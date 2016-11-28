@@ -13,9 +13,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.Teleporter;
+import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.end.DragonFightManager;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 
 public class CommandTeleportJED extends CommandBase
 {
@@ -44,7 +50,7 @@ public class CommandTeleportJED extends CommandBase
     @Override
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] strArr, BlockPos pos)
     {
-        if (strArr.length == 1)
+        if (strArr.length == 1 || strArr.length == 2)
         {
             return getListOfStringsMatchingLastWord(strArr, server.getOnlinePlayerNames());
         }
@@ -145,9 +151,34 @@ public class CommandTeleportJED extends CommandBase
             player.setPositionAndUpdate(x, y, z);
             world.spawnEntity(player);
             world.updateEntityWithOptionalForce(player, false);
+            this.removeDragonBossBarHack(player, (WorldServer) player.getEntityWorld());
         }
     }
 
+    private void removeDragonBossBarHack(EntityPlayerMP player, WorldServer worldSrc)
+    {
+        // FIXME 1.9 - Somewhat ugly way to clear the Boss Info stuff when teleporting FROM The End
+        if (worldSrc.provider instanceof WorldProviderEnd)
+        {
+            DragonFightManager manager = ((WorldProviderEnd) worldSrc.provider).getDragonFightManager();
+
+            if (manager != null)
+            {
+                try
+                {
+                    BossInfoServer bossInfo = ReflectionHelper.getPrivateValue(DragonFightManager.class, manager, "field_186109_c", "bossInfo");
+                    if (bossInfo != null)
+                    {
+                        bossInfo.removePlayer(player);
+                    }
+                }
+                catch (UnableToAccessFieldException e)
+                {
+                    JustEnoughDimensions.logger.warn("tpj: Failed to get DragonFightManager#bossInfo");
+                }
+            }
+        }
+    }
     private static class DummyTeleporter extends Teleporter
     {
         public DummyTeleporter(WorldServer worldIn)

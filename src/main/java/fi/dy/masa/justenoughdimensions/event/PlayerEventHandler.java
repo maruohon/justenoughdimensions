@@ -12,11 +12,6 @@ import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
 
 public class PlayerEventHandler
 {
-    /*@SubscribeEvent
-    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event)
-    {
-    }*/
-
     @SubscribeEvent
     public void onConnectionCreated(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
