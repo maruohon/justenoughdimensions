@@ -1,0 +1,16 @@
+[
+{
+  "modid": "justenoughdimensions",
+  "name": "Just Enough Dimensions",
+  "description": "Allows registering custom dimensions via a JSON file",
+  "version": "${mod_version}",
+  "mcversion": "${minecraft_version}",
+  "url": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
+  "updateUrl": "",
+  "authorList": ["masa"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

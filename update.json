@@ -1,0 +1,10 @@
+{
+    "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
+    "promos": {
+        "1.10.2-latest": "0.1.0",
+        "1.10.2-recommended": "0.1.0"
+    },
+    "1.10.2": {
+        "0.1.0": "Initial release"
+    }
+}
