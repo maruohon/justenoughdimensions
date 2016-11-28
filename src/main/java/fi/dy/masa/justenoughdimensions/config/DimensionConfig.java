@@ -2,6 +2,9 @@ package fi.dy.masa.justenoughdimensions.config;
 
 import java.io.File;
 import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Map;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,13 +15,16 @@ import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldProviderSurface;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import io.netty.buffer.ByteBuf;
 
 public class DimensionConfig
 {
     private static DimensionConfig instance;
     private final File configDir;
     private final File dimensionFile;
+    private final Map<Integer, DimensionEntry> dimensions = new HashMap<Integer, DimensionEntry>();
 
     private DimensionConfig(File configDir)
     {
@@ -35,6 +41,11 @@ public class DimensionConfig
     public static DimensionConfig instance()
     {
         return instance;
+    }
+
+    public ImmutableSet<DimensionEntry> getRegisteredDimensions()
+    {
+        return ImmutableSet.<DimensionEntry>copyOf(this.dimensions.values());
     }
 
     public void readConfigAndRegisterDimensions()
@@ -93,25 +104,28 @@ public class DimensionConfig
 
                 if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
                 {
-                    DimensionType dimensionType = this.parseAndRegisterDimensionType(dimension, object.get("dimensiontype").getAsJsonObject());
+                    DimensionEntry entry = this.parseDimensionType(dimension, object.get("dimensiontype").getAsJsonObject());
 
-                    if (dimensionType != null)
+                    if (entry != null)
                     {
-                        DimensionManager.registerDimension(dimension, dimensionType);
+                        DimensionManager.registerDimension(dimension, entry.registerDimensionType());
+                        this.dimensions.put(dimension, entry);
                     }
                 }
                 else
                 {
                     JustEnoughDimensions.logger.info("Using default values for DimensionType of dimension {}", dimension);
-                    DimensionType dimensionType = DimensionType.register("DIM" + dimension, "dim_" + dimension, dimension, WorldProviderSurface.class, false);
-                    DimensionManager.registerDimension(dimension, dimensionType);
+
+                    DimensionEntry entry = new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurface.class);
+                    DimensionManager.registerDimension(dimension, entry.registerDimensionType());
+                    this.dimensions.put(dimension, entry);
                 }
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private DimensionType parseAndRegisterDimensionType(int dimension, JsonObject dimType)
+    private DimensionEntry parseDimensionType(int dimension, JsonObject dimType)
     {
         String name = dimType.get("name").getAsString();
         String suffix = dimType.has("suffix") ? dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
@@ -154,6 +168,42 @@ public class DimensionConfig
         JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {} with values:" +
                 "{name: {}, suffix: {}, keeploaded: {}, worldprovider: {}}", dimension, name, suffix, keepLoaded, worldProvider);
 
-        return DimensionType.register(name, suffix, dimension, providerClass, keepLoaded);
+        return new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+    }
+
+    public static class DimensionEntry
+    {
+        private final int id;
+        private final String name;
+        private final String suffix;
+        private final boolean keepLoaded;
+        private final Class<? extends WorldProvider> providerClass;
+
+        public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, Class<? extends WorldProvider> providerClass)
+        {
+            this.id = id;
+            this.name = name;
+            this.suffix = suffix;
+            this.keepLoaded = keepLoaded;
+            this.providerClass = providerClass;
+        }
+
+        public int getId()
+        {
+            return this.id;
+        }
+
+        public DimensionType registerDimensionType()
+        {
+            return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
+        }
+
+        public void writeToByteBuf(ByteBuf buf)
+        {
+            buf.writeInt(this.id);
+            ByteBufUtils.writeUTF8String(buf, this.name);
+            ByteBufUtils.writeUTF8String(buf, this.suffix);
+            ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
+        }
     }
 }
