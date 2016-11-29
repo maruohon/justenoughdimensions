@@ -14,7 +14,6 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
-    public static boolean replaceRegisteredDimensions;
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
@@ -38,9 +37,6 @@ public class Configs
     {
         Property prop;
 
-        prop = conf.get(CATEGORY_GENERIC, "replaceRegisteredDimensions", false).setRequiresMcRestart(false);
-        prop.setComment("If enabled, then already registered dimensions will be replaced");
-        replaceRegisteredDimensions = prop.getBoolean();
 
         if (conf.hasChanged() == true)
         {

@@ -2,7 +2,6 @@ package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.google.common.collect.ImmutableSet;
 import net.minecraft.world.WorldProvider;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -16,7 +15,7 @@ public class DimensionSyncPacket
     private ByteBuf buffer = Unpooled.buffer();
     private List<DimensionEntry> dimensions;
 
-    public void addDimensionData(ImmutableSet<DimensionEntry> entries)
+    public void addDimensionData(List<DimensionEntry> entries)
     {
         this.buffer.writeInt(entries.size());
 
