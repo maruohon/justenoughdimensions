@@ -16,6 +16,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.event.JEDEventHandler;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.IProxy;
@@ -66,6 +67,7 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void serverStarted(FMLServerStartedEvent event)
     {
+        JEDEventHandler.instance().removeDefaultBorderListeners();
         DimensionConfig.instance().registerDimensions();
     }
 }

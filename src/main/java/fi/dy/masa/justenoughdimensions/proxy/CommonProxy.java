@@ -8,6 +8,6 @@ public class CommonProxy implements IProxy
     @Override
     public void registerEventHandlers()
     {
-        MinecraftForge.EVENT_BUS.register(new JEDEventHandler());
+        MinecraftForge.EVENT_BUS.register(JEDEventHandler.instance());
     }
 }

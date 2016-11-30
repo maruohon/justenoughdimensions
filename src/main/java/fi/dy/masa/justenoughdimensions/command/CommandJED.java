@@ -9,16 +9,20 @@ import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
 import net.minecraft.command.WrongUsageException;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.SPacketEntityStatus;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
+import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
@@ -36,17 +40,7 @@ public class CommandJED extends CommandBase
     @Override
     public String getUsage(ICommandSender sender)
     {
-        return  "'/jed weather <dimension> <clear|rain|thunder> [duration]' OR " +
-                "'/jed time <dimension> <add|set> <amount>' OR " +
-                "'/jed time <dimension> <query> <day|daytime|gametime>' OR " +
-                "'/jed defaultgametype <dimension> [value]' OR " +
-                "'/jed difficulty <dimension> [value]' OR " +
-                "'/jed gamerule <dimension> <key> [value]' OR " +
-                "'/jed reload' OR " +
-                "'/jed unregister' OR " +
-                "'/jed unregister-remove (only removes from the json, doesn't delete the world)' OR " +
-                "'/jed register <dim id> (uses defaults for the DimensionType)' OR " +
-                "'/jed register <dim id> <name> <suffix> <keep loaded true/false> <worldprovider>'";
+        return  "jed.commands.usage.generic";
     }
 
     @Override
@@ -54,46 +48,94 @@ public class CommandJED extends CommandBase
     {
         if (args.length == 1)
         {
-            return getListOfStringsMatchingLastWord(args, "defaultgamemode", "difficulty", "gamerule", "time", "weather", "reload", "register", "unregister", "unregister-remove");
+            return getListOfStringsMatchingLastWord(args,
+                    "defaultgametype",
+                    "difficulty",
+                    "gamerule",
+                    "register",
+                    "reload",
+                    "time",
+                    "unregister",
+                    "unregister-remove",
+                    "weather",
+                    "worldborder"
+                );
         }
-        else if (args.length >= 3)
+        else if (args.length >= 2)
         {
-            if (args[0].equals("weather"))
+            String cmd = args[0];
+            int trim = 2;
+            int len = args.length;
+
+            try { parseInt(args[1]); }
+            catch (NumberInvalidException e)
+            {
+                if (sender.getCommandSenderEntity() == null)
+                {
+                    return super.getTabCompletions(server, sender, args, pos);
+                }
+                trim = 1;
+            }
+            len -= trim;
+
+            if (cmd.equals("weather"))
             {
                 return getListOfStringsMatchingLastWord(args, "clear", "rain", "thunder");
             }
-            else if (args[0].equals("time"))
+            else if (cmd.equals("time"))
             {
-                if (args.length == 3)
+                if (len == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, "add", "set", "query");
                 }
-                else if (args.length == 4 && args[2].equals("set"))
+                else if (len == 2 && args[args.length - 2].equals("set"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "night");
                 }
-                else if (args.length == 4 && args[2].equals("query"))
+                else if (len == 2 && args[args.length - 2].equals("query"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "daytime", "gametime");
                 }
             }
-            else if (args[0].equals("defaultgametype") && args.length == 3)
+            else if (cmd.equals("defaultgametype") && len == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
             }
-            else if (args[0].equals("difficulty") && args.length == 3)
+            else if (cmd.equals("difficulty") && len == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "peaceful", "easy", "normal", "hard");
             }
-            else if (args[0].equals("gamerule"))
+            else if (cmd.equals("gamerule"))
             {
-                if (args.length == 3)
+                if (len == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, this.getOverWorldGameRules(server).getRules());
                 }
-                else if (args.length == 4 && this.getOverWorldGameRules(server).areSameType(args[2], GameRules.ValueType.BOOLEAN_VALUE))
+                else if (len == 2 && this.getOverWorldGameRules(server).areSameType(args[args.length - 2], GameRules.ValueType.BOOLEAN_VALUE))
                 {
                     return getListOfStringsMatchingLastWord(args, "true", "false");
+                }
+            }
+            else if (cmd.equals("worldborder"))
+            {
+                if (len == 1)
+                {
+                    return getListOfStringsMatchingLastWord(args, "set", "center", "damage", "warning", "add", "get");
+                }
+                else if (len >= 2)
+                {
+                    if (args[args.length - 2].equals("damage"))
+                    {
+                        return getListOfStringsMatchingLastWord(args, "buffer", "amount");
+                    }
+                    else if (args[args.length - 2].equals("warning"))
+                    {
+                        return getListOfStringsMatchingLastWord(args, "time", "distance");
+                    }
+                    else if (args[args.length - len].equals("center") && len <= 3)
+                    {
+                        return getTabCompletionCoordinateXZ(args, trim + 1, pos);
+                    }
                 }
             }
         }
@@ -109,67 +151,106 @@ public class CommandJED extends CommandBase
             throw new WrongUsageException(this.getUsage(sender));
         }
 
-        if (args[0].equals("weather") && args.length >= 2)
-        {
-            this.commandWeather(parseInt(args[1]), dropFirstStrings(args, 2), sender);
-        }
-        else if (args[0].equals("time") && args.length >= 2)
-        {
-            this.commandTime(parseInt(args[1]), dropFirstStrings(args, 2), sender);
-        }
-        else if (args[0].equals("defaultgametype") && args.length >= 2)
-        {
-            this.commandDefaultGameType(parseInt(args[1]), dropFirstStrings(args, 2), server, sender);
-        }
-        else if (args[0].equals("difficulty") && args.length >= 2)
-        {
-            this.commandDifficulty(parseInt(args[1]), dropFirstStrings(args, 2), sender);
-        }
-        else if (args[0].equals("gamerule") && args.length >= 2)
-        {
-            this.commandGameRule(parseInt(args[1]), dropFirstStrings(args, 2), server, sender);
-        }
-        else if (args[0].equals("reload") && args.length == 1)
+        String cmd = args[0];
+
+        if (cmd.equals("reload"))
         {
             DimensionConfig.instance().readDimensionConfig();
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
         }
-        else if (args[0].equals("unregister") && args.length == 2)
+        else if (cmd.equals("unregister"))
         {
-            int dimension = parseInt(args[1]);
-            this.unregister(dimension);
-            notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
-        }
-        else if (args[0].equals("unregister-remove"))
-        {
-            int dimension = parseInt(args[1]);
-            this.unregister(dimension);
-            DimensionConfig.instance().removeDimensionAndSaveConfig(dimension);
-            notifyCommandListener(sender, this, "jed.commands.unregister.remove", Integer.valueOf(dimension));
-        }
-        else if (args[0].equals("register") && args.length >= 2)
-        {
-            int dimension = parseInt(args[1]);
-
             if (args.length == 2)
             {
+                int dimension = parseInt(args[1]);
+                this.unregister(dimension);
+                notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
+            }
+            else
+            {
+                throw new WrongUsageException("jed.commands.usage.unregister");
+            }
+        }
+        else if (cmd.equals("unregister-remove"))
+        {
+            if (args.length == 2)
+            {
+                int dimension = parseInt(args[1]);
+                this.unregister(dimension);
+                DimensionConfig.instance().removeDimensionAndSaveConfig(dimension);
+                notifyCommandListener(sender, this, "jed.commands.unregister.remove", Integer.valueOf(dimension));
+            }
+            else
+            {
+                throw new WrongUsageException("jed.commands.usage.unregister.remove");
+            }
+        }
+        else if (cmd.equals("register"))
+        {
+            if (args.length == 2)
+            {
+                int dimension = parseInt(args[1]);
                 DimensionConfig.instance().registerDimension(dimension);
                 notifyCommandListener(sender, this, "jed.commands.register.default", Integer.valueOf(dimension));
             }
             else if (args.length == 6)
             {
+                int dimension = parseInt(args[1]);
                 DimensionConfig.instance().registerDimension(dimension, args[2], args[3], Boolean.parseBoolean(args[4]), args[5]);
                 notifyCommandListener(sender, this, "jed.commands.register.custom", Integer.valueOf(dimension));
             }
             else
             {
-                throw new WrongUsageException(this.getUsage(sender));
+                throw new WrongUsageException("jed.commands.usage.register");
             }
         }
         else
         {
-            throw new WrongUsageException(this.getUsage(sender));
+            Entity entity = sender.getCommandSenderEntity();
+            int dimension = entity != null ? entity.getEntityWorld().provider.getDimension() : 0;
+            int trim = args.length >= 2 ? 2 : 1;
+
+            if (args.length >= 2)
+            {
+                try { dimension = parseInt(args[1]); }
+                catch (NumberInvalidException e)
+                {
+                    if (entity == null) { throw new WrongUsageException("jed.commands.usage.generic"); }
+                    trim = 1;
+                }
+            }
+
+            args = dropFirstStrings(args, trim);
+
+            if (cmd.equals("weather"))
+            {
+                this.commandWeather(dimension, args, sender);
+            }
+            else if (cmd.equals("time"))
+            {
+                this.commandTime(dimension, args, sender);
+            }
+            else if (cmd.equals("defaultgametype"))
+            {
+                this.commandDefaultGameType(dimension, args, server, sender);
+            }
+            else if (cmd.equals("difficulty"))
+            {
+                this.commandDifficulty(dimension, args, sender);
+            }
+            else if (cmd.equals("gamerule"))
+            {
+                this.commandGameRule(dimension, args, server, sender);
+            }
+            else if (cmd.equals("worldborder"))
+            {
+                this.commandWorldBorder(dimension, args, server, sender);
+            }
+            else
+            {
+                throw new WrongUsageException("jed.commands.usage.generic");
+            }
         }
     }
 
@@ -179,7 +260,7 @@ public class CommandJED extends CommandBase
 
         if (world == null)
         {
-            throw new WrongUsageException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
         }
 
         if (args.length >= 1 && args.length <= 2)
@@ -191,9 +272,10 @@ public class CommandJED extends CommandBase
                 time = parseInt(args[1], -10000000, 10000000) * 20;
             }
 
+            String cmd = args[0];
             WorldInfo worldinfo = world.getWorldInfo();
 
-            if ("clear".equalsIgnoreCase(args[0]))
+            if (cmd.equals("clear"))
             {
                 worldinfo.setCleanWeatherTime(time);
                 worldinfo.setRainTime(0);
@@ -202,7 +284,7 @@ public class CommandJED extends CommandBase
                 worldinfo.setThundering(false);
                 notifyCommandListener(sender, this, "jed.commands.weather.clear", Integer.valueOf(dimension));
             }
-            else if ("rain".equalsIgnoreCase(args[0]))
+            else if (cmd.equals("rain"))
             {
                 worldinfo.setCleanWeatherTime(0);
                 worldinfo.setRainTime(time);
@@ -211,7 +293,7 @@ public class CommandJED extends CommandBase
                 worldinfo.setThundering(false);
                 notifyCommandListener(sender, this, "jed.commands.weather.rain", Integer.valueOf(dimension));
             }
-            else if ("thunder".equalsIgnoreCase(args[0]))
+            else if (cmd.equals("thunder"))
             {
                 worldinfo.setCleanWeatherTime(0);
                 worldinfo.setRainTime(time);
@@ -222,12 +304,12 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throw new WrongUsageException("'/jed weather <dimension> <clear|rain|thunder> [duration]'");
+                throw new WrongUsageException("jed.commands.usage.weather");
             }
         }
         else
         {
-            throw new WrongUsageException("'/jed weather <dimension> <clear|rain|thunder> [duration]'");
+            throw new WrongUsageException("jed.commands.usage.weather");
         }
     }
 
@@ -242,7 +324,9 @@ public class CommandJED extends CommandBase
 
         if (args.length > 1)
         {
-            if ("set".equals(args[0]))
+            String cmd = args[0];
+
+            if (cmd.equals("set"))
             {
                 int time;
 
@@ -262,13 +346,13 @@ public class CommandJED extends CommandBase
                 world.setWorldTime(time);
                 notifyCommandListener(sender, this, "jed.commands.time.set", Integer.valueOf(time), Integer.valueOf(dimension));
             }
-            else if ("add".equals(args[0]))
+            else if (cmd.equals("add"))
             {
                 int amount = parseInt(args[1], -24000, 24000);
                 world.setWorldTime(world.getWorldTime() + amount);
                 notifyCommandListener(sender, this, "jed.commands.time.add", Integer.valueOf(amount), Integer.valueOf(dimension));
             }
-            else if ("query".equals(args[0]))
+            else if (cmd.equals("query"))
             {
                 if ("daytime".equals(args[1]))
                 {
@@ -290,13 +374,13 @@ public class CommandJED extends CommandBase
                 }
                 else
                 {
-                    throw new WrongUsageException("/jed time <dimension> <add|set> <amount>' OR '/jed time <dimension> <query> <day|daytime|gametime>'");
+                    throw new WrongUsageException("jed.commands.usage.time");
                 }
             }
         }
         else
         {
-            throw new WrongUsageException("/jed time <dimension> <add|set> <amount>' OR '/jed time <dimension> <query> <day|daytime|gametime>'");
+            throw new WrongUsageException("jed.commands.usage.time");
         }
     }
 
@@ -442,6 +526,182 @@ public class CommandJED extends CommandBase
             {
                 player.connection.sendPacket(new SPacketEntityStatus(player, opCode));
             }
+        }
+    }
+
+    private void commandWorldBorder(int dimension, String[] args, MinecraftServer server, ICommandSender sender) throws CommandException
+    {
+        if (args.length < 1)
+        {
+            throw new WrongUsageException("jed.commands.usage.worldborder");
+        }
+
+        World world = DimensionManager.getWorld(dimension);
+
+        if (world == null)
+        {
+            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+        }
+
+        String cmd = args[0];
+        WorldBorder border = world.getWorldBorder();
+
+        if (cmd.equals("set"))
+        {
+            if (args.length != 2 && args.length != 3)
+            {
+                throw new WrongUsageException("jed.commands.usage.worldborder.set");
+            }
+
+            double oldSize = border.getTargetSize();
+            double newSize = parseDouble(args[1], 1.0D, 6.0E7D);
+            long i = args.length > 2 ? parseLong(args[2], 0L, 9223372036854775L) * 1000L : 0L;
+
+            if (i > 0L)
+            {
+                border.setTransition(oldSize, newSize, i);
+
+                if (oldSize > newSize)
+                {
+                    notifyCommandListener(sender, this, "jed.commands.worldborder.setslowly.shrink.success",
+                            Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(i / 1000L));
+                }
+                else
+                {
+                    notifyCommandListener(sender, this, "jed.commands.worldborder.setslowly.grow.success",
+                            Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(i / 1000L));
+                }
+            }
+            else
+            {
+                border.setTransition(newSize);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.set.success",
+                        Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize));
+            }
+        }
+        else if (cmd.equals("add"))
+        {
+            if (args.length != 2 && args.length != 3)
+            {
+                throw new WrongUsageException("jed.commands.usage.worldborder.add");
+            }
+
+            double oldSize = border.getDiameter();
+            double newSize = oldSize + parseDouble(args[1], -oldSize, 6.0E7D - oldSize);
+            long time = border.getTimeUntilTarget() + (args.length > 2 ? parseLong(args[2], 0L, 9223372036854775L) * 1000L : 0L);
+
+            if (time > 0L)
+            {
+                border.setTransition(oldSize, newSize, time);
+
+                if (oldSize > newSize)
+                {
+                    notifyCommandListener(sender, this, "jed.commands.worldborder.setslowly.shrink.success",
+                            Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(time / 1000L));
+                }
+                else
+                {
+                    notifyCommandListener(sender, this, "jed.commands.worldborder.setslowly.grow.success",
+                            Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(time / 1000L));
+                }
+            }
+            else
+            {
+                border.setTransition(newSize);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.set.success",
+                        Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize));
+            }
+        }
+        else if (cmd.equals("center"))
+        {
+            if (args.length != 3)
+            {
+                throw new WrongUsageException("jed.commands.usage.worldborder.center");
+            }
+
+            BlockPos blockpos = sender.getPosition();
+            double centerX = parseDouble(blockpos.getX() + 0.5D, args[1], true);
+            double centerZ = parseDouble(blockpos.getZ() + 0.5D, args[2], true);
+            border.setCenter(centerX, centerZ);
+            notifyCommandListener(sender, this, "jed.commands.worldborder.center.success",
+                    Integer.valueOf(dimension), Double.valueOf(centerX), Double.valueOf(centerZ));
+        }
+        else if (cmd.equals("damage"))
+        {
+            if (args.length >= 2 && args[1].equals("buffer"))
+            {
+                if (args.length != 3)
+                {
+                    throw new WrongUsageException("jed.commands.usage.worldborder.damage.buffer");
+                }
+
+                double bufferSize = parseDouble(args[2], 0.0D);
+                double oldSize = border.getDamageBuffer();
+                border.setDamageBuffer(bufferSize);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.damage.buffer.success",
+                        Integer.valueOf(dimension), String.format("%.1f", bufferSize), String.format("%.1f", oldSize));
+            }
+            else if (args.length >= 2 && args[1].equals("amount"))
+            {
+                if (args.length != 3)
+                {
+                    throw new WrongUsageException("jed.commands.usage.worldborder.damage.amount");
+                }
+
+                double damage = parseDouble(args[2], 0.0D);
+                double oldDamage = border.getDamageAmount();
+                border.setDamageAmount(damage);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.damage.amount.success",
+                        Integer.valueOf(dimension), String.format("%.2f", damage), String.format("%.2f", oldDamage));
+            }
+            else
+            {
+                throw new WrongUsageException("jed.commands.usage.worldborder.damage");
+            }
+        }
+        else if (cmd.equals("warning"))
+        {
+            if (args.length >= 2 && args[1].equals("time"))
+            {
+                if (args.length != 3)
+                {
+                    throw new WrongUsageException("jed.commands.usage.worldborder.warning.time");
+                }
+
+                int time = parseInt(args[2], 0);
+                int oldTime = border.getWarningTime();
+                border.setWarningTime(time);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.warning.time.success",
+                        Integer.valueOf(dimension), Integer.valueOf(time), Integer.valueOf(oldTime));
+            }
+            else if (args.length >= 2 && args[1].equals("distance"))
+            {
+                if (args.length != 3)
+                {
+                    throw new WrongUsageException("jed.commands.usage.worldborder.warning.distance");
+                }
+
+                int distance = parseInt(args[2], 0);
+                int oldDistance = border.getWarningDistance();
+                border.setWarningDistance(distance);
+                notifyCommandListener(sender, this, "jed.commands.worldborder.warning.distance.success",
+                        Integer.valueOf(dimension), Integer.valueOf(distance), Integer.valueOf(oldDistance));
+            }
+            else
+            {
+                throw new WrongUsageException("jed.commands.usage.worldborder.warning");
+            }
+        }
+        else if (cmd.equals("get"))
+        {
+            double diameter = border.getDiameter();
+            sender.setCommandStat(CommandResultStats.Type.QUERY_RESULT, MathHelper.floor(diameter + 0.5D));
+            sender.sendMessage(new TextComponentTranslation("jed.commands.worldborder.get.success",
+                    Integer.valueOf(dimension), String.format("%.0f", diameter)));
+        }
+        else
+        {
+            throw new WrongUsageException("jed.commands.worldborder.usage");
         }
     }
 

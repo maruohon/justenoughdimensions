@@ -42,10 +42,7 @@ public class CommandTeleportJED extends CommandBase
     @Override
     public String getUsage(ICommandSender sender)
     {
-        return "/tpj <to-entity> or " +
-               "/tpj <entity> <to-entity> or " +
-               "/tpj <dimensionId> [x y z] [yaw] [pitch] or " +
-               "/tpj <entity> <dimensionId> [x y z] [yaw] [pitch]";
+        return "jed.commands.usage.tp";
     }
 
     @Override

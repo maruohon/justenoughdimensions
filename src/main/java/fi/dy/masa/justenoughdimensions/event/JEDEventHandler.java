@@ -4,12 +4,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
+import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketWorldBorder;
 import net.minecraft.util.datafix.FixTypes;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.WorldServerMulti;
+import net.minecraft.world.border.IBorderListener;
+import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
@@ -21,6 +28,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.common.network.FMLOutboundHandler;
@@ -37,18 +45,28 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
 {
+    private static final JEDEventHandler INSTANCE = new JEDEventHandler();
     private Field field_worldInfo = null;
+    private Field field_WorldBorder_listeners = null;
+    private Field field_WorldServerMulti_borderListener = null;
 
     public JEDEventHandler()
     {
         try
         {
             this.field_worldInfo = ReflectionHelper.findField(World.class, "field_72986_A", "worldInfo");
+            this.field_WorldBorder_listeners = ReflectionHelper.findField(WorldBorder.class, "field_177758_a", "listeners");
+            this.field_WorldServerMulti_borderListener = ReflectionHelper.findField(WorldServerMulti.class, "borderListener");
         }
         catch (UnableToFindFieldException e)
         {
-            JustEnoughDimensions.logger.error("JEDEventHandler: Failed to reflect field World.worldInfo");
+            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!");
         }
+    }
+
+    public static JEDEventHandler instance()
+    {
+        return INSTANCE;
     }
 
     @SubscribeEvent
@@ -66,13 +84,103 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event)
     {
-        this.loadAndSetCustomWorldInfo(event.getWorld());
+        World world = event.getWorld();
+        this.loadAndSetCustomWorldInfo(world);
+
+        if (Configs.enableSeparateWorldBorders && world.isRemote == false)
+        {
+            this.removeOverworldBorderListener(world);
+            world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
+        }
     }
 
     @SubscribeEvent
     public void onWorldSave(WorldEvent.Save event)
     {
         this.saveCustomWorldInfoToFile(event.getWorld());
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
+    {
+        this.sendWorldBorder(event.player);
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
+    {
+        this.sendWorldBorder(event.player);
+    }
+
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event)
+    {
+        this.sendWorldBorder(event.player);
+    }
+
+    private void sendWorldBorder(EntityPlayer player)
+    {
+        if (Configs.enableSeparateWorldBorders && player.getEntityWorld().isRemote == false && (player instanceof EntityPlayerMP))
+        {
+            ((EntityPlayerMP) player).connection.sendPacket(
+                    new SPacketWorldBorder(player.getEntityWorld().getWorldBorder(), SPacketWorldBorder.Action.INITIALIZE));
+        }
+    }
+
+    public void removeDefaultBorderListeners()
+    {
+        World overworld = DimensionManager.getWorld(0);
+
+        if (Configs.enableSeparateWorldBorders && overworld != null)
+        {
+            try
+            {
+                @SuppressWarnings("unchecked")
+                List<IBorderListener> listeners = (List<IBorderListener>) this.field_WorldBorder_listeners.get(overworld.getWorldBorder());
+
+                if (listeners != null)
+                {
+                    listeners.clear();
+                    overworld.getWorldBorder().addListener(new JEDBorderListener(0));
+                }
+            }
+            catch (IllegalArgumentException e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to clear default WorldBorder listeners");
+            }
+            catch (IllegalAccessException e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to clear default WorldBorder listeners");
+            }
+        }
+    }
+
+    private void removeOverworldBorderListener(World world)
+    {
+        World overworld = DimensionManager.getWorld(0);
+
+        if (Configs.enableSeparateWorldBorders && overworld != null && (world instanceof WorldServerMulti))
+        {
+            try
+            {
+                @SuppressWarnings("unchecked")
+                List<IBorderListener> overworldListeners = (List<IBorderListener>) this.field_WorldBorder_listeners.get(overworld.getWorldBorder());
+                IBorderListener listener = (IBorderListener) this.field_WorldServerMulti_borderListener.get(world);
+
+                if (overworldListeners != null)
+                {
+                    overworldListeners.remove(listener);
+                }
+            }
+            catch (IllegalArgumentException e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to clear default WorldBorder listeners");
+            }
+            catch (IllegalAccessException e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to clear default WorldBorder listeners");
+            }
+        }
     }
 
     private void loadAndSetCustomWorldInfo(World world)
@@ -166,6 +274,16 @@ public class JEDEventHandler
         }
 
         WorldInfo info = world.getWorldInfo();
+        info.setBorderSize(world.getWorldBorder().getDiameter());
+        info.getBorderCenterX(world.getWorldBorder().getCenterX());
+        info.getBorderCenterZ(world.getWorldBorder().getCenterZ());
+        info.setBorderSafeZone(world.getWorldBorder().getDamageBuffer());
+        info.setBorderDamagePerBlock(world.getWorldBorder().getDamageAmount());
+        info.setBorderWarningDistance(world.getWorldBorder().getWarningDistance());
+        info.setBorderWarningTime(world.getWorldBorder().getWarningTime());
+        info.setBorderLerpTarget(world.getWorldBorder().getTargetSize());
+        info.setBorderLerpTime(world.getWorldBorder().getTimeUntilTarget());
+
         NBTTagCompound rootTag = new NBTTagCompound();
         rootTag.setTag("Data", info.cloneNBTCompound(new NBTTagCompound()));
 
@@ -233,12 +351,34 @@ public class JEDEventHandler
             try
             {
                 this.field_worldInfo.set(world, info);
+                this.setWorldBorderValues(world);
                 this.recreateChunkProvider(world);
             }
             catch (Exception e)
             {
                 JustEnoughDimensions.logger.error("JEDEventHandler: Failed to override WorldInfo for dimension {}", world.provider.getDimension());
             }
+        }
+    }
+
+    private void setWorldBorderValues(World world)
+    {
+        WorldBorder border = world.getWorldBorder();
+        WorldInfo info = world.getWorldInfo();
+
+        border.setCenter(info.getBorderCenterX(), info.getBorderCenterZ());
+        border.setDamageAmount(info.getBorderDamagePerBlock());
+        border.setDamageBuffer(info.getBorderSafeZone());
+        border.setWarningDistance(info.getBorderWarningDistance());
+        border.setWarningTime(info.getBorderWarningTime());
+
+        if (info.getBorderLerpTime() > 0L)
+        {
+            border.setTransition(info.getBorderSize(), info.getBorderLerpTarget(), info.getBorderLerpTime());
+        }
+        else
+        {
+            border.setTransition(info.getBorderSize());
         }
     }
 
