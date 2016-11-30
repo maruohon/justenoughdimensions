@@ -1,14 +1,22 @@
 package fi.dy.masa.justenoughdimensions.config;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.command.CommandException;
+import net.minecraft.command.NumberInvalidException;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
@@ -17,6 +25,8 @@ import net.minecraft.world.WorldProviderSurface;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
+import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfig
@@ -90,6 +100,82 @@ public class DimensionConfig
         }
     }
 
+    public void registerDimension(int dimension) throws CommandException
+    {
+        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
+        this.registerDimension(dimension, entry);
+    }
+
+    public void registerDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName) throws CommandException
+    {
+        Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
+
+        if (providerClass == null)
+        {
+            throw new NumberInvalidException("jed.commands.error.invalid.worldprovider.name", providerClassName);
+        }
+
+        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+        this.registerDimension(dimension, entry);
+    }
+
+    private void registerDimension(int dimension, DimensionEntry entry) throws CommandException
+    {
+        if (DimensionManager.isDimensionRegistered(dimension))
+        {
+            throw new NumberInvalidException("jed.commands.error.dimension.already.registered", Integer.valueOf(dimension));
+        }
+
+        DimensionManager.registerDimension(dimension, entry.registerDimensionType());
+        this.dimensions.add(entry);
+        this.saveConfig();
+        PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
+    }
+
+    public void removeDimensionAndSaveConfig(int dimension)
+    {
+        for (int i = 0; i < this.dimensions.size(); i++)
+        {
+            DimensionEntry entry = this.dimensions.get(i);
+
+            if (entry.getId() == dimension)
+            {
+                this.dimensions.remove(i);
+                break;
+            }
+        }
+
+        this.saveConfig();
+    }
+
+    private void saveConfig()
+    {
+        Collections.sort(this.dimensions);
+
+        JsonObject root = new JsonObject();
+        JsonArray array = new JsonArray();
+
+        for (DimensionEntry dimEntry : this.dimensions)
+        {
+            array.add(dimEntry.toJson());
+        }
+
+        root.add("dimensions", array);
+
+        try
+        {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(this.dimensionFile));
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            writer.write(gson.toJson(root));
+            writer.close();
+        }
+        catch (IOException e)
+        {
+            JustEnoughDimensions.logger.warn("Failed to write dimensions.json");
+            e.printStackTrace();
+        }
+    }
+
     private void parseDimensionConfig(JsonObject root) throws IllegalStateException
     {
         JsonArray array;
@@ -113,7 +199,7 @@ public class DimensionConfig
                 else
                 {
                     JustEnoughDimensions.logger.info("Using default values for the DimensionType of dimension {}", dimension);
-                    entry = new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurface.class);
+                    entry = this.createDefaultDimensionEntry(dimension);
                 }
 
                 if (entry != null)
@@ -129,50 +215,68 @@ public class DimensionConfig
         }
     }
 
-    @SuppressWarnings("unchecked")
+    private DimensionEntry createDefaultDimensionEntry(int dimension)
+    {
+        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurface.class);
+    }
+
     private DimensionEntry parseDimensionType(int dimension, JsonObject dimType)
     {
         String name = dimType.get("name").getAsString();
         String suffix = dimType.has("suffix") ? dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
 
         boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").getAsBoolean();
-        String worldProviderName = "";
+
         Class<? extends WorldProvider> providerClass = WorldProviderSurface.class;
 
         if (dimType.has("worldprovider") && dimType.get("worldprovider").isJsonPrimitive())
         {
-            worldProviderName = dimType.get("worldprovider").getAsString();
+            providerClass = this.getProviderClass(dimType.get("worldprovider").getAsString());
+        }
 
-            if (worldProviderName.equals("WorldProviderSurface"))
-            {
-                providerClass = WorldProviderSurface.class;
-            }
-            else if (worldProviderName.equals("WorldProviderHell"))
-            {
-                providerClass = WorldProviderHell.class;
-            }
-            else if (worldProviderName.equals("WorldProviderEnd"))
-            {
-                providerClass = WorldProviderEnd.class;
-            }
-            else
-            {
-                try
-                {
-                    providerClass = (Class<? extends WorldProvider>) Class.forName(worldProviderName);
-                }
-                catch (Exception e)
-                {
-                    JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for '{}'", worldProviderName);
-                    e.printStackTrace();
-                    return null;
-                }
-            }
+        if (providerClass == null)
+        {
+            JustEnoughDimensions.logger.warn("Failed to get a WorldProver for name {}", dimType.get("worldprovider").getAsString());
+            return null;
         }
 
         JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {}", dimension);
 
         return new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Class<? extends WorldProvider> getProviderClass(String providerClassName)
+    {
+        Class<? extends WorldProvider> providerClass;
+
+        if (providerClassName.equals("WorldProviderSurface"))
+        {
+            providerClass = WorldProviderSurface.class;
+        }
+        else if (providerClassName.equals("WorldProviderHell"))
+        {
+            providerClass = WorldProviderHell.class;
+        }
+        else if (providerClassName.equals("WorldProviderEnd"))
+        {
+            providerClass = WorldProviderEnd.class;
+        }
+        else
+        {
+            try
+            {
+                providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for '{}'", providerClassName);
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        return providerClass;
     }
 
     public static class DimensionEntry implements Comparable<DimensionEntry>
@@ -212,6 +316,21 @@ public class DimensionConfig
             ByteBufUtils.writeUTF8String(buf, this.name);
             ByteBufUtils.writeUTF8String(buf, this.suffix);
             ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
+        }
+
+        public JsonObject toJson()
+        {
+            JsonObject jsonEntry = new JsonObject();
+            jsonEntry.addProperty("dim", this.getId());
+
+            JsonObject worldType = new JsonObject();
+            worldType.addProperty("name", this.name);
+            worldType.addProperty("suffix", this.suffix);
+            worldType.addProperty("keeploaded", this.keepLoaded);
+            worldType.addProperty("worldprovider", this.providerClass.getName());
+            jsonEntry.add("worldtype", worldType);
+
+            return jsonEntry;
         }
 
         @Override

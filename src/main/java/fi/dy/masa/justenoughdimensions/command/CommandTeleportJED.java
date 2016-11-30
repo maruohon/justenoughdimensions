@@ -15,7 +15,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.World;
@@ -127,7 +126,8 @@ public class CommandTeleportJED extends CommandBase
             {
                 if ((sender.getCommandSenderEntity() instanceof Entity))
                 {
-                    sender.sendMessage(new TextComponentString("Currently in dimension " + sender.getCommandSenderEntity().getEntityWorld().provider.getDimension()));
+                    int dim = sender.getCommandSenderEntity().getEntityWorld().provider.getDimension();
+                    notifyCommandListener(sender, cmd, "jed.commands.info.current.dimension", Integer.valueOf(dim));
                 }
 
                 throw new WrongUsageException(cmd.getUsage(sender));
@@ -147,7 +147,7 @@ public class CommandTeleportJED extends CommandBase
                 // Used from the console and an invalid entity selector for the first entity
                 if (entityDest == null && (sender.getCommandSenderEntity() instanceof Entity) == false)
                 {
-                    throw new WrongUsageException("Invalid entity '" + args[0] + "'");
+                    throw new WrongUsageException("jed.commands.error.invalid.entity", args[0]);
                 }
 
                 if (entityDest != null)
@@ -174,7 +174,7 @@ public class CommandTeleportJED extends CommandBase
             {
                 if (sender.getCommandSenderEntity() == null)
                 {
-                    throw new WrongUsageException("No target entity specified");
+                    throw new WrongUsageException("jed.commands.error.no.targetentity");
                 }
 
                 argIndex--;
@@ -244,25 +244,29 @@ public class CommandTeleportJED extends CommandBase
             this.target.removePassengers();
 
             Entity entity = null;
+            int dim = 0;
 
             if (this.variant == CommandVariant.ENTITY_TO_ENTITY)
             {
                 this.teleportToEntity(this.target, this.destEntity, server);
                 entity = this.destEntity;
+                dim = destEntity.getEntityWorld().provider.getDimension();
             }
             else if (this.variant == CommandVariant.ENTITY_TO_DIMENSION)
             {
                 entity = this.teleportToDimension(this.target, this.dimension, server);
+                dim = this.dimension;
             }
 
             if (entity != null)
             {
-                notifyCommandListener(sender, cmd, "commands.teleport.success.coordinates",
+                notifyCommandListener(sender, cmd, "jed.commands.teleport.success.coordinates",
                         new Object[] {
                                 this.target.getName(),
                                 Double.valueOf(entity.posX),
                                 Double.valueOf(entity.posY),
-                                Double.valueOf(entity.posZ)
+                                Double.valueOf(entity.posZ),
+                                Integer.valueOf(dim)
                             });
             }
         }
@@ -284,7 +288,7 @@ public class CommandTeleportJED extends CommandBase
         {
             if (DimensionManager.isDimensionRegistered(dimension) == false)
             {
-                throw new NumberInvalidException("Not a valid dimension ID: " + dimension, new Object[0]);
+                throw new NumberInvalidException("jed.commands.error.not.valid.dimension", Integer.valueOf(dimension));
             }
 
             if (entity.getEntityWorld().provider.getDimension() != dimension)
@@ -326,7 +330,7 @@ public class CommandTeleportJED extends CommandBase
             WorldServer worldDst = server.worldServerForDimension(dimension);
             if (worldDst == null)
             {
-                throw new WrongUsageException("Unable to load world for dimension " + dimension);
+                throw new WrongUsageException("jed.commands.error.unable.to.load.world", Integer.valueOf(dimension));
             }
 
             double x = entity.posX;

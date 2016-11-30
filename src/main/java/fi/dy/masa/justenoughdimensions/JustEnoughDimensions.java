@@ -11,10 +11,12 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
+import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
+import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.IProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 
@@ -42,6 +44,7 @@ public class JustEnoughDimensions
         Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
         proxy.registerEventHandlers();
         channels = NetworkRegistry.INSTANCE.newChannel("JEDChannel", DimensionSyncChannelHandler.instance);
+        PacketHandler.init();
 
         DimensionConfig.create(new File(event.getModConfigurationDirectory(), Reference.MOD_ID));
     }
@@ -49,6 +52,7 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event)
     {
+        event.registerServerCommand(new CommandJED());
         event.registerServerCommand(new CommandTeleportJED());
     }
 
