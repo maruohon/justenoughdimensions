@@ -81,7 +81,10 @@ public class JEDEventHandler
 
         if (world.isRemote == false && Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
+            JustEnoughDimensions.logger.info("Using custom WorldInfo for dimension {}", dimension);
+
             WorldInfoJED info = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
+            NBTTagCompound nbt;
 
             if (info == null)
             {
@@ -92,12 +95,15 @@ public class JEDEventHandler
                 worldInfo.populateFromWorldSettings(worldSettings);*/
 
                 // Transfer via NBT so that the GameRules instance remains separate
-                NBTTagCompound nbt = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
-                nbt = DimensionConfig.instance().getWorldInfoValues(dimension, nbt);
-                info = new WorldInfoJED(nbt);
+                nbt = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
+            }
+            else
+            {
+                nbt = info.cloneNBTCompound(new NBTTagCompound());
             }
 
-            JustEnoughDimensions.logger.info("Using custom WorldInfo for dimension {}", dimension);
+            nbt = DimensionConfig.instance().getWorldInfoValues(dimension, nbt);
+            info = new WorldInfoJED(nbt);
             this.setWorldInfo(world, info);
         }
     }
