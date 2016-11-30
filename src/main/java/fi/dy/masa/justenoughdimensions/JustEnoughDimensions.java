@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
@@ -42,11 +43,17 @@ public class JustEnoughDimensions
         logger = event.getModLog();
 
         Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
+        PacketHandler.init();
         proxy.registerEventHandlers();
         channels = NetworkRegistry.INSTANCE.newChannel("JEDChannel", DimensionSyncChannelHandler.instance);
-        PacketHandler.init();
 
         DimensionConfig.create(new File(event.getModConfigurationDirectory(), Reference.MOD_ID));
+    }
+
+    @Mod.EventHandler
+    public void onServerAboutToStart(FMLServerAboutToStartEvent event)
+    {
+        DimensionConfig.instance().readDimensionConfig();
     }
 
     @Mod.EventHandler
@@ -59,7 +66,6 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void serverStarted(FMLServerStartedEvent event)
     {
-        DimensionConfig.instance().readDimensionConfig();
         DimensionConfig.instance().registerDimensions();
     }
 }

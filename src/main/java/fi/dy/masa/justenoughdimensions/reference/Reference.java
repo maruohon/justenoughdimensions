@@ -7,5 +7,5 @@ public class Reference
     public static final String MOD_VERSION = "@MOD_VERSION@";
 
     public static final String PROXY_CLIENT = "fi.dy.masa.justenoughdimensions.proxy.ClientProxy";
-    public static final String PROXY_SERVER = "fi.dy.masa.justenoughdimensions.proxy.ServerProxy";
+    public static final String PROXY_SERVER = "fi.dy.masa.justenoughdimensions.proxy.CommonProxy";
 }

@@ -14,6 +14,7 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableSeparateWorldInfo;
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
@@ -37,6 +38,9 @@ public class Configs
     {
         Property prop;
 
+        prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldInfo", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
+        prop.setComment("If enabled, all dimensions that exist in dimensions.json and have the \"worldinfo\" key (even if the dimension isn't registered by this mod!) will use separate WorldInfo instances (separate time, weather, gamerules etc.)");
+        enableSeparateWorldInfo = prop.getBoolean();
 
         if (conf.hasChanged() == true)
         {

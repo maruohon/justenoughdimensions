@@ -7,7 +7,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,6 +19,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.NumberInvalidException;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagByte;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagDouble;
+import net.minecraft.nbt.NBTTagInt;
+import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
@@ -35,6 +44,7 @@ public class DimensionConfig
     private final File configDir;
     private final File dimensionFile;
     private final List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
+    private final Map<Integer, NBTTagCompound> customWorldInfoDimensions = new HashMap<Integer, NBTTagCompound>(8);
 
     private DimensionConfig(File configDir)
     {
@@ -56,6 +66,31 @@ public class DimensionConfig
     public List<DimensionEntry> getRegisteredDimensions()
     {
         return ImmutableList.<DimensionEntry>copyOf(this.dimensions);
+    }
+
+    public boolean useCustomWorldInfoFor(int dimension)
+    {
+        return this.customWorldInfoDimensions.containsKey(dimension);
+    }
+
+    public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound nbt)
+    {
+        NBTTagCompound nbtDim = this.customWorldInfoDimensions.get(dimension);
+
+        if (nbtDim != null)
+        {
+            for (String key : nbtDim.getKeySet())
+            {
+                NBTBase tag = nbtDim.getTag(key);
+
+                if (tag != null)
+                {
+                    nbt.setTag(key, tag.copy());
+                }
+            }
+        }
+
+        return nbt;
     }
 
     public void readDimensionConfig()
@@ -90,7 +125,7 @@ public class DimensionConfig
 
             if (DimensionManager.isDimensionRegistered(dimension) == false)
             {
-                JustEnoughDimensions.logger.warn("Registering a dimension with ID {}...", dimension);
+                //JustEnoughDimensions.logger.info("Registering a dimension with ID {}...", dimension);
                 DimensionManager.registerDimension(dimension, entry.registerDimensionType());
             }
             else
@@ -181,6 +216,9 @@ public class DimensionConfig
         JsonArray array;
         JsonObject object;
 
+        JustEnoughDimensions.logger.info("Reading the dimensions.json config...");
+        this.customWorldInfoDimensions.clear();
+
         array = root.get("dimensions").getAsJsonArray();
 
         for (JsonElement el : array)
@@ -198,12 +236,19 @@ public class DimensionConfig
                 }
                 else
                 {
-                    JustEnoughDimensions.logger.info("Using default values for the DimensionType of dimension {}", dimension);
+                    //JustEnoughDimensions.logger.info("Using default values for the DimensionType of dimension {}", dimension);
                     entry = this.createDefaultDimensionEntry(dimension);
                 }
 
                 if (entry != null)
                 {
+                    if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
+                    {
+                        JsonObject obj = object.get("worldinfo").getAsJsonObject();
+                        entry.setWorldInfoJson(obj);
+                        this.parseAndSetCustomWorldInfoValues(dimension, obj);
+                    }
+
                     if (this.dimensions.contains(entry))
                     {
                         this.dimensions.remove(entry);
@@ -213,6 +258,84 @@ public class DimensionConfig
                 }
             }
         }
+    }
+
+    private void parseAndSetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
+    {
+        NBTTagCompound nbt = new NBTTagCompound();
+
+        for (Map.Entry<String, JsonElement> entry : object.entrySet())
+        {
+            JsonElement element = entry.getValue();
+
+            if (element.isJsonPrimitive())
+            {
+                String key = entry.getKey();
+                NBTBase tag = this.getTagForValue(key, element);
+
+                if (tag != null)
+                {
+                    nbt.setTag(key, tag);
+                }
+            }
+        }
+
+        this.customWorldInfoDimensions.put(dimension, nbt);
+    }
+
+    private NBTBase getTagForValue(String key, JsonElement element)
+    {
+        if (key.equals("RandomSeed"))           { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("generatorName"))        { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("generatorVersion"))     { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("generatorOptions"))     { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("GameType"))             { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("MapFeatures"))          { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("SpawnX"))               { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("SpawnY"))               { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("SpawnZ"))               { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("Time"))                 { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("DayTime"))              { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("LastPlayed"))           { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("SizeOnDisk"))           { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("LevelName"))            { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("version"))              { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("clearWeatherTime"))     { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("rainTime"))             { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("raining"))              { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("thunderTime"))          { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("thundering"))           { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("hardcore"))             { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("initialized"))          { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("allowCommands"))        { return new NBTTagByte(    element.getAsByte()     ); }
+
+        if (key.equals("Difficulty"))           { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("DifficultyLocked"))     { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("BorderCenterX"))        { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderCenterZ"))        { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderSize"))           { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderSizeLerpTime"))   { return new NBTTagLong(    element.getAsLong()     ); }
+        if (key.equals("BorderSizeLerpTarget")) { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderSafeZone"))       { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderDamagePerBlock")) { return new NBTTagDouble(  element.getAsDouble()   ); }
+        if (key.equals("BorderWarningBlocks"))  { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("BorderWarningTime"))    { return new NBTTagInt(     element.getAsInt()      ); }
+
+        if (key.equals("GameRules") && element.isJsonObject())
+        {
+            NBTTagCompound tag = new NBTTagCompound();
+            JsonObject obj = element.getAsJsonObject();
+
+            for (Map.Entry<String, JsonElement> entry : obj.entrySet())
+            {
+                tag.setString(entry.getKey(), entry.getValue().getAsString());
+            }
+
+            return tag;
+        }
+
+        JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element.getAsString());
+        return null;
     }
 
     private DimensionEntry createDefaultDimensionEntry(int dimension)
@@ -240,7 +363,7 @@ public class DimensionConfig
             return null;
         }
 
-        JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {}", dimension);
+        //JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {}", dimension);
 
         return new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
     }
@@ -286,6 +409,7 @@ public class DimensionConfig
         private final String suffix;
         private final boolean keepLoaded;
         private final Class<? extends WorldProvider> providerClass;
+        private JsonObject worldInfojson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, Class<? extends WorldProvider> providerClass)
         {
@@ -294,6 +418,12 @@ public class DimensionConfig
             this.suffix = suffix;
             this.keepLoaded = keepLoaded;
             this.providerClass = providerClass;
+        }
+
+        public DimensionEntry setWorldInfoJson(JsonObject obj)
+        {
+            this.worldInfojson = obj;
+            return this;
         }
 
         public int getId()
@@ -328,7 +458,12 @@ public class DimensionConfig
             worldType.addProperty("suffix", this.suffix);
             worldType.addProperty("keeploaded", this.keepLoaded);
             worldType.addProperty("worldprovider", this.providerClass.getName());
-            jsonEntry.add("worldtype", worldType);
+            jsonEntry.add("dimensiontype", worldType);
+
+            if (this.worldInfojson != null)
+            {
+                jsonEntry.add("worldinfo", this.worldInfojson);
+            }
 
             return jsonEntry;
         }
