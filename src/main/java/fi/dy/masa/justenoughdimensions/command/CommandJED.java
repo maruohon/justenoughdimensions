@@ -23,8 +23,11 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
@@ -49,6 +52,7 @@ public class CommandJED extends CommandBase
         if (args.length == 1)
         {
             return getListOfStringsMatchingLastWord(args,
+                    "debug",
                     "defaultgametype",
                     "difficulty",
                     "gamerule",
@@ -203,6 +207,28 @@ public class CommandJED extends CommandBase
             else
             {
                 throw new WrongUsageException("jed.commands.usage.register");
+            }
+        }
+        else if (cmd.equals("debug"))
+        {
+            World world = null;
+            try { int dim = parseInt(args[1]); world = DimensionManager.getWorld(dim); }
+            catch (Exception e) { Entity ent = sender.getCommandSenderEntity(); if (ent != null) world = ent.getEntityWorld(); }
+            if (world != null)
+            {
+                IChunkProvider cp = world.getChunkProvider();
+                JustEnoughDimensions.logger.info("============= JED DEBUG ==========\nDIM: {}\nWorld {}\n" +
+                                                 "WorldType: {} - {}\nWorldProvider: {}\nChunkProvider: {}\n" +
+                                                 "ChunkProviderServer.chunkGenerator: {}\nBiomeProvider: {}",
+                    world.provider.getDimension(),
+                    world.getClass().getName(),
+                    world.getWorldInfo().getTerrainType().getName(),
+                    world.getWorldInfo().getTerrainType().getClass().getName(),
+                    world.provider.getClass().getName(),
+                    cp.getClass().getName(),
+                    ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"),
+                    world.getBiomeProvider().getClass().getName());
+                sender.sendMessage(new TextComponentString("Debug output printed to console"));
             }
         }
         else

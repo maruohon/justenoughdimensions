@@ -407,7 +407,7 @@ public class JEDEventHandler
             }
 
             JustEnoughDimensions.logger.info("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
-                    ((ChunkProviderServer)world.getChunkProvider()).chunkGenerator.getClass().getName(),
+                    ((ChunkProviderServer) world.getChunkProvider()).chunkGenerator.getClass().getName(),
                     dimension, newChunkProvider.getClass().getName());
 
             try
