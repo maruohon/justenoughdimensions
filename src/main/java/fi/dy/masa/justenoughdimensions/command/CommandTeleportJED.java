@@ -346,7 +346,11 @@ public class CommandTeleportJED extends CommandBase
             }
             else if (useSpawnPoint)
             {
-                BlockPos spawn = worldDst.provider instanceof WorldProviderEnd ? worldDst.getSpawnCoordinate() : worldDst.getSpawnPoint();
+                BlockPos spawn = worldDst.getSpawnCoordinate();
+                if (spawn == null)
+                {
+                    spawn = worldDst.getSpawnPoint();
+                }
 
                 if (spawn != null)
                 {
@@ -359,19 +363,19 @@ public class CommandTeleportJED extends CommandBase
             if (entity instanceof EntityPlayerMP)
             {
                 EntityPlayerMP player = (EntityPlayerMP) entity;
-                int oldDim = player.getEntityWorld().provider.getDimension();
+                World worldOld = player.getEntityWorld();
                 // Set the yaw and pitch at this point
                 entity.setLocationAndAngles(x, y, z, yaw, pitch);
                 server.getPlayerList().transferPlayerToDimension(player, dimension, new DummyTeleporter(worldDst));
                 player.setPositionAndUpdate(x, y, z);
 
                 // Teleporting FROM The End
-                if (oldDim == 1)
+                if (worldOld.provider instanceof WorldProviderEnd)
                 {
                     player.setPositionAndUpdate(x, y, z);
                     worldDst.spawnEntity(player);
                     worldDst.updateEntityWithOptionalForce(player, false);
-                    this.removeDragonBossBarHack(player, (WorldServer) player.getEntityWorld());
+                    this.removeDragonBossBarHack(player, (WorldServer) worldOld);
                 }
             }
             else
