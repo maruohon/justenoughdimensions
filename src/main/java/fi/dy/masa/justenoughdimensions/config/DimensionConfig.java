@@ -49,7 +49,7 @@ public class DimensionConfig
     private final File configDirConfigs;
     private final File dimensionFileConfigs;
     private final List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
-    private final Map<Integer, NBTTagCompound> customWorldInfoDimensions = new HashMap<Integer, NBTTagCompound>(8);
+    private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
 
     private DimensionConfig(File configDir)
     {
@@ -75,12 +75,12 @@ public class DimensionConfig
 
     public boolean useCustomWorldInfoFor(int dimension)
     {
-        return this.customWorldInfoDimensions.containsKey(dimension);
+        return this.customWorldInfo.containsKey(dimension);
     }
 
     public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound nbt)
     {
-        NBTTagCompound nbtDim = this.customWorldInfoDimensions.get(dimension);
+        NBTTagCompound nbtDim = this.customWorldInfo.get(dimension);
 
         if (nbtDim != null)
         {
@@ -166,7 +166,7 @@ public class DimensionConfig
     {
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
-            //JustEnoughDimensions.logger.info("Registering a dimension with ID {}...", dimension);
+            JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
             DimensionManager.registerDimension(dimension, entry.registerDimensionType());
             return true;
         }
@@ -174,7 +174,7 @@ public class DimensionConfig
         {
             if (DimensionManager.getWorld(dimension) == null)
             {
-                JustEnoughDimensions.logger.info("Overriding dimension {}...", dimension);
+                JustEnoughDimensions.logInfo("Overriding dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
                 DimensionManager.registerDimension(dimension, entry.registerDimensionType());
                 return true;
@@ -275,9 +275,10 @@ public class DimensionConfig
     {
         JsonArray array;
         JsonObject object;
+        int count = 0;
 
-        JustEnoughDimensions.logger.info("Reading the dimensions.json config...");
-        this.customWorldInfoDimensions.clear();
+        JustEnoughDimensions.logInfo("Reading the dimensions.json config...");
+        this.customWorldInfo.clear();
         this.dimensions.clear();
 
         array = root.get("dimensions").getAsJsonArray();
@@ -298,7 +299,7 @@ public class DimensionConfig
                 }
                 else
                 {
-                    //JustEnoughDimensions.logger.info("Using default values for the DimensionType of dimension {}", dimension);
+                    JustEnoughDimensions.logInfo("Using default values for the DimensionType of dimension {}", dimension);
                     entry = this.createDefaultDimensionEntry(dimension);
                 }
 
@@ -315,8 +316,12 @@ public class DimensionConfig
 
                     this.dimensions.add(entry);
                 }
+
+                count++;
             }
         }
+
+        JustEnoughDimensions.logInfo("Read {} dimension entries from the config", count);
     }
 
     private void parseAndSetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
@@ -339,7 +344,7 @@ public class DimensionConfig
             }
         }
 
-        this.customWorldInfoDimensions.put(dimension, nbt);
+        this.customWorldInfo.put(dimension, nbt);
     }
 
     private NBTBase getTagForValue(String key, JsonElement element)
@@ -447,7 +452,7 @@ public class DimensionConfig
                     dimType.get("worldprovider").getAsString(), getNameForWorldProvider(providerClass));
         }
 
-        //JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {}", dimension);
+        JustEnoughDimensions.logInfo("Creating a customized DimensionType for dimension {}", dimension);
 
         return new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
     }
@@ -561,7 +566,7 @@ public class DimensionConfig
 
         public DimensionType registerDimensionType()
         {
-            JustEnoughDimensions.logger.info("Registering a DimensionType with values:" +
+            JustEnoughDimensions.logInfo("Registering a DimensionType with values:" +
                     "{id: {}, name: \"{}\", suffix: \"{}\", keepLoaded: {}, WorldProvider: {}}",
                     this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
 

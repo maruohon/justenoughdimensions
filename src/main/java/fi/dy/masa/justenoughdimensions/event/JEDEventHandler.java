@@ -189,7 +189,7 @@ public class JEDEventHandler
 
         if (world.isRemote == false && Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
-            JustEnoughDimensions.logger.info("Using custom WorldInfo for dimension {}", dimension);
+            JustEnoughDimensions.logInfo("Using custom WorldInfo for dimension {}", dimension);
 
             WorldInfoJED info = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound nbt;
@@ -221,7 +221,7 @@ public class JEDEventHandler
     {
         if (worldDir == null)
         {
-            JustEnoughDimensions.logger.error("loadWorldInfo(): No worldDir found");
+            JustEnoughDimensions.logger.warn("loadWorldInfo(): No worldDir found");
             return null;
         }
 
@@ -387,13 +387,8 @@ public class JEDEventHandler
     {
         World overworld = DimensionManager.getWorld(0);
 
-        if (overworld == null)
-        {
-            return;
-        }
-
         // Don't override unless the WorldType has been changed from the default
-        if (world.getWorldInfo().getTerrainType().getWorldTypeID() == overworld.getWorldInfo().getTerrainType().getWorldTypeID())
+        if (overworld == null || world.getWorldInfo().getTerrainType().getName().equals(overworld.getWorldInfo().getTerrainType().getName()))
         {
             return;
         }
@@ -412,7 +407,7 @@ public class JEDEventHandler
             }
 
             int dimension = world.provider.getDimension();
-            JustEnoughDimensions.logger.info("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
+            JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
                     ((ChunkProviderServer) world.getChunkProvider()).chunkGenerator.getClass().getName(),
                     dimension, newChunkProvider.getClass().getName());
 

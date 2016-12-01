@@ -14,6 +14,7 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableLoggingInfo;
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
@@ -39,6 +40,10 @@ public class Configs
     public static void loadConfigs(Configuration conf)
     {
         Property prop;
+
+        prop = conf.get(CATEGORY_GENERIC, "enableLoggingInfo", false).setRequiresMcRestart(false);
+        prop.setComment("Enables a bunch of extra logging on the INFO level for registrations etc.");
+        enableLoggingInfo = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", false).setRequiresMcRestart(false);
         prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in the dimensions.json config can be used to override an existing registered dimension.");

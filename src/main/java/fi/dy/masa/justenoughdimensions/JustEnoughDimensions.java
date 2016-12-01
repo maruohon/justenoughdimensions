@@ -84,4 +84,12 @@ public class JustEnoughDimensions
         // Although that does still happen in single player if you exit the world and then load it again...
         DimensionConfig.instance().registerDimensions();
     }
+
+    public static void logInfo(String message, Object... params)
+    {
+        if (Configs.enableLoggingInfo)
+        {
+            logger.info(message, params);
+        }
+    }
 }
