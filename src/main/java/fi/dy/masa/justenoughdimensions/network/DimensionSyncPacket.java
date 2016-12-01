@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -60,17 +61,31 @@ public class DimensionSyncPacket
     {
         List<String> ids = new ArrayList<String>();
 
-        for (DimensionEntry dim : this.dimensions)
+        for (DimensionEntry entry : this.dimensions)
         {
-            int id = dim.getId();
+            int id = entry.getId();
             ids.add(String.valueOf(id));
-
-            if (DimensionManager.isDimensionRegistered(id) == false)
-            {
-                DimensionManager.registerDimension(id, dim.registerDimensionType());
-            }
+            registerDimension(id, entry);
         }
 
         JustEnoughDimensions.logger.info("DimensionSyncPacket: Registered dimensions: " + String.join(", ", ids));
+    }
+
+    public static void registerDimension(int id, DimensionEntry entry)
+    {
+        if (DimensionManager.isDimensionRegistered(id))
+        {
+            DimensionType type = DimensionManager.getProviderType(id);
+
+            if (type.createDimension().getClass() != entry.getProviderClass())
+            {
+                DimensionManager.unregisterDimension(id);
+            }
+        }
+
+        if (DimensionManager.isDimensionRegistered(id) == false)
+        {
+            DimensionManager.registerDimension(id, entry.registerDimensionType());
+        }
     }
 }

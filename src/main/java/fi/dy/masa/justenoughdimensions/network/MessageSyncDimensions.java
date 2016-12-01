@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.WorldProvider;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -99,15 +98,11 @@ public class MessageSyncDimensions implements IMessage
         {
             List<String> ids = new ArrayList<String>();
 
-            for (DimensionEntry dim : message.dimensions)
+            for (DimensionEntry entry : message.dimensions)
             {
-                int id = dim.getId();
+                int id = entry.getId();
                 ids.add(String.valueOf(id));
-
-                if (DimensionManager.isDimensionRegistered(id) == false)
-                {
-                    DimensionManager.registerDimension(id, dim.registerDimensionType());
-                }
+                DimensionSyncPacket.registerDimension(id, entry);
             }
 
             JustEnoughDimensions.logger.info("DimensionSyncPacket: Registered dimensions: " + String.join(", ", ids));
