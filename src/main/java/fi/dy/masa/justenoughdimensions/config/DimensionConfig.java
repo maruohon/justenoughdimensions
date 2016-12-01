@@ -1,6 +1,5 @@
 package fi.dy.masa.justenoughdimensions.config;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -10,6 +9,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -36,6 +37,7 @@ import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfig
@@ -150,8 +152,7 @@ public class DimensionConfig
             throw new NumberInvalidException("jed.commands.error.invalid.worldprovider.name", providerClassName);
         }
 
-        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
-        this.registerDimension(dimension, entry);
+        this.registerDimension(dimension, new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass));
     }
 
     private void registerDimension(int dimension, DimensionEntry entry) throws CommandException
@@ -199,7 +200,7 @@ public class DimensionConfig
 
         try
         {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(this.dimensionFile));
+            FileWriter writer = new FileWriter(this.dimensionFile);
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             writer.write(gson.toJson(root));
             writer.close();
@@ -340,17 +341,21 @@ public class DimensionConfig
 
     private DimensionEntry createDefaultDimensionEntry(int dimension)
     {
-        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurface.class);
+        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderJED.class);
     }
 
     private DimensionEntry parseDimensionType(int dimension, JsonObject dimType)
     {
-        String name = dimType.get("name").getAsString();
-        String suffix = dimType.has("suffix") ? dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
+        String name = (dimType.has("name") && dimType.get("name").isJsonPrimitive()) ?
+                dimType.get("name").getAsString() : "DIM" + dimension;
+        if (StringUtils.isBlank(name)) { name = "DIM" + dimension; }
 
-        boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").getAsBoolean();
+        String suffix = (dimType.has("suffix") && dimType.get("name").isJsonPrimitive()) ?
+                dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
 
-        Class<? extends WorldProvider> providerClass = WorldProviderSurface.class;
+        boolean keepLoaded = dimType.has("keeploaded") && dimType.get("name").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
+
+        Class<? extends WorldProvider> providerClass = WorldProviderJED.class;
 
         if (dimType.has("worldprovider") && dimType.get("worldprovider").isJsonPrimitive())
         {
@@ -359,8 +364,10 @@ public class DimensionConfig
 
         if (providerClass == null)
         {
-            JustEnoughDimensions.logger.warn("Failed to get a WorldProver for name {}", dimType.get("worldprovider").getAsString());
-            return null;
+            providerClass = WorldProviderJED.class;
+
+            JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
+                    dimType.get("worldprovider").getAsString(), getNameForWorldProvider(providerClass));
         }
 
         //JustEnoughDimensions.logger.info("Creating a customized DimensionType for dimension {}", dimension);
@@ -373,7 +380,11 @@ public class DimensionConfig
     {
         Class<? extends WorldProvider> providerClass;
 
-        if (providerClassName.equals("WorldProviderSurface"))
+        if (providerClassName.equals("WorldProviderJED"))
+        {
+            providerClass = WorldProviderJED.class;
+        }
+        else if (providerClassName.equals("WorldProviderSurface"))
         {
             providerClass = WorldProviderSurface.class;
         }
@@ -402,6 +413,20 @@ public class DimensionConfig
         return providerClass;
     }
 
+    private static String getNameForWorldProvider(@Nonnull Class<? extends WorldProvider> clazz)
+    {
+        String provName = clazz.getName();
+
+        // These ones are supported by their simple class names in this code
+        if (provName.startsWith("net.minecraft.world.") ||
+            provName.equals(WorldProviderJED.class.getName()))
+        {
+            return clazz.getSimpleName();
+        }
+
+        return provName;
+    }
+
     public static class DimensionEntry implements Comparable<DimensionEntry>
     {
         private final int id;
@@ -411,7 +436,7 @@ public class DimensionConfig
         private final Class<? extends WorldProvider> providerClass;
         private JsonObject worldInfojson;
 
-        public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, Class<? extends WorldProvider> providerClass)
+        public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
         {
             this.id = id;
             this.name = name;
@@ -434,8 +459,8 @@ public class DimensionConfig
         public DimensionType registerDimensionType()
         {
             JustEnoughDimensions.logger.info("Registering a DimensionType with values:" +
-                    "{id: {}, name: \"{}\", suffix: \"{}\", keeploaded: {}, WorldProvider: {}}",
-                    this.id, this.name, this.suffix, this.keepLoaded, this.providerClass.getName());
+                    "{id: {}, name: \"{}\", suffix: \"{}\", keepLoaded: {}, WorldProvider: {}}",
+                    this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
 
             return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
         }
@@ -457,7 +482,7 @@ public class DimensionConfig
             worldType.addProperty("name", this.name);
             worldType.addProperty("suffix", this.suffix);
             worldType.addProperty("keeploaded", this.keepLoaded);
-            worldType.addProperty("worldprovider", this.providerClass.getName());
+            worldType.addProperty("worldprovider", getNameForWorldProvider(this.providerClass));
             jsonEntry.add("dimensiontype", worldType);
 
             if (this.worldInfojson != null)
