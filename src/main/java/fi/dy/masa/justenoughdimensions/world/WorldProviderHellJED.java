@@ -1,10 +1,11 @@
 package fi.dy.masa.justenoughdimensions.world;
 
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DimensionType;
-import net.minecraft.world.WorldProviderSurface;
+import net.minecraft.world.WorldProviderHell;
 import net.minecraftforge.common.DimensionManager;
 
-public class WorldProviderJED extends WorldProviderSurface
+public class WorldProviderHellJED extends WorldProviderHell
 {
     @Override
     public DimensionType getDimensionType()
@@ -20,5 +21,13 @@ public class WorldProviderJED extends WorldProviderSurface
         }
 
         return type != null ? type : super.getDimensionType();
+    }
+
+    @Override
+    public BlockPos getSpawnCoordinate()
+    {
+        // Override this method because by default it returns null, so if overriding the End
+        // with class, this prevents a crash in the vanilla TP code.
+        return this.world.getSpawnPoint();
     }
 }

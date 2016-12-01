@@ -22,6 +22,7 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
@@ -195,13 +196,15 @@ public class CommandJED extends CommandBase
             if (args.length == 2)
             {
                 int dimension = parseInt(args[1]);
-                DimensionConfig.instance().registerDimension(dimension);
+                DimensionConfig.instance().registerNewDimension(dimension);
                 notifyCommandListener(sender, this, "jed.commands.register.default", Integer.valueOf(dimension));
             }
-            else if (args.length == 6)
+            else if (args.length == 6 || args.length == 7)
             {
                 int dimension = parseInt(args[1]);
-                DimensionConfig.instance().registerDimension(dimension, args[2], args[3], Boolean.parseBoolean(args[4]), args[5]);
+                boolean keepLoaded = Boolean.parseBoolean(args[4]);
+                boolean override = args.length == 7 ? Boolean.parseBoolean(args[6]) : false;
+                DimensionConfig.instance().registerNewDimension(dimension, args[2], args[3], keepLoaded, args[5], override);
                 notifyCommandListener(sender, this, "jed.commands.register.custom", Integer.valueOf(dimension));
             }
             else
@@ -214,20 +217,22 @@ public class CommandJED extends CommandBase
             World world = null;
             try { int dim = parseInt(args[1]); world = DimensionManager.getWorld(dim); }
             catch (Exception e) { Entity ent = sender.getCommandSenderEntity(); if (ent != null) world = ent.getEntityWorld(); }
+
             if (world != null)
             {
                 IChunkProvider cp = world.getChunkProvider();
-                JustEnoughDimensions.logger.info("============= JED DEBUG ==========\nDIM: {}\nWorld {}\n" +
-                                                 "WorldType: {} - {}\nWorldProvider: {}\nChunkProvider: {}\n" +
-                                                 "ChunkProviderServer.chunkGenerator: {}\nBiomeProvider: {}",
-                    world.provider.getDimension(),
-                    world.getClass().getName(),
-                    world.getWorldInfo().getTerrainType().getName(),
-                    world.getWorldInfo().getTerrainType().getClass().getName(),
-                    world.provider.getClass().getName(),
-                    cp.getClass().getName(),
-                    ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"),
-                    world.getBiomeProvider().getClass().getName());
+                JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
+                JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
+                JustEnoughDimensions.logger.info("World {}", world.getClass().getName());
+                WorldType type = world.getWorldInfo().getTerrainType();
+                JustEnoughDimensions.logger.info("WorldType: {} - {}", type.getName(), type.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
+                JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
+                JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
+                        ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
+                JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
+                JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
+
                 sender.sendMessage(new TextComponentString("Debug output printed to console"));
             }
         }

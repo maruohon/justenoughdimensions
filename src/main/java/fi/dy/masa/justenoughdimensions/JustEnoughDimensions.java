@@ -55,6 +55,12 @@ public class JustEnoughDimensions
     public void onServerAboutToStart(FMLServerAboutToStartEvent event)
     {
         DimensionConfig.instance().readDimensionConfig();
+
+        // This needs to be here so that we are able to override existing dimensions before
+        // they get loaded during server start.
+        // But on the other hand we don't want to register the rest of the dimensions yet,
+        // otherwise they would be considered 'static dimensions' and get loaded on server start.
+        DimensionConfig.instance().registerOverriddenDimensions();
     }
 
     @Mod.EventHandler
@@ -67,7 +73,12 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void serverStarted(FMLServerStartedEvent event)
     {
+        // This removes the WorldBorder listeners that WorldServerMulti adds from other dimensions to the overworld border.
+        // Thus this needs to be called after the static dimensions have loaded, ie. from this event specifically.
         JEDEventHandler.instance().removeDefaultBorderListeners();
+
+        // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
+        // won't get auto-loaded on server start as 'static' dimensions.
         DimensionConfig.instance().registerDimensions();
     }
 }

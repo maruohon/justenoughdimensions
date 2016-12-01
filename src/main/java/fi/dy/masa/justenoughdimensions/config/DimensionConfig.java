@@ -37,7 +37,9 @@ import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfig
@@ -123,27 +125,61 @@ public class DimensionConfig
     {
         for (DimensionEntry entry : this.dimensions)
         {
-            int dimension = entry.getId();
+            this.registerDimension(entry.getId(), entry);
+        }
+    }
 
-            if (DimensionManager.isDimensionRegistered(dimension) == false)
+    public void registerOverriddenDimensions()
+    {
+        if (Configs.enableReplacingRegisteredDimensions)
+        {
+            for (DimensionEntry entry : this.dimensions)
             {
-                //JustEnoughDimensions.logger.info("Registering a dimension with ID {}...", dimension);
-                DimensionManager.registerDimension(dimension, entry.registerDimensionType());
-            }
-            else
-            {
-                JustEnoughDimensions.logger.warn("A dimension with id {} is already registered, skipping it...", dimension);
+                if (entry.getOverride() && DimensionManager.isDimensionRegistered(entry.getId()))
+                {
+                    this.registerDimension(entry.getId(), entry);
+                }
             }
         }
     }
 
-    public void registerDimension(int dimension) throws CommandException
+    private boolean registerDimension(int dimension, DimensionEntry entry)
     {
-        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
-        this.registerDimension(dimension, entry);
+        if (DimensionManager.isDimensionRegistered(dimension) == false)
+        {
+            //JustEnoughDimensions.logger.info("Registering a dimension with ID {}...", dimension);
+            DimensionManager.registerDimension(dimension, entry.registerDimensionType());
+            return true;
+        }
+        else if (Configs.enableReplacingRegisteredDimensions && entry.getOverride())
+        {
+            if (DimensionManager.getWorld(dimension) == null)
+            {
+                JustEnoughDimensions.logger.info("Overriding dimension {}...", dimension);
+                DimensionManager.unregisterDimension(dimension);
+                DimensionManager.registerDimension(dimension, entry.registerDimensionType());
+                return true;
+            }
+            else
+            {
+                JustEnoughDimensions.logger.warn("Dimension {} is already registered and currently loaded, can't override it...", dimension);
+            }
+        }
+        else
+        {
+            JustEnoughDimensions.logger.warn("Dimension {} is already registered, skipping it...", dimension);
+        }
+
+        return false;
     }
 
-    public void registerDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName) throws CommandException
+    public void registerNewDimension(int dimension) throws CommandException
+    {
+        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
+        this.registerNewDimension(dimension, entry);
+    }
+
+    public void registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName, boolean override) throws CommandException
     {
         Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
 
@@ -152,17 +188,21 @@ public class DimensionConfig
             throw new NumberInvalidException("jed.commands.error.invalid.worldprovider.name", providerClassName);
         }
 
-        this.registerDimension(dimension, new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass));
+        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+        entry.setOverride(override);
+
+        this.registerNewDimension(dimension, entry);
     }
 
-    private void registerDimension(int dimension, DimensionEntry entry) throws CommandException
+    private void registerNewDimension(int dimension, DimensionEntry entry) throws CommandException
     {
-        if (DimensionManager.isDimensionRegistered(dimension))
+        boolean success = this.registerDimension(dimension, entry);
+
+        if (success == false)
         {
             throw new NumberInvalidException("jed.commands.error.dimension.already.registered", Integer.valueOf(dimension));
         }
 
-        DimensionManager.registerDimension(dimension, entry.registerDimensionType());
         this.dimensions.add(entry);
         this.saveConfig();
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
@@ -229,6 +269,7 @@ public class DimensionConfig
             if (object.has("dim") && object.get("dim").isJsonPrimitive())
             {
                 int dimension = object.get("dim").getAsInt();
+                boolean override = object.has("override") && object.get("override").isJsonPrimitive() && object.get("override").getAsBoolean();
                 DimensionEntry entry = null;
 
                 if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
@@ -243,6 +284,8 @@ public class DimensionConfig
 
                 if (entry != null)
                 {
+                    entry.setOverride(override);
+
                     if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
                     {
                         JsonObject obj = object.get("worldinfo").getAsJsonObject();
@@ -250,6 +293,7 @@ public class DimensionConfig
                         this.parseAndSetCustomWorldInfoValues(dimension, obj);
                     }
 
+                    // Remove the old entry if one exists (compared by dimension ID)
                     if (this.dimensions.contains(entry))
                     {
                         this.dimensions.remove(entry);
@@ -341,7 +385,7 @@ public class DimensionConfig
 
     private DimensionEntry createDefaultDimensionEntry(int dimension)
     {
-        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderJED.class);
+        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
     }
 
     private DimensionEntry parseDimensionType(int dimension, JsonObject dimType)
@@ -350,21 +394,40 @@ public class DimensionConfig
                 dimType.get("name").getAsString() : "DIM" + dimension;
         if (StringUtils.isBlank(name)) { name = "DIM" + dimension; }
 
-        String suffix = (dimType.has("suffix") && dimType.get("name").isJsonPrimitive()) ?
+        String suffix = (dimType.has("suffix") && dimType.get("suffix").isJsonPrimitive()) ?
                 dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
 
-        boolean keepLoaded = dimType.has("keeploaded") && dimType.get("name").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
+        boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
 
-        Class<? extends WorldProvider> providerClass = WorldProviderJED.class;
+        Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
 
         if (dimType.has("worldprovider") && dimType.get("worldprovider").isJsonPrimitive())
         {
-            providerClass = this.getProviderClass(dimType.get("worldprovider").getAsString());
+            String providerName = dimType.get("worldprovider").getAsString();
+
+            // Don't allow using the vanilla surface or hell providers for the vanilla end dimension,
+            // because that will lead to a crash in the teleport code (null returned from getSpawnCoordinate() for
+            // other vanilla providers than the End).
+            if (dimension == 1)
+            {
+                if (providerName.equals("WorldProviderSurface") || providerName.equals("net.minecraft.world.WorldProviderSurface"))
+                {
+                    providerName = WorldProviderSurfaceJED.class.getSimpleName();
+                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
+                }
+                else if (providerName.equals("WorldProviderHell") || providerName.equals("net.minecraft.world.WorldProviderHell"))
+                {
+                    providerName = WorldProviderHellJED.class.getSimpleName();
+                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
+                }
+            }
+
+            providerClass = this.getProviderClass(providerName);
         }
 
         if (providerClass == null)
         {
-            providerClass = WorldProviderJED.class;
+            providerClass = WorldProviderSurfaceJED.class;
 
             JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
                     dimType.get("worldprovider").getAsString(), getNameForWorldProvider(providerClass));
@@ -380,9 +443,17 @@ public class DimensionConfig
     {
         Class<? extends WorldProvider> providerClass;
 
-        if (providerClassName.equals("WorldProviderJED"))
+        if (providerClassName.equals("WorldProviderSurfaceJED"))
         {
-            providerClass = WorldProviderJED.class;
+            providerClass = WorldProviderSurfaceJED.class;
+        }
+        else if (providerClassName.equals("WorldProviderHellJED"))
+        {
+            providerClass = WorldProviderHellJED.class;
+        }
+        else if (providerClassName.equals("WorldProviderEndJED"))
+        {
+            providerClass = WorldProviderEndJED.class;
         }
         else if (providerClassName.equals("WorldProviderSurface"))
         {
@@ -419,7 +490,9 @@ public class DimensionConfig
 
         // These ones are supported by their simple class names in this code
         if (provName.startsWith("net.minecraft.world.") ||
-            provName.equals(WorldProviderJED.class.getName()))
+            provName.equals(WorldProviderSurfaceJED.class.getName()) ||
+            provName.equals(WorldProviderHellJED.class.getName()) ||
+            provName.equals(WorldProviderEndJED.class.getName()))
         {
             return clazz.getSimpleName();
         }
@@ -434,6 +507,7 @@ public class DimensionConfig
         private final String suffix;
         private final boolean keepLoaded;
         private final Class<? extends WorldProvider> providerClass;
+        private boolean override;
         private JsonObject worldInfojson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
@@ -441,8 +515,18 @@ public class DimensionConfig
             this.id = id;
             this.name = name;
             this.suffix = suffix;
-            this.keepLoaded = keepLoaded;
+            this.keepLoaded = id == 0 ? true : keepLoaded;
             this.providerClass = providerClass;
+        }
+
+        public boolean getOverride()
+        {
+            return this.override;
+        }
+
+        public void setOverride(boolean override)
+        {
+            this.override = override;
         }
 
         public DimensionEntry setWorldInfoJson(JsonObject obj)
@@ -477,6 +561,7 @@ public class DimensionConfig
         {
             JsonObject jsonEntry = new JsonObject();
             jsonEntry.addProperty("dim", this.getId());
+            jsonEntry.addProperty("override", this.override);
 
             JsonObject worldType = new JsonObject();
             worldType.addProperty("name", this.name);

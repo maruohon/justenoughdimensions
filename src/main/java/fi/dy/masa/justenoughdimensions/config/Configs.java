@@ -14,6 +14,7 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
 
@@ -39,12 +40,16 @@ public class Configs
     {
         Property prop;
 
+        prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", false).setRequiresMcRestart(false);
+        prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in the dimensions.json config can be used to override an existing registered dimension.");
+        enableReplacingRegisteredDimensions = prop.getBoolean();
+
         prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldBorders", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
-        prop.setComment("If enabled, adds custom WorldBorder syncing and removes default linking from toher worlds to the overworld border.");
+        prop.setComment("If enabled, adds custom WorldBorder syncing and removes default linking from other dimensions to the overworld border.");
         enableSeparateWorldBorders = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldInfo", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
-        prop.setComment("If enabled, all dimensions that exist in dimensions.json and have the \"worldinfo\" key (even if the dimension isn't registered by this mod!) will use separate WorldInfo instances (separate time, weather, gamerules etc.)");
+        prop.setComment("If enabled, all dimensions that exist in dimensions.json and have the \"worldinfo\" key present (an empty object is enough - works even if the dimension isn't registered by this mod because it already exist!), will use separate WorldInfo instances (separate time, weather, world border, gamerules etc.)");
         enableSeparateWorldInfo = prop.getBoolean();
 
         if (conf.hasChanged() == true)
