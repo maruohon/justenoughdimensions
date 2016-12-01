@@ -14,12 +14,14 @@ import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.end.DragonFightManager;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
@@ -258,13 +260,11 @@ public class CommandTeleportJED extends CommandBase
             if (entity != null)
             {
                 notifyCommandListener(sender, cmd, "jed.commands.teleport.success.coordinates",
-                        new Object[] {
-                                this.target.getName(),
-                                Double.valueOf(entity.posX),
-                                Double.valueOf(entity.posY),
-                                Double.valueOf(entity.posZ),
-                                Integer.valueOf(dim)
-                            });
+                        this.target.getName(),
+                        String.format("%.1f", entity.posX),
+                        String.format("%.1f", entity.posY),
+                        String.format("%.1f", entity.posZ),
+                        Integer.valueOf(dim));
             }
         }
 
@@ -314,12 +314,20 @@ public class CommandTeleportJED extends CommandBase
 
         private void teleportEntityTo(Entity entity, Vec3d pos, float yaw, float pitch)
         {
-            double x = pos.xCoord;
-            double y = pos.yCoord;
-            double z = pos.zCoord;
+            pos = this.getClampedDestinationPosition(pos, entity.getEntityWorld());
+            entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, yaw, pitch);
+            entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
+        }
 
-            entity.setLocationAndAngles(x, y, z, yaw, pitch);
-            entity.setPositionAndUpdate(x, y, z);
+        private Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
+        {
+            WorldBorder border = worldDst.getWorldBorder();
+
+            double x = MathHelper.clamp(posIn.xCoord, border.minX() + 2, border.maxX() - 2);
+            double y = MathHelper.clamp(posIn.yCoord, -4096, 4096);
+            double z = MathHelper.clamp(posIn.zCoord, border.minZ() + 2, border.maxZ() - 2);
+
+            return new Vec3d(x, y, z);
         }
 
         private Entity changeToDimension(Entity entity, int dimension, boolean useSpawnPoint, MinecraftServer server) throws CommandException
@@ -359,6 +367,11 @@ public class CommandTeleportJED extends CommandBase
                     z = spawn.getZ() + 0.5;
                 }
             }
+
+            Vec3d pos = this.getClampedDestinationPosition(new Vec3d(x, y, z), worldDst);
+            x = pos.xCoord;
+            y = pos.yCoord;
+            z = pos.zCoord;
 
             if (entity instanceof EntityPlayerMP)
             {
