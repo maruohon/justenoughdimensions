@@ -353,7 +353,7 @@ public class JEDEventHandler
             {
                 this.field_worldInfo.set(world, info);
                 this.setWorldBorderValues(world);
-                this.recreateChunkProvider(world);
+                this.setChunkProvider(world);
             }
             catch (Exception e)
             {
@@ -383,22 +383,26 @@ public class JEDEventHandler
         }
     }
 
-    private void recreateChunkProvider(World world)
+    private void setChunkProvider(World world)
     {
         World overworld = DimensionManager.getWorld(0);
 
+        if (overworld == null)
+        {
+            return;
+        }
+
         // Don't override unless the WorldType has been changed from the default
-        if (overworld != null && world.getWorldInfo().getTerrainType().getWorldTypeID() == overworld.getWorldInfo().getTerrainType().getWorldTypeID())
+        if (world.getWorldInfo().getTerrainType().getWorldTypeID() == overworld.getWorldInfo().getTerrainType().getWorldTypeID())
         {
             return;
         }
 
         if (world instanceof WorldServer)
         {
-            int dimension = world.provider.getDimension();
-
             // This sets the new WorldType to the WorldProvider
             world.provider.setWorld(world);
+
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 
             if (newChunkProvider == null)
@@ -407,6 +411,7 @@ public class JEDEventHandler
                 return;
             }
 
+            int dimension = world.provider.getDimension();
             JustEnoughDimensions.logger.info("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
                     ((ChunkProviderServer) world.getChunkProvider()).chunkGenerator.getClass().getName(),
                     dimension, newChunkProvider.getClass().getName());

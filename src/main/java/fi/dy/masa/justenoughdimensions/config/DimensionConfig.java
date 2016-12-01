@@ -98,15 +98,21 @@ public class DimensionConfig
         return nbt;
     }
 
+    /**
+     * Only call this method after the overworld has been loaded
+     */
     public void readDimensionConfig()
     {
-        File file = null;
-        File saveDir = DimensionManager.getCurrentSaveRootDirectory();
+        this.readDimensionConfig(DimensionManager.getCurrentSaveRootDirectory());
+    }
 
-        if (saveDir != null)
+    public void readDimensionConfig(File worldDir)
+    {
+        File file = null;
+
+        if (worldDir != null)
         {
-            File configDirWorld = new File(saveDir, Reference.MOD_ID);
-            file = new File(configDirWorld, "dimensions.json");;
+            file = new File(new File(worldDir, Reference.MOD_ID), "dimensions.json");
         }
 
         if (file == null || file.exists() == false || file.isFile() == false || file.canRead() == false)
@@ -527,9 +533,19 @@ public class DimensionConfig
             this.providerClass = providerClass;
         }
 
+        public int getId()
+        {
+            return this.id;
+        }
+
         public boolean getOverride()
         {
             return this.override;
+        }
+
+        public Class<? extends WorldProvider> getProviderClass()
+        {
+            return this.providerClass;
         }
 
         public void setOverride(boolean override)
@@ -541,11 +557,6 @@ public class DimensionConfig
         {
             this.worldInfojson = obj;
             return this;
-        }
-
-        public int getId()
-        {
-            return this.id;
         }
 
         public DimensionType registerDimensionType()

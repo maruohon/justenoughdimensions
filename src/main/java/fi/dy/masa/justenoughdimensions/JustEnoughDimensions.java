@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions;
 import java.io.File;
 import java.util.EnumMap;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.world.chunk.storage.AnvilSaveConverter;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -54,7 +55,8 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void onServerAboutToStart(FMLServerAboutToStartEvent event)
     {
-        DimensionConfig.instance().readDimensionConfig();
+        File worldDir = new File(((AnvilSaveConverter) event.getServer().getActiveAnvilConverter()).savesDirectory, event.getServer().getFolderName());
+        DimensionConfig.instance().readDimensionConfig(worldDir);
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.
@@ -77,12 +79,9 @@ public class JustEnoughDimensions
         // Thus this needs to be called after the static dimensions have loaded, ie. from this event specifically.
         JEDEventHandler.instance().removeDefaultBorderListeners();
 
-        // This is here again so that we can read the per-world configuration file, if one exists.
-        // That can only be done after the overworld has loaded, so that we know the save directory.
-        DimensionConfig.instance().readDimensionConfig();
-
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
+        // Although that does still happen in single player if you exit the world and then load it again...
         DimensionConfig.instance().registerDimensions();
     }
 }
