@@ -193,6 +193,7 @@ public class JEDEventHandler
 
             WorldInfoJED info = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound nbt;
+            NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
 
             if (info == null)
             {
@@ -203,11 +204,11 @@ public class JEDEventHandler
                 worldInfo.populateFromWorldSettings(worldSettings);*/
 
                 // Transfer via NBT so that the GameRules instance remains separate
-                nbt = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
+                nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
             }
             else
             {
-                nbt = info.cloneNBTCompound(new NBTTagCompound());
+                nbt = info.cloneNBTCompound(playerNBT);
             }
 
             nbt = DimensionConfig.instance().getWorldInfoValues(dimension, nbt);
@@ -285,7 +286,7 @@ public class JEDEventHandler
         info.setBorderLerpTime(world.getWorldBorder().getTimeUntilTarget());
 
         NBTTagCompound rootTag = new NBTTagCompound();
-        rootTag.setTag("Data", info.cloneNBTCompound(new NBTTagCompound()));
+        rootTag.setTag("Data", info.cloneNBTCompound(world.getMinecraftServer().getPlayerList().getHostPlayerData()));
 
         if (world.getSaveHandler() instanceof SaveHandler)
         {
