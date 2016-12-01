@@ -77,6 +77,10 @@ public class JustEnoughDimensions
         // Thus this needs to be called after the static dimensions have loaded, ie. from this event specifically.
         JEDEventHandler.instance().removeDefaultBorderListeners();
 
+        // This is here again so that we can read the per-world configuration file, if one exists.
+        // That can only be done after the overworld has loaded, so that we know the save directory.
+        DimensionConfig.instance().readDimensionConfig();
+
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
         DimensionConfig.instance().registerDimensions();

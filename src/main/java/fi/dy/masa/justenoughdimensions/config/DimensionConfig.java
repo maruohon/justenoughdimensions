@@ -37,6 +37,7 @@ import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -45,16 +46,16 @@ import io.netty.buffer.ByteBuf;
 public class DimensionConfig
 {
     private static DimensionConfig instance;
-    private final File configDir;
-    private final File dimensionFile;
+    private final File configDirConfigs;
+    private final File dimensionFileConfigs;
     private final List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfoDimensions = new HashMap<Integer, NBTTagCompound>(8);
 
     private DimensionConfig(File configDir)
     {
         instance = this;
-        this.configDir = configDir;
-        this.dimensionFile = new File(configDir, "dimensions.json");
+        this.configDirConfigs = configDir;
+        this.dimensionFileConfigs = new File(configDir, "dimensions.json");
     }
 
     public static DimensionConfig create(File configDir)
@@ -99,7 +100,19 @@ public class DimensionConfig
 
     public void readDimensionConfig()
     {
-        File file = this.dimensionFile;
+        File file = null;
+        File saveDir = DimensionManager.getCurrentSaveRootDirectory();
+
+        if (saveDir != null)
+        {
+            File configDirWorld = new File(saveDir, Reference.MOD_ID);
+            file = new File(configDirWorld, "dimensions.json");;
+        }
+
+        if (file == null || file.exists() == false || file.isFile() == false || file.canRead() == false)
+        {
+            file = this.dimensionFileConfigs;
+        }
 
         if (file.exists() && file.isFile() && file.canRead())
         {
@@ -115,9 +128,9 @@ public class DimensionConfig
                 e.printStackTrace();
             }
         }
-        else if (this.configDir.isDirectory() == false)
+        else if (this.configDirConfigs.isDirectory() == false)
         {
-            this.configDir.mkdirs();
+            this.configDirConfigs.mkdirs();
         }
     }
 
@@ -240,7 +253,7 @@ public class DimensionConfig
 
         try
         {
-            FileWriter writer = new FileWriter(this.dimensionFile);
+            FileWriter writer = new FileWriter(this.dimensionFileConfigs);
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             writer.write(gson.toJson(root));
             writer.close();
@@ -259,6 +272,7 @@ public class DimensionConfig
 
         JustEnoughDimensions.logger.info("Reading the dimensions.json config...");
         this.customWorldInfoDimensions.clear();
+        this.dimensions.clear();
 
         array = root.get("dimensions").getAsJsonArray();
 
@@ -291,12 +305,6 @@ public class DimensionConfig
                         JsonObject obj = object.get("worldinfo").getAsJsonObject();
                         entry.setWorldInfoJson(obj);
                         this.parseAndSetCustomWorldInfoValues(dimension, obj);
-                    }
-
-                    // Remove the old entry if one exists (compared by dimension ID)
-                    if (this.dimensions.contains(entry))
-                    {
-                        this.dimensions.remove(entry);
                     }
 
                     this.dimensions.add(entry);
