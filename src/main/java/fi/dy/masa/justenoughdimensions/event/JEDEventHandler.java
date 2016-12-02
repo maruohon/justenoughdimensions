@@ -25,8 +25,10 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.SaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
@@ -116,6 +118,15 @@ public class JEDEventHandler
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event)
     {
         this.sendWorldBorder(event.player);
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onEntityTravelToDimensionEvent(EntityTravelToDimensionEvent event)
+    {
+        if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
+        {
+            event.setCanceled(true);
+        }
     }
 
     private void sendWorldBorder(EntityPlayer player)
