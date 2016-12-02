@@ -147,7 +147,7 @@ public class CommandJED extends CommandBase
     {
         if (args.length == 0)
         {
-            throw new WrongUsageException(this.getUsage(sender));
+            throwUsage("generic");
         }
 
         String cmd = args[0];
@@ -168,7 +168,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.unregister");
+                throwUsage("unregister");
             }
         }
         else if (cmd.equals("unregister-remove"))
@@ -182,29 +182,12 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.unregister.remove");
+                throwUsage("unregister.remove");
             }
         }
         else if (cmd.equals("register"))
         {
-            if (args.length == 2)
-            {
-                int dimension = parseInt(args[1]);
-                DimensionConfig.instance().registerNewDimension(dimension);
-                notifyCommandListener(sender, this, "jed.commands.register.default", Integer.valueOf(dimension));
-            }
-            else if (args.length == 6 || args.length == 7)
-            {
-                int dimension = parseInt(args[1]);
-                boolean keepLoaded = Boolean.parseBoolean(args[4]);
-                boolean override = args.length == 7 ? Boolean.parseBoolean(args[6]) : false;
-                DimensionConfig.instance().registerNewDimension(dimension, args[2], args[3], keepLoaded, args[5], override);
-                notifyCommandListener(sender, this, "jed.commands.register.custom", Integer.valueOf(dimension));
-            }
-            else
-            {
-                throw new WrongUsageException("jed.commands.usage.register");
-            }
+            this.register(dropFirstStrings(args, 1), sender);
         }
         else if (cmd.equals("debug"))
         {
@@ -242,7 +225,7 @@ public class CommandJED extends CommandBase
                 try { dimension = parseInt(args[1]); }
                 catch (NumberInvalidException e)
                 {
-                    if (entity == null) { throw new WrongUsageException("jed.commands.usage.generic"); }
+                    if (entity == null) { throwUsage("generic"); }
                     trim = 1;
                 }
             }
@@ -279,7 +262,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.generic");
+                throwUsage("generic");
             }
         }
     }
@@ -290,7 +273,7 @@ public class CommandJED extends CommandBase
 
         if (world == null)
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
 
         sender.sendMessage(new TextComponentString("DIM: " + dimension + " - Seed: " + world.getWorldInfo().getSeed()));
@@ -299,6 +282,34 @@ public class CommandJED extends CommandBase
     private GameRules getOverWorldGameRules(MinecraftServer server)
     {
         return server.worldServerForDimension(0).getGameRules();
+    }
+
+    private void register(String[] args, ICommandSender sender) throws CommandException
+    {
+        if (args.length == 1)
+        {
+            int dimension = parseInt(args[0]);
+            String str = DimensionConfig.instance().registerDimensionFromConfig(dimension);
+            notifyCommandListener(sender, this, "jed.commands.register.from.config", Integer.valueOf(dimension), str);
+        }
+        else if (args.length == 2 && args[1].equals("create"))
+        {
+            int dimension = parseInt(args[0]);
+            String str = DimensionConfig.instance().registerNewDimension(dimension);
+            notifyCommandListener(sender, this, "jed.commands.register.create.simple", Integer.valueOf(dimension), str);
+        }
+        else if (args.length == 5 || args.length == 6)
+        {
+            int dimension = parseInt(args[0]);
+            boolean keepLoaded = Boolean.parseBoolean(args[3]);
+            boolean override = args.length == 6 ? Boolean.parseBoolean(args[5]) : false;
+            String str = DimensionConfig.instance().registerNewDimension(dimension, args[1], args[2], keepLoaded, args[4], override);
+            notifyCommandListener(sender, this, "jed.commands.register.custom", Integer.valueOf(dimension), str);
+        }
+        else
+        {
+            throwUsage("register");
+        }
     }
 
     private void unregister(int dimension) throws CommandException
@@ -311,12 +322,12 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throw new NumberInvalidException("jed.commands.error.dimension.loaded", Integer.valueOf(dimension));
+                throwNumber("dimension.loaded", Integer.valueOf(dimension));
             }
         }
         else
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notregistered", Integer.valueOf(dimension));
+            throwNumber("dimension.notregistered", Integer.valueOf(dimension));
         }
     }
 
@@ -330,5 +341,20 @@ public class CommandJED extends CommandBase
         String[] arr = new String[input.length - toDrop];
         System.arraycopy(input, toDrop, arr, 0, input.length - toDrop);
         return arr;
+    }
+
+    public static void throwUsage(String type, Object... params) throws CommandException
+    {
+        throw new WrongUsageException("jed.commands.usage." + type, params);
+    }
+
+    public static void throwNumber(String type, Object... params) throws CommandException
+    {
+        throw new NumberInvalidException("jed.commands.error." + type, params);
+    }
+
+    public static void throwCommand(String type, Object... params) throws CommandException
+    {
+        throw new CommandException("jed.commands.error." + type, params);
     }
 }

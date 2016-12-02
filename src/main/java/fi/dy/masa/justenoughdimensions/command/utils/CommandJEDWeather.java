@@ -4,8 +4,6 @@ import java.util.Random;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
@@ -19,7 +17,7 @@ public class CommandJEDWeather
 
         if (world == null)
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
 
         if (args.length >= 1 && args.length <= 2)
@@ -63,12 +61,12 @@ public class CommandJEDWeather
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.weather");
+                CommandJED.throwUsage("weather");
             }
         }
         else
         {
-            throw new WrongUsageException("jed.commands.usage.weather");
+            CommandJED.throwUsage("weather");
         }
     }
 }

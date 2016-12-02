@@ -19,7 +19,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByte;
 import net.minecraft.nbt.NBTTagCompound;
@@ -35,6 +34,7 @@ import net.minecraft.world.WorldProviderSurface;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
@@ -192,39 +192,62 @@ public class DimensionConfig
         return false;
     }
 
-    public void registerNewDimension(int dimension) throws CommandException
+    public String registerDimensionFromConfig(int dimension) throws CommandException
     {
-        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
-        this.registerNewDimension(dimension, entry);
+        for (DimensionEntry entry : this.dimensions)
+        {
+            if (entry.getId() == dimension)
+            {
+                if (this.registerDimension(dimension, entry) == false)
+                {
+                    CommandJED.throwNumber("register.from.config", Integer.valueOf(dimension));
+                }
+                else
+                {
+                    return entry.getDescription();
+                }
+            }
+        }
+
+        CommandJED.throwNumber("register.not.in.config", Integer.valueOf(dimension));
+        return "";
     }
 
-    public void registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName, boolean override) throws CommandException
+    public String registerNewDimension(int dimension) throws CommandException
+    {
+        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
+        return this.registerNewDimension(dimension, entry);
+    }
+
+    public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName, boolean override) throws CommandException
     {
         Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
 
         if (providerClass == null)
         {
-            throw new NumberInvalidException("jed.commands.error.invalid.worldprovider.name", providerClassName);
+            CommandJED.throwCommand("invalid.worldprovider.name", providerClassName);
         }
 
         DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
         entry.setOverride(override);
 
-        this.registerNewDimension(dimension, entry);
+        return this.registerNewDimension(dimension, entry);
     }
 
-    private void registerNewDimension(int dimension, DimensionEntry entry) throws CommandException
+    private String registerNewDimension(int dimension, DimensionEntry entry) throws CommandException
     {
         boolean success = this.registerDimension(dimension, entry);
 
         if (success == false)
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.already.registered", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.already.registered", Integer.valueOf(dimension));
         }
 
         this.dimensions.add(entry);
         this.saveConfig();
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
+
+        return entry.getDescription();
     }
 
     public void removeDimensionAndSaveConfig(int dimension)
@@ -566,9 +589,7 @@ public class DimensionConfig
 
         public DimensionType registerDimensionType()
         {
-            JustEnoughDimensions.logInfo("Registering a DimensionType with values:" +
-                    "{id: {}, name: \"{}\", suffix: \"{}\", keepLoaded: {}, WorldProvider: {}}",
-                    this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
+            JustEnoughDimensions.logInfo("Registering a DimensionType with values: {}", this.getDescription());
 
             return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
         }
@@ -600,6 +621,12 @@ public class DimensionConfig
             }
 
             return jsonEntry;
+        }
+
+        public String getDescription()
+        {
+            return String.format("{id: %d, name: \"%s\", suffix: \"%s\", keepLoaded: %s, WorldProvider: %s}",
+                    this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
         }
 
         @Override

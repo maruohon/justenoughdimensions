@@ -7,8 +7,6 @@ import java.util.List;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -23,7 +21,6 @@ import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.end.DragonFightManager;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindMethodException;
@@ -129,7 +126,7 @@ public class CommandTeleportJED extends CommandBase
                     notifyCommandListener(sender, cmd, "jed.commands.info.current.dimension", Integer.valueOf(dim));
                 }
 
-                throw new WrongUsageException(cmd.getUsage(sender));
+                CommandJED.throwUsage("tp");
             }
 
             // <to-entity> OR <dimensionId>
@@ -146,7 +143,7 @@ public class CommandTeleportJED extends CommandBase
                 // Used from the console and an invalid entity selector for the first entity
                 if (entityDest == null && (sender.getCommandSenderEntity() instanceof Entity) == false)
                 {
-                    throw new WrongUsageException("jed.commands.error.invalid.entity", args[0]);
+                    CommandJED.throwUsage("invalid.entity", args[0]);
                 }
 
                 if (entityDest != null)
@@ -173,7 +170,7 @@ public class CommandTeleportJED extends CommandBase
             {
                 if (sender.getCommandSenderEntity() == null)
                 {
-                    throw new WrongUsageException("jed.commands.error.no.targetentity");
+                    CommandJED.throwUsage("no.targetentity");
                 }
 
                 argIndex--;
@@ -218,14 +215,14 @@ public class CommandTeleportJED extends CommandBase
 
                 if (args.length > argIndex)
                 {
-                    throw new WrongUsageException(cmd.getUsage(sender));
+                    CommandJED.throwUsage("tp");
                 }
 
                 return new CommandParser(target, dimension, new Vec3d(x, y, z), yaw, pitch);
             }
             else if (args.length > argIndex)
             {
-                throw new WrongUsageException(cmd.getUsage(sender));
+                CommandJED.throwUsage("tp");
             }
 
             return new CommandParser(target, dimension);
@@ -283,11 +280,6 @@ public class CommandTeleportJED extends CommandBase
 
         private Entity teleportToDimension(Entity entity, int dimension, MinecraftServer server) throws CommandException
         {
-            if (DimensionManager.isDimensionRegistered(dimension) == false)
-            {
-                throw new NumberInvalidException("jed.commands.error.not.valid.dimension", Integer.valueOf(dimension));
-            }
-
             if (entity.getEntityWorld().provider.getDimension() != dimension)
             {
                 return this.changeToDimension(entity, dimension, this.hasPosition == false, server);
@@ -335,7 +327,7 @@ public class CommandTeleportJED extends CommandBase
             WorldServer worldDst = server.worldServerForDimension(dimension);
             if (worldDst == null)
             {
-                throw new WrongUsageException("jed.commands.error.unable.to.load.world", Integer.valueOf(dimension));
+                CommandJED.throwNumber("unable.to.load.world", Integer.valueOf(dimension));
             }
 
             double x = entity.posX;

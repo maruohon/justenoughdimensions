@@ -4,7 +4,6 @@ import com.google.common.base.Predicates;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.GameType;
@@ -25,7 +24,7 @@ public class CommandJEDDefaultGameType
             if (args.length == 0)
             {
                 GameType type = world.getWorldInfo().getGameType();
-                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.defaultgamemode.print", type, Integer.valueOf(dimension));
+                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.defaultgamemode.print", Integer.valueOf(dimension), type);
                 return;
             }
 
@@ -48,15 +47,15 @@ public class CommandJEDDefaultGameType
                 }
             }
 
-            CommandBase.notifyCommandListener(sender, cmd, "jed.commands.defaultgamemode.success", type, Integer.valueOf(dimension));
+            CommandBase.notifyCommandListener(sender, cmd, "jed.commands.defaultgamemode.success", Integer.valueOf(dimension), type);
         }
         else
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
     }
 
-    static GameType getGameModeFromCommand(ICommandSender sender, String str) throws CommandException, NumberInvalidException
+    static GameType getGameModeFromCommand(ICommandSender sender, String str) throws CommandException
     {
         GameType gametype = GameType.parseGameTypeWithDefault(str, GameType.NOT_SET);
         return gametype == GameType.NOT_SET ? WorldSettings.getGameTypeById(CommandBase.parseInt(str, 0, GameType.values().length - 2)) : gametype;

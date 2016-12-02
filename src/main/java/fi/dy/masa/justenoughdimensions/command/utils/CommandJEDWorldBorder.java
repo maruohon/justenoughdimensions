@@ -4,8 +4,6 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -21,14 +19,14 @@ public class CommandJEDWorldBorder
     {
         if (args.length < 1)
         {
-            throw new WrongUsageException("jed.commands.usage.worldborder");
+            CommandJED.throwUsage("worldborder");
         }
 
         World world = DimensionManager.getWorld(dimension);
 
         if (world == null)
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
 
         String cmdName = args[0];
@@ -38,7 +36,7 @@ public class CommandJEDWorldBorder
         {
             if (args.length != 2 && args.length != 3)
             {
-                throw new WrongUsageException("jed.commands.usage.worldborder.set");
+                CommandJED.throwUsage("worldborder.set");
             }
 
             double oldSize = border.getTargetSize();
@@ -51,12 +49,12 @@ public class CommandJEDWorldBorder
 
                 if (oldSize > newSize)
                 {
-                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.setslowly.shrink.success",
+                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.set.slowly.shrink.success",
                             Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(i / 1000L));
                 }
                 else
                 {
-                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.setslowly.grow.success",
+                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.set.slowly.grow.success",
                             Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(i / 1000L));
                 }
             }
@@ -71,7 +69,7 @@ public class CommandJEDWorldBorder
         {
             if (args.length != 2 && args.length != 3)
             {
-                throw new WrongUsageException("jed.commands.usage.worldborder.add");
+                CommandJED.throwUsage("worldborder.add");
             }
 
             double oldSize = border.getDiameter();
@@ -84,12 +82,12 @@ public class CommandJEDWorldBorder
 
                 if (oldSize > newSize)
                 {
-                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.setslowly.shrink.success",
+                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.set.slowly.shrink.success",
                             Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(time / 1000L));
                 }
                 else
                 {
-                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.setslowly.grow.success",
+                    CommandBase.notifyCommandListener(sender, cmd, "jed.commands.worldborder.set.slowly.grow.success",
                             Integer.valueOf(dimension), String.format("%.1f", newSize), String.format("%.1f", oldSize), Long.toString(time / 1000L));
                 }
             }
@@ -104,7 +102,7 @@ public class CommandJEDWorldBorder
         {
             if (args.length != 3)
             {
-                throw new WrongUsageException("jed.commands.usage.worldborder.center");
+                CommandJED.throwUsage("worldborder.center");
             }
 
             BlockPos blockpos = sender.getPosition();
@@ -120,7 +118,7 @@ public class CommandJEDWorldBorder
             {
                 if (args.length != 3)
                 {
-                    throw new WrongUsageException("jed.commands.usage.worldborder.damage.buffer");
+                    CommandJED.throwUsage("worldborder.damage.buffer");
                 }
 
                 double bufferSize = CommandBase.parseDouble(args[2], 0.0D);
@@ -133,7 +131,7 @@ public class CommandJEDWorldBorder
             {
                 if (args.length != 3)
                 {
-                    throw new WrongUsageException("jed.commands.usage.worldborder.damage.amount");
+                    CommandJED.throwUsage("worldborder.damage.amount");
                 }
 
                 double damage = CommandBase.parseDouble(args[2], 0.0D);
@@ -144,7 +142,7 @@ public class CommandJEDWorldBorder
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.worldborder.damage");
+                CommandJED.throwUsage("worldborder.damage");
             }
         }
         else if (cmdName.equals("warning"))
@@ -153,7 +151,7 @@ public class CommandJEDWorldBorder
             {
                 if (args.length != 3)
                 {
-                    throw new WrongUsageException("jed.commands.usage.worldborder.warning.time");
+                    CommandJED.throwUsage("worldborder.warning.time");
                 }
 
                 int time = CommandBase.parseInt(args[2], 0);
@@ -166,7 +164,7 @@ public class CommandJEDWorldBorder
             {
                 if (args.length != 3)
                 {
-                    throw new WrongUsageException("jed.commands.usage.worldborder.warning.distance");
+                    CommandJED.throwUsage("worldborder.warning.distance");
                 }
 
                 int distance = CommandBase.parseInt(args[2], 0);
@@ -177,7 +175,7 @@ public class CommandJEDWorldBorder
             }
             else
             {
-                throw new WrongUsageException("jed.commands.usage.worldborder.warning");
+                CommandJED.throwUsage("worldborder.warning");
             }
         }
         else if (cmdName.equals("get"))
@@ -189,7 +187,7 @@ public class CommandJEDWorldBorder
         }
         else
         {
-            throw new WrongUsageException("jed.commands.worldborder.usage");
+            CommandJED.throwUsage("worldborder");
         }
     }
 }

@@ -4,8 +4,6 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
@@ -18,7 +16,7 @@ public class CommandJEDTime
 
         if (world == null)
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
 
         if (args.length > 1)
@@ -43,13 +41,13 @@ public class CommandJEDTime
                 }
 
                 world.setWorldTime(time);
-                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.time.set", Integer.valueOf(time), Integer.valueOf(dimension));
+                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.time.set", Integer.valueOf(dimension), Integer.valueOf(time));
             }
             else if (cmdName.equals("add"))
             {
                 int amount = CommandBase.parseInt(args[1], -24000, 24000);
                 world.setWorldTime(world.getWorldTime() + amount);
-                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.time.add", Integer.valueOf(amount), Integer.valueOf(dimension));
+                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.time.add", Integer.valueOf(dimension), Integer.valueOf(amount));
             }
             else if (cmdName.equals("query"))
             {
@@ -73,13 +71,13 @@ public class CommandJEDTime
                 }
                 else
                 {
-                    throw new WrongUsageException("jed.commands.usage.time");
+                    CommandJED.throwUsage("time");
                 }
             }
         }
         else
         {
-            throw new WrongUsageException("jed.commands.usage.time");
+            CommandJED.throwUsage("time");
         }
     }
 }

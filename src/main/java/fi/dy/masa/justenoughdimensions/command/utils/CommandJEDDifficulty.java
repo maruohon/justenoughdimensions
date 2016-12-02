@@ -3,7 +3,6 @@ package fi.dy.masa.justenoughdimensions.command.utils;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -21,7 +20,7 @@ public class CommandJEDDifficulty
             if (args.length == 0)
             {
                 EnumDifficulty diff = world.getWorldInfo().getDifficulty();
-                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.print", diff, Integer.valueOf(dimension));
+                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.print", Integer.valueOf(dimension), diff);
                 return;
             }
 
@@ -36,15 +35,15 @@ public class CommandJEDDifficulty
                 world.getWorldInfo().setDifficulty(diff);
             }
 
-            CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.success", diff, Integer.valueOf(dimension));
+            CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.success", Integer.valueOf(dimension), diff);
         }
         else
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
     }
 
-    static EnumDifficulty getDifficultyFromCommand(String str) throws CommandException, NumberInvalidException
+    static EnumDifficulty getDifficultyFromCommand(String str) throws CommandException
     {
         if (str.equalsIgnoreCase("peaceful") || str.equalsIgnoreCase("p")) { return EnumDifficulty.PEACEFUL; }
         if (str.equalsIgnoreCase("easy")     || str.equalsIgnoreCase("e")) { return EnumDifficulty.EASY;     }

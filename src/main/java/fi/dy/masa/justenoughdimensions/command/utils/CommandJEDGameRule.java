@@ -5,7 +5,6 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.NumberInvalidException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.SPacketEntityStatus;
 import net.minecraft.server.MinecraftServer;
@@ -34,7 +33,7 @@ public class CommandJEDGameRule
             {
                 if (rules.hasRule(key) == false)
                 {
-                    throw new CommandException("jed.commands.gamerule.norule", key, Integer.valueOf(dimension));
+                    CommandJED.throwCommand("gamerule.norule", Integer.valueOf(dimension), key);
                 }
 
                 String value = rules.getString(key);
@@ -47,17 +46,17 @@ public class CommandJEDGameRule
 
                 if (rules.areSameType(key, GameRules.ValueType.BOOLEAN_VALUE) && value.equals("true") == false && value.equals("false") == false)
                 {
-                    throw new CommandException("commands.generic.boolean.invalid", value);
+                    CommandJED.throwCommand("boolean.invalid", value);
                 }
 
                 rules.setOrCreateGameRule(key, value);
                 notifyGameRuleChange(rules, key, world);
-                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.gamerule.success", key, value, Integer.valueOf(dimension));
+                CommandBase.notifyCommandListener(sender, cmd, "jed.commands.gamerule.success", Integer.valueOf(dimension), key, value);
             }
         }
         else
         {
-            throw new NumberInvalidException("jed.commands.error.dimension.notloaded", Integer.valueOf(dimension));
+            CommandJED.throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
     }
 
