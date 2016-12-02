@@ -3,9 +3,7 @@ package fi.dy.masa.justenoughdimensions.network;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.WorldProvider;
 import net.minecraftforge.fml.client.FMLClientHandler;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -24,32 +22,22 @@ public class MessageSyncDimensions implements IMessage
 
     public MessageSyncDimensions(List<DimensionEntry> entries)
     {
-        this.dimensions = entries;
+        this.dimensions.addAll(entries);
     }
 
     @Override
     public void fromBytes(ByteBuf buf)
     {
         int count = buf.readInt();
-        this.dimensions = new ArrayList<DimensionEntry>();
+        this.dimensions.clear();
 
         for (int i = 0 ; i < count ; i++)
         {
-            int id = buf.readInt();
-            String name = ByteBufUtils.readUTF8String(buf);
-            String suffix = ByteBufUtils.readUTF8String(buf);
-            String providerClassName = ByteBufUtils.readUTF8String(buf);
+            DimensionEntry entry = DimensionEntry.fromByteBuf(buf);
 
-            try
+            if (entry != null && entry.getUnregister() == false)
             {
-                @SuppressWarnings("unchecked")
-                Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
-                this.dimensions.add(new DimensionEntry(id, name, suffix, false, providerClass));
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.error("Failed to read dimension info from packet for dimension {}" +
-                    " - WorldProvider class {} not found", id, providerClassName);
+                this.dimensions.add(entry);
             }
         }
     }

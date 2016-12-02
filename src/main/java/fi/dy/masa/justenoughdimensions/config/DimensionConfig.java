@@ -154,9 +154,17 @@ public class DimensionConfig
         {
             for (DimensionEntry entry : this.dimensions)
             {
-                if (entry.getOverride() && DimensionManager.isDimensionRegistered(entry.getId()))
+                if (DimensionManager.isDimensionRegistered(entry.getId()))
                 {
-                    this.registerDimension(entry.getId(), entry);
+                    if (Configs.enableUnregisteringDimensions && entry.getUnregister())
+                    {
+                        JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
+                        DimensionManager.unregisterDimension(entry.getId());
+                    }
+                    else if (entry.getOverride())
+                    {
+                        this.registerDimension(entry.getId(), entry);
+                    }
                 }
             }
         }
@@ -164,6 +172,11 @@ public class DimensionConfig
 
     private boolean registerDimension(int dimension, DimensionEntry entry)
     {
+        if (entry.getUnregister())
+        {
+            return false;
+        }
+
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
@@ -198,6 +211,11 @@ public class DimensionConfig
         {
             if (entry.getId() == dimension)
             {
+                if (entry.getUnregister())
+                {
+                    CommandJED.throwNumber("register.from.config.unregister.set", Integer.valueOf(dimension));
+                }
+
                 if (this.registerDimension(dimension, entry) == false)
                 {
                     CommandJED.throwNumber("register.from.config", Integer.valueOf(dimension));
@@ -219,7 +237,8 @@ public class DimensionConfig
         return this.registerNewDimension(dimension, entry);
     }
 
-    public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded, String providerClassName, boolean override) throws CommandException
+    public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded,
+            String providerClassName, boolean override) throws CommandException
     {
         Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
 
@@ -313,7 +332,10 @@ public class DimensionConfig
             if (object.has("dim") && object.get("dim").isJsonPrimitive())
             {
                 int dimension = object.get("dim").getAsInt();
-                boolean override = object.has("override") && object.get("override").isJsonPrimitive() && object.get("override").getAsBoolean();
+                boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
+                        object.get("override").getAsBoolean();
+                boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
+                        object.get("unregister").getAsBoolean();
                 DimensionEntry entry = null;
 
                 if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
@@ -329,6 +351,7 @@ public class DimensionConfig
                 if (entry != null)
                 {
                     entry.setOverride(override);
+                    entry.setUnregister(unregister);
 
                     if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
                     {
@@ -550,6 +573,7 @@ public class DimensionConfig
         private final boolean keepLoaded;
         private final Class<? extends WorldProvider> providerClass;
         private boolean override;
+        private boolean unregister;
         private JsonObject worldInfojson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
@@ -571,6 +595,11 @@ public class DimensionConfig
             return this.override;
         }
 
+        public boolean getUnregister()
+        {
+            return this.unregister;
+        }
+
         public Class<? extends WorldProvider> getProviderClass()
         {
             return this.providerClass;
@@ -579,6 +608,12 @@ public class DimensionConfig
         public void setOverride(boolean override)
         {
             this.override = override;
+        }
+
+        public void setUnregister(boolean unregister)
+        {
+            // Don't allow unregistering the overworld, or bad thing will happen!
+            this.unregister = unregister && this.id != 0;
         }
 
         public DimensionEntry setWorldInfoJson(JsonObject obj)
@@ -600,6 +635,31 @@ public class DimensionConfig
             ByteBufUtils.writeUTF8String(buf, this.name);
             ByteBufUtils.writeUTF8String(buf, this.suffix);
             ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
+            buf.writeBoolean(this.unregister);
+        }
+
+        public static DimensionEntry fromByteBuf(ByteBuf buf)
+        {
+            int id = buf.readInt();
+            String name = ByteBufUtils.readUTF8String(buf);
+            String suffix = ByteBufUtils.readUTF8String(buf);
+            String providerClassName = ByteBufUtils.readUTF8String(buf);
+            boolean unregister = buf.readBoolean();
+
+            try
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
+                DimensionEntry entry = new DimensionEntry(id, name, suffix, false, providerClass);
+                entry.setUnregister(unregister);
+                return entry;
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("Failed to read dimension info from packet for dimension {}" +
+                    " - WorldProvider class {} not found", id, providerClassName);
+                return null;
+            }
         }
 
         public JsonObject toJson()

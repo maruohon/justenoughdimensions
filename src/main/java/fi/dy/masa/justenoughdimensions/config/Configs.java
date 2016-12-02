@@ -18,6 +18,7 @@ public class Configs
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
+    public static boolean enableUnregisteringDimensions;
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
@@ -46,8 +47,12 @@ public class Configs
         enableLoggingInfo = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", false).setRequiresMcRestart(false);
-        prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in the dimensions.json config can be used to override an existing registered dimension.");
+        prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in the dimensions.json config can be used to override an existing dimension.");
         enableReplacingRegisteredDimensions = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableUnregisteringDimensions", false).setRequiresMcRestart(false);
+        prop.setComment("If enabled, then an 'unregister: true' boolean value for the dimension in the dimensions.json config can be used to unregister existing dimension.");
+        enableUnregisteringDimensions = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldBorders", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
         prop.setComment("If enabled, adds custom WorldBorder syncing and removes default linking from other dimensions to the overworld border.");

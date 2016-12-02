@@ -16,6 +16,7 @@ jed.commands.error.invalid.entity=Invalid entity: %s
 jed.commands.error.invalid.worldprovider.name=Invalid WorldProvider name '%s'
 jed.commands.error.no.targetentity=No target entity specified
 jed.commands.error.register.from.config=Failed to register dimension %s from the config
+jed.commands.error.register.from.config.unregister.set=Dimension %s has been marked to be unregistered
 jed.commands.error.register.not.in.config=Dimension %s not found in config
 jed.commands.error.unable.to.load.world=Unable to load world for dimension %s
 jed.commands.gamerule.success=DIM %s: Gamerule %s has been set to %s
