@@ -87,12 +87,19 @@ public class JEDEventHandler
     public void onWorldLoad(WorldEvent.Load event)
     {
         World world = event.getWorld();
-        this.loadAndSetCustomWorldInfo(world);
 
-        if (Configs.enableSeparateWorldBorders && world.isRemote == false)
+        if (world.isRemote == false)
         {
-            this.removeOverworldBorderListener(world);
-            world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
+            if (Configs.enableSeparateWorldInfo)
+            {
+                this.loadAndSetCustomWorldInfo(world);
+            }
+
+            if (Configs.enableSeparateWorldBorders)
+            {
+                this.removeOverworldBorderListener(world);
+                world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
+            }
         }
     }
 
@@ -198,7 +205,7 @@ public class JEDEventHandler
     {
         int dimension = world.provider.getDimension();
 
-        if (world.isRemote == false && Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
             JustEnoughDimensions.logInfo("Using custom WorldInfo for dimension {}", dimension);
 

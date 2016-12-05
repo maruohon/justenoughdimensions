@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
@@ -18,7 +19,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.command.CommandException;
+import net.minecraft.command.ICommandSender;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByte;
 import net.minecraft.nbt.NBTTagCompound;
@@ -26,6 +29,8 @@ import net.minecraft.nbt.NBTTagDouble;
 import net.minecraft.nbt.NBTTagInt;
 import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.nbt.NBTTagString;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
@@ -50,6 +55,7 @@ public class DimensionConfig
     private final File dimensionFileConfigs;
     private final List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
+    private JsonObject dimBuilderData = new JsonObject();
 
     private DimensionConfig(File configDir)
     {
@@ -78,24 +84,24 @@ public class DimensionConfig
         return this.customWorldInfo.containsKey(dimension);
     }
 
-    public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound nbt)
+    public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound tagIn)
     {
-        NBTTagCompound nbtDim = this.customWorldInfo.get(dimension);
+        NBTTagCompound dimNBT = this.customWorldInfo.get(dimension);
 
-        if (nbtDim != null)
+        if (dimNBT != null)
         {
-            for (String key : nbtDim.getKeySet())
+            for (String key : dimNBT.getKeySet())
             {
-                NBTBase tag = nbtDim.getTag(key);
+                NBTBase tag = dimNBT.getTag(key);
 
                 if (tag != null)
                 {
-                    nbt.setTag(key, tag.copy());
+                    tagIn.setTag(key, tag.copy());
                 }
             }
         }
 
-        return nbt;
+        return tagIn;
     }
 
     /**
@@ -278,10 +284,11 @@ public class DimensionConfig
             if (entry.getId() == dimension)
             {
                 this.dimensions.remove(i);
-                break;
+                i--;
             }
         }
 
+        this.customWorldInfo.remove(dimension);
         this.saveConfig();
     }
 
@@ -331,38 +338,7 @@ public class DimensionConfig
 
             if (object.has("dim") && object.get("dim").isJsonPrimitive())
             {
-                int dimension = object.get("dim").getAsInt();
-                boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
-                        object.get("override").getAsBoolean();
-                boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
-                        object.get("unregister").getAsBoolean();
-                DimensionEntry entry = null;
-
-                if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
-                {
-                    entry = this.parseDimensionType(dimension, object.get("dimensiontype").getAsJsonObject());
-                }
-                else
-                {
-                    JustEnoughDimensions.logInfo("Using default values for the DimensionType of dimension {}", dimension);
-                    entry = this.createDefaultDimensionEntry(dimension);
-                }
-
-                if (entry != null)
-                {
-                    entry.setOverride(override);
-                    entry.setUnregister(unregister);
-
-                    if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
-                    {
-                        JsonObject obj = object.get("worldinfo").getAsJsonObject();
-                        entry.setWorldInfoJson(obj);
-                        this.parseAndSetCustomWorldInfoValues(dimension, obj);
-                    }
-
-                    this.dimensions.add(entry);
-                }
-
+                this.parseDimensionConfigEntry(object.get("dim").getAsInt(), object);
                 count++;
             }
         }
@@ -370,7 +346,183 @@ public class DimensionConfig
         JustEnoughDimensions.logInfo("Read {} dimension entries from the config", count);
     }
 
-    private void parseAndSetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
+    private void parseDimensionConfigEntry(int dimension, JsonObject object)
+    {
+        boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
+                object.get("override").getAsBoolean();
+        boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
+                object.get("unregister").getAsBoolean();
+        DimensionEntry entry = null;
+
+        if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
+        {
+            entry = this.parseDimensionType(dimension, object.get("dimensiontype").getAsJsonObject());
+        }
+        else
+        {
+            JustEnoughDimensions.logInfo("Using default values for the DimensionType of dimension {}", dimension);
+            entry = this.createDefaultDimensionEntry(dimension);
+        }
+
+        if (entry != null)
+        {
+            entry.setOverride(override);
+            entry.setUnregister(unregister);
+
+            if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
+            {
+                JsonObject obj = object.get("worldinfo").getAsJsonObject();
+                entry.setWorldInfoJson(obj);
+                this.customWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
+            }
+
+            this.dimensions.add(entry);
+        }
+    }
+
+    public void dimbuilderClear()
+    {
+        this.dimBuilderData = new JsonObject();
+    }
+
+    public void dimbuilderDimtype(String name, String suffix, String keepLoaded, String worldProvider)
+    {
+        JsonObject dimType = this.getOrCreateNestedObject(this.dimBuilderData, "dimensiontype");
+        dimType.add("name", new JsonPrimitive(name));
+        dimType.add("suffix", new JsonPrimitive(suffix));
+        dimType.add("keeploaded", new JsonPrimitive(keepLoaded));
+        dimType.add("worldprovider", new JsonPrimitive(worldProvider));
+    }
+
+    public void dimbuilderSet(String key, String value)
+    {
+        JsonObject obj = this.dimBuilderData;
+
+        if (key.equals("override") || key.equals("unregister"))
+        {
+            obj.add(key, new JsonPrimitive(value));
+        }
+        else if (key.equals("name") || key.equals("suffix") || key.equals("keeploaded") || key.equals("worldprovider"))
+        {
+            this.getOrCreateNestedObject(obj, "dimensiontype").add(key, new JsonPrimitive(value));
+        }
+        else
+        {
+            this.getOrCreateNestedObject(obj, "worldinfo").add(key, new JsonPrimitive(value));
+        }
+    }
+
+    public boolean dimbuilderRemove(String key)
+    {
+        JsonObject obj = this.dimBuilderData;
+
+        if (key.equals("override") || key.equals("unregister"))
+        {
+            return obj.remove(key) != null;
+        }
+        else if (key.equals("name") || key.equals("suffix") || key.equals("keeploaded") || key.equals("worldprovider"))
+        {
+            obj = this.getNestedObject(obj, "dimensiontype", false);
+            return obj != null ? obj.remove(key) != null : false;
+        }
+        else
+        {
+            obj = this.getNestedObject(obj, "worldinfo", false);
+            return obj != null ? obj.remove(key) != null : false;
+        }
+    }
+
+    public void dimbuilderList(@Nullable String key, ICommandSender sender) throws CommandException
+    {
+        if (key != null)
+        {
+            JsonPrimitive prim = this.getDimbuilderPrimitive(key);
+
+            if (prim != null)
+            {
+                sender.sendMessage(new TextComponentString(key + " = " + prim.getAsString()));
+            }
+            else
+            {
+                CommandJED.throwCommand("dimbuilder.list", key);
+            }
+        }
+        else
+        {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JustEnoughDimensions.logger.info("==== Dim Builder list start ====");
+            JustEnoughDimensions.logger.info("\n" + gson.toJson(this.dimBuilderData));
+            JustEnoughDimensions.logger.info("==== Dim Builder list end ====");
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
+        }
+    }
+
+    public void dimbuilderSaveAs(int dimension)
+    {
+        this.removeDimensionAndSaveConfig(dimension);
+        this.parseDimensionConfigEntry(dimension, this.dimBuilderData);
+        this.saveConfig();
+    }
+
+    public void dimbuilderCreateAs(int dimension) throws CommandException
+    {
+        this.dimbuilderSaveAs(dimension);
+        this.registerDimensionFromConfig(dimension);
+    }
+
+    private JsonObject getOrCreateNestedObject(JsonObject parent, String key)
+    {
+        return this.getNestedObject(parent, key, true);
+    }
+
+    private JsonObject getNestedObject(JsonObject parent, String key, boolean create)
+    {
+        if (parent.has(key) == false || parent.get(key).isJsonObject() == false)
+        {
+            if (create == false)
+            {
+                return null;
+            }
+
+            JsonObject obj = new JsonObject();
+            parent.add(key, obj);
+            return obj;
+        }
+        else
+        {
+            return parent.get(key).getAsJsonObject();
+        }
+    }
+
+    @Nullable
+    private JsonPrimitive getDimbuilderPrimitive(String key)
+    {
+        JsonObject obj = this.dimBuilderData;
+
+        if ((key.equals("override") || key.equals("unregister")) && obj.has(key) && obj.get(key).isJsonPrimitive())
+        {
+            return obj.get(key).getAsJsonPrimitive();
+        }
+
+        if (key.equals("name") || key.equals("suffix") || key.equals("keeploaded") || key.equals("worldprovider"))
+        {
+            if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
+            {
+                obj = obj.get("dimensiontype").getAsJsonObject();
+                return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+            }
+        }
+
+        if (obj.has("worldinfo") && obj.get("worldinfo").isJsonObject())
+        {
+            obj = obj.get("worldinfo").getAsJsonObject();
+            return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+        }
+
+        return null;
+    }
+
+    private NBTTagCompound parseAndGetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
     {
         NBTTagCompound nbt = new NBTTagCompound();
 
@@ -390,7 +542,7 @@ public class DimensionConfig
             }
         }
 
-        this.customWorldInfo.put(dimension, nbt);
+        return nbt;
     }
 
     private NBTBase getTagForValue(String key, JsonElement element)
@@ -666,7 +818,16 @@ public class DimensionConfig
         {
             JsonObject jsonEntry = new JsonObject();
             jsonEntry.addProperty("dim", this.getId());
-            jsonEntry.addProperty("override", this.override);
+
+            if (this.override)
+            {
+                jsonEntry.addProperty("override", true);
+            }
+
+            if (this.unregister)
+            {
+                jsonEntry.addProperty("unregister", true);
+            }
 
             JsonObject worldType = new JsonObject();
             worldType.addProperty("name", this.name);

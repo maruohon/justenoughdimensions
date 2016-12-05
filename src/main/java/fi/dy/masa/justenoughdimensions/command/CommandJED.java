@@ -49,6 +49,7 @@ public class CommandJED extends CommandBase
                     "debug",
                     "defaultgametype",
                     "difficulty",
+                    "dimbuilder",
                     "gamerule",
                     "register",
                     "reload",
@@ -62,6 +63,11 @@ public class CommandJED extends CommandBase
         }
         else if (args.length >= 2)
         {
+            if (args[0].equals("dimbuilder"))
+            {
+                return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "remove", "save-as", "set");
+            }
+
             String cmd = args[0];
             int trim = 2;
             int len = args.length;
@@ -158,6 +164,14 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
         }
+        else if (cmd.equals("dimbuilder"))
+        {
+            this.dimBuilder(dropFirstStrings(args, 1), sender);
+        }
+        else if (cmd.equals("register"))
+        {
+            this.register(dropFirstStrings(args, 1), sender);
+        }
         else if (cmd.equals("unregister"))
         {
             if (args.length == 2)
@@ -184,10 +198,6 @@ public class CommandJED extends CommandBase
             {
                 throwUsage("unregister.remove");
             }
-        }
-        else if (cmd.equals("register"))
-        {
-            this.register(dropFirstStrings(args, 1), sender);
         }
         else if (cmd.equals("debug"))
         {
@@ -328,6 +338,113 @@ public class CommandJED extends CommandBase
         else
         {
             throwNumber("dimension.notregistered", Integer.valueOf(dimension));
+        }
+    }
+
+    private void dimBuilder(String[] args, ICommandSender sender) throws CommandException
+    {
+        if (args.length == 0)
+        {
+            throwUsage("dimbuilder");
+        }
+
+        if (args[0].equals("dimtype"))
+        {
+            if (args.length == 5)
+            {
+                DimensionConfig.instance().dimbuilderDimtype(args[1], args[2], args[3], args[4]);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.dimtype.success");
+            }
+            else
+            {
+                throwUsage("dimbuilder.dimtype");
+            }
+        }
+        else if (args[0].equals("clear"))
+        {
+            if (args.length == 1)
+            {
+                DimensionConfig.instance().dimbuilderClear();
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.clear.success");
+            }
+            else
+            {
+                throwUsage("dimbuilder.clear");
+            }
+        }
+        else if (args[0].equals("set"))
+        {
+            if (args.length == 3)
+            {
+                DimensionConfig.instance().dimbuilderSet(args[1], args[2]);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success");
+            }
+            else
+            {
+                throwUsage("dimbuilder.set");
+            }
+        }
+        else if (args[0].equals("remove"))
+        {
+            if (args.length == 2)
+            {
+                if (DimensionConfig.instance().dimbuilderRemove(args[1]))
+                {
+                    notifyCommandListener(sender, this, "jed.commands.dimbuilder.remove.success", args[1]);
+                }
+                else
+                {
+                    throwCommand("dimbuilder.remove.fail", args[1]);
+                }
+            }
+            else
+            {
+                throwUsage("dimbuilder.remove");
+            }
+        }
+        else if (args[0].equals("list"))
+        {
+            if (args.length > 1)
+            {
+                for (int i = 1; i < args.length; i++)
+                {
+                    DimensionConfig.instance().dimbuilderList(args[i], sender);
+                }
+            }
+            else
+            {
+                DimensionConfig.instance().dimbuilderList(null, sender);
+            }
+        }
+        else if (args[0].equals("save-as"))
+        {
+            if (args.length == 2)
+            {
+                int dimension = parseInt(args[1]);
+                DimensionConfig.instance().dimbuilderSaveAs(dimension);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.save.as.success", Integer.valueOf(dimension));
+            }
+            else
+            {
+                throwUsage("dimbuilder.save.as");
+            }
+        }
+        else if (args[0].equals("create-as"))
+        {
+            if (args.length == 2)
+            {
+                int dimension = parseInt(args[1]);
+                DimensionConfig.instance().dimbuilderCreateAs(dimension);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.create.as.success", Integer.valueOf(dimension));
+            }
+            else
+            {
+                throwUsage("dimbuilder.create.as");
+            }
+        }
+        else
+        {
+            throwUsage("dimbuilder");
         }
     }
 
