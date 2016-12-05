@@ -547,7 +547,6 @@ public class DimensionConfig
 
     private NBTBase getTagForValue(String key, JsonElement element)
     {
-        if (key.equals("RandomSeed"))           { return new NBTTagLong(    element.getAsLong()     ); }
         if (key.equals("generatorName"))        { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("generatorVersion"))     { return new NBTTagInt(     element.getAsInt()      ); }
         if (key.equals("generatorOptions"))     { return new NBTTagString(  element.getAsString()   ); }
@@ -582,6 +581,23 @@ public class DimensionConfig
         if (key.equals("BorderDamagePerBlock")) { return new NBTTagDouble(  element.getAsDouble()   ); }
         if (key.equals("BorderWarningBlocks"))  { return new NBTTagInt(     element.getAsInt()      ); }
         if (key.equals("BorderWarningTime"))    { return new NBTTagInt(     element.getAsInt()      ); }
+
+        if (key.equals("RandomSeed"))
+        {
+            String seedStr = element.getAsString();
+            try
+            {
+                long seed = Long.parseLong(seedStr);
+                if (seed != 0L)
+                {
+                    return new NBTTagLong(seed);
+                }
+            }
+            catch (NumberFormatException e)
+            {
+                return new NBTTagLong(seedStr.hashCode());
+            }
+        }
 
         if (key.equals("GameRules") && element.isJsonObject())
         {
