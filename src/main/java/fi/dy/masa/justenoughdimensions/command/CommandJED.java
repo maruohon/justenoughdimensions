@@ -65,7 +65,7 @@ public class CommandJED extends CommandBase
         {
             if (args[0].equals("dimbuilder"))
             {
-                return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "remove", "save-as", "set");
+                return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "read-from", "remove", "save-as", "set");
             }
 
             String cmd = args[0];
@@ -414,6 +414,25 @@ public class CommandJED extends CommandBase
             else
             {
                 DimensionConfig.instance().dimbuilderList(null, sender);
+            }
+        }
+        else if (args[0].equals("read-from"))
+        {
+            if (args.length == 2)
+            {
+                int dimension = parseInt(args[1]);
+                if (DimensionConfig.instance().dimbuilderReadFrom(dimension))
+                {
+                    notifyCommandListener(sender, this, "jed.commands.dimbuilder.read.from.success", Integer.valueOf(dimension));
+                }
+                else
+                {
+                    notifyCommandListener(sender, this, "jed.commands.dimbuilder.read.from.fail", Integer.valueOf(dimension));
+                }
+            }
+            else
+            {
+                throwUsage("dimbuilder.read.from");
             }
         }
         else if (args[0].equals("save-as"))

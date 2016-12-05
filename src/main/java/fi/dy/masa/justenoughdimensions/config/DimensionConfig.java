@@ -457,6 +457,23 @@ public class DimensionConfig
         }
     }
 
+    public boolean dimbuilderReadFrom(int dimension)
+    {
+        for (int i = 0; i < this.dimensions.size(); i++)
+        {
+            DimensionEntry entry = this.dimensions.get(i);
+            if (entry.getId() == dimension)
+            {
+                this.dimbuilderClear();
+                this.dimBuilderData = entry.toJson();
+                this.dimBuilderData.remove("dim");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void dimbuilderSaveAs(int dimension)
     {
         this.removeDimensionAndSaveConfig(dimension);
