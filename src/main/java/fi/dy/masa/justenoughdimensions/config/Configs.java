@@ -15,6 +15,7 @@ public class Configs
     public static final String CATEGORY_GENERIC = "Generic";
 
     public static boolean enableLoggingInfo;
+    public static boolean enableOverrideBiomeProvider;
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
@@ -45,6 +46,10 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "enableLoggingInfo", false).setRequiresMcRestart(false);
         prop.setComment("Enables a bunch of extra logging on the INFO level for registrations etc.");
         enableLoggingInfo = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableOverrideBiomeProvider", false).setRequiresMcRestart(false);
+        prop.setComment("If enabled, then a 'biome: name' key-value pair in the dimension config will override the BiomeProvider of that dimension with BiomeProviderSingle, using the biome given as the value.");
+        enableOverrideBiomeProvider = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", false).setRequiresMcRestart(false);
         prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in the dimensions.json config can be used to override an existing dimension.");

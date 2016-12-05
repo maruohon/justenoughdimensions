@@ -11,10 +11,15 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketWorldBorder;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.datafix.FixTypes;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeProvider;
+import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.border.IBorderListener;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.IChunkGenerator;
@@ -35,6 +40,7 @@ import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.common.network.FMLOutboundHandler;
 import net.minecraftforge.fml.common.network.handshake.NetworkDispatcher;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
@@ -100,6 +106,11 @@ public class JEDEventHandler
                 this.removeOverworldBorderListener(world);
                 world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
             }
+
+            if (Configs.enableOverrideBiomeProvider)
+            {
+                this.overrideBiomeProvider(world);
+            }
         }
     }
 
@@ -133,6 +144,29 @@ public class JEDEventHandler
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
             event.setCanceled(true);
+        }
+    }
+
+    private void overrideBiomeProvider(World world)
+    {
+        int dimension = world.provider.getDimension();
+        String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
+        Biome biome = biomeName != null ? ForgeRegistries.BIOMES.getValue(new ResourceLocation(biomeName)) : null;
+
+        if (biome != null)
+        {
+            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with BiomeProviderSingle" +
+                " using the biome '{}' ('{}')", dimension, biomeName, biome.getBiomeName());
+
+            BiomeProvider provider = new BiomeProviderSingle(biome);
+            try
+            {
+                ReflectionHelper.setPrivateValue(WorldProvider.class, world.provider, provider, "field_76578_c", "biomeProvider");
+            }
+            catch (UnableToAccessFieldException e)
+            {
+                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+            }
         }
     }
 

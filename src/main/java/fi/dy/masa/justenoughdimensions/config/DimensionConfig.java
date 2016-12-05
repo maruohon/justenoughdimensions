@@ -53,7 +53,7 @@ public class DimensionConfig
     private static DimensionConfig instance;
     private final File configDirConfigs;
     private final File dimensionFileConfigs;
-    private final List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
+    private final Map<Integer, DimensionEntry> dimensions = new HashMap<Integer, DimensionEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private JsonObject dimBuilderData = new JsonObject();
 
@@ -76,12 +76,18 @@ public class DimensionConfig
 
     public List<DimensionEntry> getRegisteredDimensions()
     {
-        return ImmutableList.<DimensionEntry>copyOf(this.dimensions);
+        return ImmutableList.<DimensionEntry>copyOf(this.dimensions.values());
     }
 
     public boolean useCustomWorldInfoFor(int dimension)
     {
         return this.customWorldInfo.containsKey(dimension);
+    }
+
+    public String getBiomeFor(int dimension)
+    {
+        DimensionEntry entry = this.dimensions.get(dimension);
+        return entry != null ? entry.getBiome() : null;
     }
 
     public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound tagIn)
@@ -148,7 +154,7 @@ public class DimensionConfig
 
     public void registerDimensions()
     {
-        for (DimensionEntry entry : this.dimensions)
+        for (DimensionEntry entry : this.dimensions.values())
         {
             this.registerDimension(entry.getId(), entry);
         }
@@ -158,7 +164,7 @@ public class DimensionConfig
     {
         if (Configs.enableReplacingRegisteredDimensions)
         {
-            for (DimensionEntry entry : this.dimensions)
+            for (DimensionEntry entry : this.dimensions.values())
             {
                 if (DimensionManager.isDimensionRegistered(entry.getId()))
                 {
@@ -213,7 +219,7 @@ public class DimensionConfig
 
     public String registerDimensionFromConfig(int dimension) throws CommandException
     {
-        for (DimensionEntry entry : this.dimensions)
+        for (DimensionEntry entry : this.dimensions.values())
         {
             if (entry.getId() == dimension)
             {
@@ -268,7 +274,7 @@ public class DimensionConfig
             CommandJED.throwNumber("dimension.already.registered", Integer.valueOf(dimension));
         }
 
-        this.dimensions.add(entry);
+        this.dimensions.put(dimension, entry);
         this.saveConfig();
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
 
@@ -277,29 +283,21 @@ public class DimensionConfig
 
     public void removeDimensionAndSaveConfig(int dimension)
     {
-        for (int i = 0; i < this.dimensions.size(); i++)
-        {
-            DimensionEntry entry = this.dimensions.get(i);
-
-            if (entry.getId() == dimension)
-            {
-                this.dimensions.remove(i);
-                i--;
-            }
-        }
-
+        this.dimensions.remove(dimension);
         this.customWorldInfo.remove(dimension);
         this.saveConfig();
     }
 
     private void saveConfig()
     {
-        Collections.sort(this.dimensions);
+        List<DimensionEntry> dims = new ArrayList<DimensionEntry>();
+        dims.addAll(this.getRegisteredDimensions());
+        Collections.sort(dims);
 
         JsonObject root = new JsonObject();
         JsonArray array = new JsonArray();
 
-        for (DimensionEntry dimEntry : this.dimensions)
+        for (DimensionEntry dimEntry : dims)
         {
             array.add(dimEntry.toJson());
         }
@@ -366,8 +364,12 @@ public class DimensionConfig
 
         if (entry != null)
         {
+            String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
+                    object.get("biome").getAsString() : null;
+
             entry.setOverride(override);
             entry.setUnregister(unregister);
+            entry.setBiome(biome);
 
             if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
             {
@@ -376,7 +378,7 @@ public class DimensionConfig
                 this.customWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
             }
 
-            this.dimensions.add(entry);
+            this.dimensions.put(dimension, entry);
         }
     }
 
@@ -398,7 +400,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
         {
             obj.add(key, new JsonPrimitive(value));
         }
@@ -416,7 +418,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
         {
             return obj.remove(key) != null;
         }
@@ -459,16 +461,13 @@ public class DimensionConfig
 
     public boolean dimbuilderReadFrom(int dimension)
     {
-        for (int i = 0; i < this.dimensions.size(); i++)
+        DimensionEntry entry = this.dimensions.get(dimension);
+
+        if (entry != null)
         {
-            DimensionEntry entry = this.dimensions.get(i);
-            if (entry.getId() == dimension)
-            {
-                this.dimbuilderClear();
-                this.dimBuilderData = entry.toJson();
-                this.dimBuilderData.remove("dim");
-                return true;
-            }
+            this.dimBuilderData = entry.toJson();
+            this.dimBuilderData.remove("dim");
+            return true;
         }
 
         return false;
@@ -516,7 +515,8 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister")) && obj.has(key) && obj.get(key).isJsonPrimitive())
+        if ((key.equals("override") || key.equals("unregister") || key.equals("biome")) &&
+                obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
         }
@@ -759,6 +759,7 @@ public class DimensionConfig
         private final Class<? extends WorldProvider> providerClass;
         private boolean override;
         private boolean unregister;
+        private String biome; // if != null, then use BiomeProviderSingle with this biome
         private JsonObject worldInfojson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
@@ -790,6 +791,11 @@ public class DimensionConfig
             return this.providerClass;
         }
 
+        public String getBiome()
+        {
+            return this.biome;
+        }
+
         public void setOverride(boolean override)
         {
             this.override = override;
@@ -799,6 +805,11 @@ public class DimensionConfig
         {
             // Don't allow unregistering the overworld, or bad thing will happen!
             this.unregister = unregister && this.id != 0;
+        }
+
+        public void setBiome(String biome)
+        {
+            this.biome = biome;
         }
 
         public DimensionEntry setWorldInfoJson(JsonObject obj)
@@ -860,6 +871,11 @@ public class DimensionConfig
             if (this.unregister)
             {
                 jsonEntry.addProperty("unregister", true);
+            }
+
+            if (this.biome != null)
+            {
+                jsonEntry.addProperty("biome", this.biome);
             }
 
             JsonObject worldType = new JsonObject();
