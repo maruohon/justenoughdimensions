@@ -374,9 +374,10 @@ public class CommandJED extends CommandBase
         }
         else if (args[0].equals("set"))
         {
-            if (args.length == 3)
+            if (args.length >= 3)
             {
-                DimensionConfig.instance().dimbuilderSet(args[1], args[2]);
+                String[] valueParts = dropFirstStrings(args, 2);
+                DimensionConfig.instance().dimbuilderSet(args[1], String.join(" ", valueParts));
                 notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success");
             }
             else
@@ -386,15 +387,18 @@ public class CommandJED extends CommandBase
         }
         else if (args[0].equals("remove"))
         {
-            if (args.length == 2)
+            if (args.length >= 2)
             {
-                if (DimensionConfig.instance().dimbuilderRemove(args[1]))
+                for (int i = 1; i < args.length; i++)
                 {
-                    notifyCommandListener(sender, this, "jed.commands.dimbuilder.remove.success", args[1]);
-                }
-                else
-                {
-                    throwCommand("dimbuilder.remove.fail", args[1]);
+                    if (DimensionConfig.instance().dimbuilderRemove(args[i]))
+                    {
+                        notifyCommandListener(sender, this, "jed.commands.dimbuilder.remove.success", args[i]);
+                    }
+                    else
+                    {
+                        throwCommand("dimbuilder.remove.fail", args[i]);
+                    }
                 }
             }
             else
