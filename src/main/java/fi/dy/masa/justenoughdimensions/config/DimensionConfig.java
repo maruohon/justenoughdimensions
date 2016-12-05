@@ -110,15 +110,7 @@ public class DimensionConfig
         return tagIn;
     }
 
-    /**
-     * Only call this method after the overworld has been loaded
-     */
-    public void readDimensionConfig()
-    {
-        this.readDimensionConfig(DimensionManager.getCurrentSaveRootDirectory());
-    }
-
-    public void readDimensionConfig(File worldDir)
+    private File getConfigFile(File worldDir)
     {
         File file = null;
 
@@ -131,6 +123,21 @@ public class DimensionConfig
         {
             file = this.dimensionFileConfigs;
         }
+
+        return file;
+    }
+
+    /**
+     * Only call this method after the overworld has been loaded
+     */
+    public void readDimensionConfig()
+    {
+        this.readDimensionConfig(DimensionManager.getCurrentSaveRootDirectory());
+    }
+
+    public void readDimensionConfig(File worldDir)
+    {
+        File file = this.getConfigFile(worldDir);
 
         if (file.exists() && file.isFile() && file.canRead())
         {
@@ -306,7 +313,7 @@ public class DimensionConfig
 
         try
         {
-            FileWriter writer = new FileWriter(this.dimensionFileConfigs);
+            FileWriter writer = new FileWriter(this.getConfigFile(DimensionManager.getCurrentSaveRootDirectory()));
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             writer.write(gson.toJson(root));
             writer.close();
