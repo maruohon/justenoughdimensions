@@ -173,6 +173,8 @@ public class DimensionConfig
         {
             this.registerDimension(entry.getId(), entry);
         }
+
+        PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
     }
 
     public void registerOverriddenDimensions()
@@ -234,23 +236,23 @@ public class DimensionConfig
 
     public String registerDimensionFromConfig(int dimension) throws CommandException
     {
-        for (DimensionEntry entry : this.dimensions.values())
-        {
-            if (entry.getId() == dimension)
-            {
-                if (entry.getUnregister())
-                {
-                    CommandJED.throwNumber("register.from.config.unregister.set", Integer.valueOf(dimension));
-                }
+        DimensionEntry entry = this.dimensions.get(dimension);
 
-                if (this.registerDimension(dimension, entry) == false)
-                {
-                    CommandJED.throwNumber("register.from.config", Integer.valueOf(dimension));
-                }
-                else
-                {
-                    return entry.getDescription();
-                }
+        if (entry != null)
+        {
+            if (entry.getUnregister())
+            {
+                CommandJED.throwNumber("register.from.config.unregister.set", Integer.valueOf(dimension));
+            }
+
+            if (this.registerDimension(dimension, entry))
+            {
+                PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
+                return entry.getDescription();
+            }
+            else
+            {
+                CommandJED.throwNumber("register.from.config", Integer.valueOf(dimension));
             }
         }
 
@@ -261,22 +263,6 @@ public class DimensionConfig
     public String registerNewDimension(int dimension) throws CommandException
     {
         DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
-        return this.registerNewDimension(dimension, entry);
-    }
-
-    public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded,
-            String providerClassName, boolean override) throws CommandException
-    {
-        Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
-
-        if (providerClass == null)
-        {
-            CommandJED.throwCommand("invalid.worldprovider.name", providerClassName);
-        }
-
-        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
-        entry.setOverride(override);
-
         return this.registerNewDimension(dimension, entry);
     }
 
@@ -294,6 +280,22 @@ public class DimensionConfig
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
 
         return entry.getDescription();
+    }
+
+    public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded,
+            String providerClassName, boolean override) throws CommandException
+    {
+        Class<? extends WorldProvider> providerClass = this.getProviderClass(providerClassName);
+
+        if (providerClass == null)
+        {
+            CommandJED.throwCommand("invalid.worldprovider.name", providerClassName);
+        }
+
+        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+        entry.setOverride(override);
+
+        return this.registerNewDimension(dimension, entry);
     }
 
     public void removeDimensionAndSaveConfig(int dimension)
