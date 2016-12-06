@@ -10,6 +10,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldType;
@@ -20,6 +21,7 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDifficulty;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDGameRule;
+import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDSetWorldSpawn;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDTime;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
@@ -51,9 +53,11 @@ public class CommandJED extends CommandBase
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
+                    "listdims",
                     "register",
                     "reload",
                     "seed",
+                    "setworldspawn",
                     "time",
                     "unregister",
                     "unregister-remove",
@@ -121,6 +125,10 @@ public class CommandJED extends CommandBase
                     return getListOfStringsMatchingLastWord(args, "true", "false");
                 }
             }
+            else if (cmd.equals("setworldspawn"))
+            {
+                return getListOfStringsMatchingLastWord(args, "query");
+            }
             else if (cmd.equals("worldborder"))
             {
                 if (len == 1)
@@ -163,6 +171,13 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().readDimensionConfig();
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
+        }
+        else if (cmd.equals("listdims"))
+        {
+            Integer[] dims = DimensionManager.getStaticDimensionIDs();
+            String[] dimsStr = new String[dims.length];
+            for (int i = 0; i < dimsStr.length; i++) { dimsStr[i] = String.valueOf(dims[i]); }
+            sender.sendMessage(new TextComponentTranslation("jed.commands.listdims.list", String.join(", ", dimsStr)));
         }
         else if (cmd.equals("dimbuilder"))
         {
@@ -257,6 +272,10 @@ public class CommandJED extends CommandBase
             else if (cmd.equals("seed"))
             {
                 this.commandSeed(dimension, sender);
+            }
+            else if (cmd.equals("setworldspawn"))
+            {
+                CommandJEDSetWorldSpawn.execute(this, dimension, args, sender);
             }
             else if (cmd.equals("time"))
             {
