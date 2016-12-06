@@ -1,15 +1,17 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.11-latest": "1.0.0-beta.1",
-        "1.11-recommended": "1.0.0-beta.1",
-        "1.10.2-latest": "1.0.0-beta.1",
-        "1.10.2-recommended": "1.0.0-beta.1"
+        "1.11-latest": "1.0.0",
+        "1.11-recommended": "1.0.0",
+        "1.10.2-latest": "1.0.0",
+        "1.10.2-recommended": "1.0.0"
     },
     "1.11": {
+        "1.0.0": "Countless fixes, improvements and additions. See the changelog on the CurseForge files page.",
         "1.0.0-beta.1": "Major improvements: new commands, re-written teleport command (now supports all entities and entity selectors), per-dimension gamerules/time/weather/WorldBorder/WorldType"
     },
     "1.10.2": {
+        "1.0.0": "Countless fixes, improvements and additions. See the changelog on the CurseForge files page.",
         "1.0.0-beta.1": "Major improvements: new commands, re-written teleport command (now supports all entities and entity selectors), per-dimension gamerules/time/weather/WorldBorder/WorldType",
         "0.1.0": "Initial release"
     }
