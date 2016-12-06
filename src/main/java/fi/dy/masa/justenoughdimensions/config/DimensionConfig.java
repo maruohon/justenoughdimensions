@@ -144,15 +144,15 @@ public class DimensionConfig
             try
             {
                 JsonParser parser = new JsonParser();
-                JsonObject root = parser.parse(new FileReader(file)).getAsJsonObject();
+                JsonElement rootElement = parser.parse(new FileReader(file));
 
-                if (root.has("dimensions") && root.get("dimensions").isJsonObject())
+                if (rootElement != null)
                 {
-                    this.parseDimensionConfig(root);
+                    this.parseDimensionConfig(rootElement);
                 }
                 else
                 {
-                    JustEnoughDimensions.logger.warn("The dimensions.json config was empty or invalid (missing the \"dimensions\" array)");
+                    JustEnoughDimensions.logger.warn("The dimensions.json config was empty");
                 }
             }
             catch (Exception e)
@@ -335,17 +335,23 @@ public class DimensionConfig
         }
     }
 
-    private void parseDimensionConfig(JsonObject root) throws IllegalStateException
+    private void parseDimensionConfig(JsonElement rootElement) throws IllegalStateException
     {
-        JsonArray array;
+        JustEnoughDimensions.logInfo("Reading the dimensions.json config...");
+
+        if (rootElement == null || rootElement.isJsonObject() == false ||
+            rootElement.getAsJsonObject().has("dimensions") == false ||
+            rootElement.getAsJsonObject().get("dimensions").isJsonArray() == false)
+        {
+            JustEnoughDimensions.logger.warn("The dimensions.json config is missing some of the top level elements...");
+            return;
+        }
+
+        JsonArray array = rootElement.getAsJsonObject().get("dimensions").getAsJsonArray();
         JsonObject object;
         int count = 0;
-
-        JustEnoughDimensions.logInfo("Reading the dimensions.json config...");
         this.customWorldInfo.clear();
         this.dimensions.clear();
-
-        array = root.get("dimensions").getAsJsonArray();
 
         for (JsonElement el : array)
         {

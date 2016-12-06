@@ -4,7 +4,7 @@ language.code=en_US
 
 jed.commands.defaultgamemode.print=DIM %s: Default gamemode is currently %s
 jed.commands.defaultgamemode.success=DIM %s: Default game mode has been set to %s
-jed.commands.difficulty.print=DIM %s: THe current difficulty is %s
+jed.commands.difficulty.print=DIM %s: The current difficulty is %s
 jed.commands.difficulty.success=DIM %s: Difficulty set to %s
 jed.commands.dimbuilder.clear.success=dimbuilder data cleared
 jed.commands.dimbuilder.create.as.success=The dimension was saved to the config as dimension %s and registered
