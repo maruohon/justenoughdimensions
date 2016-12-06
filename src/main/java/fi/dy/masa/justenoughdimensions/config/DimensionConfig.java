@@ -145,7 +145,15 @@ public class DimensionConfig
             {
                 JsonParser parser = new JsonParser();
                 JsonObject root = parser.parse(new FileReader(file)).getAsJsonObject();
-                this.parseDimensionConfig(root);
+
+                if (root.has("dimensions") && root.get("dimensions").isJsonObject())
+                {
+                    this.parseDimensionConfig(root);
+                }
+                else
+                {
+                    JustEnoughDimensions.logger.warn("The dimensions.json config was empty or invalid (missing the \"dimensions\" array)");
+                }
             }
             catch (Exception e)
             {

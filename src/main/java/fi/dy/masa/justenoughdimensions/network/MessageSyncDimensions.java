@@ -93,7 +93,7 @@ public class MessageSyncDimensions implements IMessage
                 DimensionSyncPacket.registerDimension(id, entry);
             }
 
-            JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: " + String.join(", ", ids));
+            JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
         }
     }
 }

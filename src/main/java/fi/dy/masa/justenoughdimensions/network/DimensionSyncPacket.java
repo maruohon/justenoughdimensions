@@ -56,7 +56,7 @@ public class DimensionSyncPacket
             registerDimension(id, entry);
         }
 
-        JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: " + String.join(", ", ids));
+        JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
     }
 
     public static void registerDimension(int id, DimensionEntry entry)

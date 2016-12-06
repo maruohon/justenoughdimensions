@@ -228,7 +228,7 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
-                JustEnoughDimensions.logger.info("WorldType: {} - {}", type.getName(), type.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldType: '{}' - {}", type.getName(), type.getClass().getName());
                 JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
