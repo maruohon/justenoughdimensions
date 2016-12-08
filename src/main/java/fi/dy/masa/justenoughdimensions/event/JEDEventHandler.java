@@ -40,9 +40,7 @@ import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.common.network.FMLOutboundHandler;
 import net.minecraftforge.fml.common.network.handshake.NetworkDispatcher;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -57,6 +55,8 @@ public class JEDEventHandler
     private Field field_worldInfo = null;
     private Field field_WorldBorder_listeners = null;
     private Field field_WorldServerMulti_borderListener = null;
+    private Field field_WorldProvider_biomeProvider = null;
+    private Field field_ChunkProviderServer_chunkGenerator = null;
 
     public JEDEventHandler()
     {
@@ -65,6 +65,8 @@ public class JEDEventHandler
             this.field_worldInfo = ReflectionHelper.findField(World.class, "field_72986_A", "worldInfo");
             this.field_WorldBorder_listeners = ReflectionHelper.findField(WorldBorder.class, "field_177758_a", "listeners");
             this.field_WorldServerMulti_borderListener = ReflectionHelper.findField(WorldServerMulti.class, "borderListener");
+            this.field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
+            this.field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
         catch (UnableToFindFieldException e)
         {
@@ -151,7 +153,7 @@ public class JEDEventHandler
     {
         int dimension = world.provider.getDimension();
         String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
-        Biome biome = biomeName != null ? ForgeRegistries.BIOMES.getValue(new ResourceLocation(biomeName)) : null;
+        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
 
         if (biome != null)
         {
@@ -161,9 +163,13 @@ public class JEDEventHandler
             BiomeProvider provider = new BiomeProviderSingle(biome);
             try
             {
-                ReflectionHelper.setPrivateValue(WorldProvider.class, world.provider, provider, "field_76578_c", "biomeProvider");
+                this.field_WorldProvider_biomeProvider.set(world.provider, provider);
             }
-            catch (UnableToAccessFieldException e)
+            catch (IllegalArgumentException e)
+            {
+                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+            }
+            catch (IllegalAccessException e)
             {
                 JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
             }
@@ -465,14 +471,19 @@ public class JEDEventHandler
 
             try
             {
-                ReflectionHelper.setPrivateValue(ChunkProviderServer.class, (ChunkProviderServer) world.getChunkProvider(),
-                        newChunkProvider, "field_186029_c", "chunkGenerator");
+                this.field_ChunkProviderServer_chunkGenerator.set((ChunkProviderServer) world.getChunkProvider(), newChunkProvider);
             }
-            catch (UnableToAccessFieldException e)
+            catch (IllegalArgumentException e)
             {
                 JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
                         dimension, newChunkProvider.getClass().getName());
-                JustEnoughDimensions.logger.warn(e.getMessage());
+                e.printStackTrace();
+            }
+            catch (IllegalAccessException e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
+                        dimension, newChunkProvider.getClass().getName());
+                e.printStackTrace();
             }
         }
     }
