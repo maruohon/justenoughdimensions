@@ -369,10 +369,6 @@ public class DimensionConfig
 
     private void parseDimensionConfigEntry(int dimension, JsonObject object)
     {
-        boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
-                object.get("override").getAsBoolean();
-        boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
-                object.get("unregister").getAsBoolean();
         DimensionEntry entry = null;
 
         if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
@@ -387,6 +383,10 @@ public class DimensionConfig
 
         if (entry != null)
         {
+            boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
+                    object.get("override").getAsBoolean();
+            boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
+                    object.get("unregister").getAsBoolean();
             String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
                     object.get("biome").getAsString() : null;
 
