@@ -69,7 +69,14 @@ public class CommandJED extends CommandBase
         {
             if (args[0].equals("dimbuilder"))
             {
-                return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "read-from", "remove", "save-as", "set");
+                if (args.length == 2)
+                {
+                    return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "read-from", "remove", "save-as", "set");
+                }
+                else
+                {
+                    return super.getTabCompletions(server, sender, args, pos);
+                }
             }
 
             String cmd = args[0];
