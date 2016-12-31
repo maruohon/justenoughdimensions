@@ -47,7 +47,10 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
+import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderProperties;
+import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
 
 public class JEDEventHandler
 {
@@ -70,7 +73,7 @@ public class JEDEventHandler
         }
         catch (UnableToFindFieldException e)
         {
-            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!");
+            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!", e);
         }
     }
 
@@ -126,18 +129,21 @@ public class JEDEventHandler
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
     {
         this.sendWorldBorder(event.player);
+        this.syncWorldProviderProperties(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
         this.sendWorldBorder(event.player);
+        this.syncWorldProviderProperties(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event)
     {
         this.sendWorldBorder(event.player);
+        this.syncWorldProviderProperties(event.player);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -146,6 +152,16 @@ public class JEDEventHandler
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
             event.setCanceled(true);
+        }
+    }
+
+    private void syncWorldProviderProperties(EntityPlayer player)
+    {
+        World world = player.getEntityWorld();
+
+        if (world.getWorldInfo() instanceof WorldInfoJED && player instanceof EntityPlayerMP)
+        {
+            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties((WorldInfoJED) world.getWorldInfo()), (EntityPlayerMP) player);
         }
     }
 
@@ -249,33 +265,23 @@ public class JEDEventHandler
         {
             JustEnoughDimensions.logInfo("Using custom WorldInfo for dimension {}", dimension);
 
-            WorldInfoJED info = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
-            NBTTagCompound nbt;
+            NBTTagCompound nbt = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
 
-            if (info == null)
+            // No level.dat exists for this dimensions yet, inherit the values from the overworld
+            if (nbt == null)
             {
-                /*MinecraftServer server = world.getMinecraftServer();
-                WorldInfo worldInfoParent = world.getWorldInfo();
-                WorldSettings worldSettings = new WorldSettings(worldInfoParent.getSeed(), server.getGameType(),
-                        server.canStructuresSpawn(), server.isHardcore(), worldInfoParent.getTerrainType());
-                worldInfo.populateFromWorldSettings(worldSettings);*/
-
-                // Transfer via NBT so that the GameRules instance remains separate
                 nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
             }
-            else
-            {
-                nbt = info.cloneNBTCompound(playerNBT);
-            }
 
-            nbt = DimensionConfig.instance().getWorldInfoValues(dimension, nbt);
-            info = new WorldInfoJED(nbt);
-            this.setWorldInfo(world, info);
+            // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
+            nbt.merge(DimensionConfig.instance().getWorldInfoValues(dimension, nbt));
+
+            this.setWorldInfo(world, new WorldInfoJED(nbt));
         }
     }
 
-    private WorldInfoJED loadWorldInfoFromFile(World world, @Nullable File worldDir)
+    private NBTTagCompound loadWorldInfoFromFile(World world, @Nullable File worldDir)
     {
         if (worldDir == null)
         {
@@ -296,11 +302,11 @@ public class JEDEventHandler
             try
             {
                 NBTTagCompound nbt = CompressedStreamTools.readCompressed(new FileInputStream(fileLevel));
-                WorldInfoJED info = new WorldInfoJED(world.getMinecraftServer().getDataFixer().process(FixTypes.LEVEL, nbt.getCompoundTag("Data")));
+                nbt = world.getMinecraftServer().getDataFixer().process(FixTypes.LEVEL, nbt.getCompoundTag("Data"));
                 //FMLCommonHandler.instance().handleWorldDataLoad((SaveHandler) world.getSaveHandler(), info, nbt);
 
                 //JustEnoughDimensions.logger.info("Loaded custom WorldInfo from {}", fileLevel.getName());
-                return info;
+                return nbt;
             }
             //catch (net.minecraftforge.fml.common.StartupQuery.AbortedException e) { throw e; }
             catch (Exception e)
@@ -317,7 +323,7 @@ public class JEDEventHandler
 
     private void saveCustomWorldInfoToFile(World world)
     {
-        if (world.isRemote == false && Configs.enableSeparateWorldInfo &&
+        if (Configs.enableSeparateWorldInfo && world.isRemote == false &&
             DimensionConfig.instance().useCustomWorldInfoFor(world.provider.getDimension()))
         {
             this.saveWorldInfoToFile(world, this.getWorldDirectory(world));
@@ -403,7 +409,7 @@ public class JEDEventHandler
         return null;
     }
 
-    private void setWorldInfo(World world, WorldInfo info)
+    private void setWorldInfo(World world, WorldInfoJED info)
     {
         if (this.field_worldInfo != null)
         {
@@ -412,6 +418,11 @@ public class JEDEventHandler
                 this.field_worldInfo.set(world, info);
                 this.setWorldBorderValues(world);
                 this.setChunkProvider(world);
+
+                if (world.provider instanceof WorldProviderJED)
+                {
+                    ((WorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
+                }
             }
             catch (Exception e)
             {

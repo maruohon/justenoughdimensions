@@ -433,7 +433,14 @@ public class DimensionConfig
         }
         else
         {
-            this.getOrCreateNestedObject(obj, "worldinfo").add(key, new JsonPrimitive(value));
+            obj = this.getOrCreateNestedObject(obj, "worldinfo");
+
+            if (this.isJEDProperty(key))
+            {
+                obj = this.getOrCreateNestedObject(obj, "JED");
+            }
+
+            obj.add(key, new JsonPrimitive(value));
         }
     }
 
@@ -453,7 +460,18 @@ public class DimensionConfig
         else
         {
             obj = this.getNestedObject(obj, "worldinfo", false);
-            return obj != null ? obj.remove(key) != null : false;
+
+            if (obj != null)
+            {
+                if (this.isJEDProperty(key))
+                {
+                    obj = this.getNestedObject(obj, "JED", false);
+                }
+
+                return obj != null ? obj.remove(key) != null : false;
+            }
+
+            return false;
         }
     }
 
@@ -514,6 +532,7 @@ public class DimensionConfig
         return this.getNestedObject(parent, key, true);
     }
 
+    @Nullable
     private JsonObject getNestedObject(JsonObject parent, String key, boolean create)
     {
         if (parent.has(key) == false || parent.get(key).isJsonObject() == false)
@@ -551,12 +570,27 @@ public class DimensionConfig
                 obj = obj.get("dimensiontype").getAsJsonObject();
                 return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
             }
+            else
+            {
+                return null;
+            }
         }
 
         if (obj.has("worldinfo") && obj.get("worldinfo").isJsonObject())
         {
             obj = obj.get("worldinfo").getAsJsonObject();
-            return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+
+            // The requested key is a value directly inside the worldinfo object
+            if (obj.has(key) && obj.get(key).isJsonPrimitive())
+            {
+                return obj.get(key).getAsJsonPrimitive();
+            }
+            else if (obj.has("JED") && obj.get("JED").isJsonObject())
+            {
+                obj = obj.get("JED").getAsJsonObject();
+                // The requested key exists inside the JED object (which is a 'JED' Compound tag in level.dat)
+                return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+            }
         }
 
         return null;
@@ -569,24 +603,32 @@ public class DimensionConfig
         for (Map.Entry<String, JsonElement> entry : object.entrySet())
         {
             JsonElement element = entry.getValue();
+            String key = entry.getKey();
+            NBTBase tag = this.getTagForValue(key, element);
 
-            if (element.isJsonPrimitive())
+            if (tag != null)
             {
-                String key = entry.getKey();
-                NBTBase tag = this.getTagForValue(key, element);
-
-                if (tag != null)
-                {
-                    nbt.setTag(key, tag);
-                }
+                nbt.setTag(key, tag);
             }
         }
 
         return nbt;
     }
 
+    private boolean isJEDProperty(String key)
+    {
+        return  key.equals("ForceGamemode") ||
+                key.equals("DayLength") ||
+                key.equals("NightLength") ||
+                key.equals("CloudHeight") ||
+                key.equals("SkyColor") ||
+                key.equals("CloudColor") ||
+                key.equals("FogColor");
+    }
+
     private NBTBase getTagForValue(String key, JsonElement element)
     {
+        // These are the keys/values in a vanilla level.dat
         if (key.equals("generatorName"))        { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("generatorVersion"))     { return new NBTTagInt(     element.getAsInt()      ); }
         if (key.equals("generatorOptions"))     { return new NBTTagString(  element.getAsString()   ); }
@@ -639,14 +681,34 @@ public class DimensionConfig
             }
         }
 
-        if (key.equals("GameRules") && element.isJsonObject())
+        // Custom JED properties
+        if (key.equals("ForceGamemode"))    { return new NBTTagByte(    element.getAsBoolean() ? (byte) 1 : 0); }
+        if (key.equals("DayLength"))        { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("NightLength"))      { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("CloudHeight"))      { return new NBTTagInt(     element.getAsInt()      ); }
+        if (key.equals("SkyColor"))         { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("CloudColor"))       { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("FogColor"))         { return new NBTTagString(  element.getAsString()   ); }
+
+        if (element.isJsonObject())
         {
             NBTTagCompound tag = new NBTTagCompound();
             JsonObject obj = element.getAsJsonObject();
 
-            for (Map.Entry<String, JsonElement> entry : obj.entrySet())
+            if (key.equals("GameRules"))
             {
-                tag.setString(entry.getKey(), entry.getValue().getAsString());
+                for (Map.Entry<String, JsonElement> entry : obj.entrySet())
+                {
+                    tag.setString(entry.getKey(), entry.getValue().getAsString());
+                }
+            }
+            else if (key.equals("JED"))
+            {
+                for (Map.Entry<String, JsonElement> entry : obj.entrySet())
+                {
+                    // Calls this method recursively to get the JED-specific values listed above
+                    tag.setTag(entry.getKey(), this.getTagForValue(entry.getKey(), entry.getValue()));
+                }
             }
 
             return tag;
