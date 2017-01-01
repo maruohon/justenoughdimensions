@@ -14,6 +14,7 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableForcedGamemodes;
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
     public static boolean enableReplacingRegisteredDimensions;
@@ -42,6 +43,10 @@ public class Configs
     public static void loadConfigs(Configuration conf)
     {
         Property prop;
+
+        prop = conf.get(CATEGORY_GENERIC, "enableForcedGamemodes", false).setRequiresMcRestart(false);
+        prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");
+        enableForcedGamemodes = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableLoggingInfo", false).setRequiresMcRestart(false);
         prop.setComment("Enables a bunch of extra logging on the INFO level for registrations etc.");

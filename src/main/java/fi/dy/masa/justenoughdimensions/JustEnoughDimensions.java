@@ -17,6 +17,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.event.GamemodeTracker;
 import fi.dy.masa.justenoughdimensions.event.JEDEventHandler;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -83,6 +84,8 @@ public class JustEnoughDimensions
         // won't get auto-loaded on server start as 'static' dimensions.
         // Although that does still happen in single player if you exit the world and then load it again...
         DimensionConfig.instance().registerDimensions();
+
+        GamemodeTracker.getInstance().readFromDisk();
     }
 
     public static void logInfo(String message, Object... params)

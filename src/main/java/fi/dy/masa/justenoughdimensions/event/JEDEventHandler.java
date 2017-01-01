@@ -123,6 +123,11 @@ public class JEDEventHandler
     public void onWorldSave(WorldEvent.Save event)
     {
         this.saveCustomWorldInfoToFile(event.getWorld());
+
+        if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
+        {
+            GamemodeTracker.getInstance().writeToDisk();
+        }
     }
 
     @SubscribeEvent
@@ -144,6 +149,11 @@ public class JEDEventHandler
     {
         this.sendWorldBorder(event.player);
         this.syncWorldProviderProperties(event.player);
+
+        if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
+        {
+            GamemodeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, event.fromDim, event.toDim);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
