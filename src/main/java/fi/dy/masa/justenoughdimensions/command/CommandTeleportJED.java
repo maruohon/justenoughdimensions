@@ -1,7 +1,6 @@
 package fi.dy.masa.justenoughdimensions.command;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.command.CommandBase;
@@ -23,13 +22,25 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.end.DragonFightManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindMethodException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils;
+import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils.UnableToFindMethodHandleException;
 
 public class CommandTeleportJED extends CommandBase
 {
+    private MethodHandle methodHandle_Entity_copyDataFromOld;
+
     public CommandTeleportJED()
     {
+        try
+        {
+            this.methodHandle_Entity_copyDataFromOld = MethodHandleUtils.getMethodHandleVirtual(
+                    Entity.class, new String[] { "func_180432_n", "copyDataFromOld" }, Entity.class);
+        }
+        catch (UnableToFindMethodHandleException e)
+        {
+            JustEnoughDimensions.logger.error("CommandTeleportJED: Failed to get MethodHandle for Entity#copyDataFromOld()", e);
+        }
     }
 
     @Override
@@ -244,13 +255,13 @@ public class CommandTeleportJED extends CommandBase
 
             if (this.variant == CommandVariant.ENTITY_TO_ENTITY)
             {
-                this.teleportToEntity(this.target, this.destEntity, server);
+                this.teleportToEntity(cmd, this.target, this.destEntity, server);
                 entity = this.destEntity;
                 dim = destEntity.getEntityWorld().provider.getDimension();
             }
             else if (this.variant == CommandVariant.ENTITY_TO_DIMENSION)
             {
-                entity = this.teleportToDimension(this.target, this.dimension, server);
+                entity = this.teleportToDimension(cmd, this.target, this.dimension, server);
                 dim = this.dimension;
             }
 
@@ -265,24 +276,24 @@ public class CommandTeleportJED extends CommandBase
             }
         }
 
-        private void teleportToEntity(Entity target, Entity destEntity, MinecraftServer server) throws CommandException
+        private void teleportToEntity(CommandTeleportJED cmd, Entity target, Entity destEntity, MinecraftServer server) throws CommandException
         {
             int dimTgt = target.getEntityWorld().provider.getDimension();
             int dimDst = destEntity.getEntityWorld().provider.getDimension();
 
             if (dimTgt != dimDst)
             {
-                target = this.changeToDimension(target, dimDst, false, server);
+                target = this.changeToDimension(cmd, target, dimDst, false, server);
             }
 
             this.teleportEntityTo(target, destEntity.getPositionVector(), destEntity.rotationYaw, destEntity.rotationPitch);
         }
 
-        private Entity teleportToDimension(Entity entity, int dimension, MinecraftServer server) throws CommandException
+        private Entity teleportToDimension(CommandTeleportJED cmd, Entity entity, int dimension, MinecraftServer server) throws CommandException
         {
             if (entity.getEntityWorld().provider.getDimension() != dimension)
             {
-                return this.changeToDimension(entity, dimension, this.hasPosition == false, server);
+                return this.changeToDimension(cmd, entity, dimension, this.hasPosition == false, server);
             }
             else
             {
@@ -322,7 +333,7 @@ public class CommandTeleportJED extends CommandBase
             return new Vec3d(x, y, z);
         }
 
-        private Entity changeToDimension(Entity entity, int dimension, boolean useSpawnPoint, MinecraftServer server) throws CommandException
+        private Entity changeToDimension(CommandTeleportJED cmd, Entity entity, int dimension, boolean useSpawnPoint, MinecraftServer server) throws CommandException
         {
             WorldServer worldDst = server.worldServerForDimension(dimension);
             if (worldDst == null)
@@ -397,7 +408,7 @@ public class CommandTeleportJED extends CommandBase
 
                 if (entityNew != null)
                 {
-                    copyDataFromOld(entityNew, entity);
+                    this.copyDataFromOld(cmd, entityNew, entity);
                     entityNew.setLocationAndAngles(x, y, z, yaw, pitch);
 
                     boolean flag = entityNew.forceSpawn;
@@ -442,29 +453,17 @@ public class CommandTeleportJED extends CommandBase
                 }
             }
         }
-    }
 
-    public static void copyDataFromOld(Entity target, Entity old)
-    {
-        Method method = ReflectionHelper.findMethod(Entity.class, target, new String[] {"func_180432_n", "copyDataFromOld", "a"}, Entity.class);
-        try
+        private void copyDataFromOld(CommandTeleportJED cmd, Entity target, Entity old)
         {
-            method.invoke(target, old);
-        }
-        catch (UnableToFindMethodException e)
-        {
-            JustEnoughDimensions.logger.error("Error while trying reflect Entity.copyDataFromOld() (UnableToFindMethodException)");
-            e.printStackTrace();
-        }
-        catch (InvocationTargetException e)
-        {
-            JustEnoughDimensions.logger.error("Error while trying reflect Entity.copyDataFromOld() (InvocationTargetException)");
-            e.printStackTrace();
-        }
-        catch (IllegalAccessException e)
-        {
-            JustEnoughDimensions.logger.error("Error while trying reflect Entity.copyDataFromOld() (IllegalAccessException)");
-            e.printStackTrace();
+            try
+            {
+                cmd.methodHandle_Entity_copyDataFromOld.invokeExact(target, old);
+            }
+            catch (Throwable e)
+            {
+                JustEnoughDimensions.logger.error("Error while trying invoke Entity#copyDataFromOld()", e);
+            }
         }
     }
 
