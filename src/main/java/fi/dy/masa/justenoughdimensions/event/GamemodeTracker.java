@@ -10,6 +10,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -57,7 +58,7 @@ public class GamemodeTracker
             }
 
             // The player is in the destination world at this point, so we get the gamemode from there
-            player.setGameType(player.getEntityWorld().getWorldInfo().getGameType());
+            this.setPlayerGamemode(player, player.getEntityWorld().getWorldInfo().getGameType());
         }
         // When switching to a non-forced-gamemode dimension from a forced-gamemode dimension,
         // ie. we have a stored gamemode for the player.
@@ -81,9 +82,15 @@ public class GamemodeTracker
 
     private void restoreStoredGamemode(EntityPlayerMP player)
     {
-        player.setGameType(this.gameModes.get(player.getUniqueID()));
+        this.setPlayerGamemode(player, this.gameModes.get(player.getUniqueID()));
         this.gameModes.remove(player.getUniqueID());
         this.dirty = true;
+    }
+
+    private void setPlayerGamemode(EntityPlayerMP player, GameType type)
+    {
+        player.setGameType(type);
+        player.sendMessage(new TextComponentTranslation("jed.info.gamemode.changed", type.toString()));
     }
 
     public void readFromDisk()

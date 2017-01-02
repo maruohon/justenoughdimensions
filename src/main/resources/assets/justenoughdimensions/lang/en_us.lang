@@ -84,3 +84,4 @@ jed.commands.worldborder.set.slowly.grow.success=DIM %s: Growing world border to
 jed.commands.worldborder.set.slowly.shrink.success=DIM %s: Shrinking world border to %s blocks wide (down from %s blocks) over %s seconds
 jed.commands.worldborder.warning.distance.success=DIM %s: Set world border warning to %s blocks away (from %s blocks)
 jed.commands.worldborder.warning.time.success=DIM %s: Set world border warning to %s seconds away (from %s seconds)
+jed.info.gamemode.changed=Changed gamemode to %s
