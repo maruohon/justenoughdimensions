@@ -103,8 +103,14 @@ public class WorldProviderJED extends WorldProvider
     {
         int cycleLength = this.getDayCycleLength();
         int i = (int) (worldTime % cycleLength);
-        float f;
         int duskOrDawnLength = (int) (0.075f * cycleLength);
+        float f;
+
+        // This fixes the sun/moon spazzing out in-place noticeably with short day cycles
+        if (this.world.getGameRules().getBoolean("doDaylightCycle") == false)
+        {
+            partialTicks = 0f;
+        }
 
         // Day, including dusk (The day part starts duskOrDawnLength before 0, so
         // subtract the duskOrDawnLength length from the day length to get the upper limit

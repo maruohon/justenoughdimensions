@@ -3,7 +3,7 @@ language.region=US
 language.code=en_US
 
 jed.commands.defaultgamemode.print=DIM %s: Default gamemode is currently %s
-jed.commands.defaultgamemode.success=DIM %s: Default game mode has been set to %s
+jed.commands.defaultgamemode.success=DIM %s: Default gamemode has been set to %s
 jed.commands.difficulty.print=DIM %s: The current difficulty is %s
 jed.commands.difficulty.success=DIM %s: Difficulty set to %s
 jed.commands.dimbuilder.clear.success=dimbuilder data cleared
