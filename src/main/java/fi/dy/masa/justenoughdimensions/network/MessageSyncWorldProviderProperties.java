@@ -50,7 +50,8 @@ public class MessageSyncWorldProviderProperties implements IMessage
                 return null;
             }
 
-            Minecraft mc = FMLClientHandler.instance().getClient();
+            final Minecraft mc = FMLClientHandler.instance().getClient();
+
             if (mc == null)
             {
                 JustEnoughDimensions.logger.error("Minecraft was null in MessageSyncWorldProviderProperties");
