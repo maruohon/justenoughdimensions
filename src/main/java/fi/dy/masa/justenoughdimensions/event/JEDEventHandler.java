@@ -475,7 +475,7 @@ public class JEDEventHandler
         if (world instanceof WorldServer)
         {
             // This sets the new WorldType to the WorldProvider
-            world.provider.setWorld(world);
+            world.provider.registerWorld(world);
 
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 

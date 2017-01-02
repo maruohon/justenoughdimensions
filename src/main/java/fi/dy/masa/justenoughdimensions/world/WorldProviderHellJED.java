@@ -17,7 +17,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     }
 
     @Override
-    public void init()
+    public void createBiomeProvider()
     {
         this.biomeProvider = new BiomeProviderSingle(Biomes.HELL);
         this.doesWaterVaporize = true;

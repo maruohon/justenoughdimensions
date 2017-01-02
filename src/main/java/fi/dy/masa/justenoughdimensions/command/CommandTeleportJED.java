@@ -404,7 +404,7 @@ public class CommandTeleportJED extends CommandBase
                 entity.isDead = false;
                 worldEntity.updateEntityWithOptionalForce(entity, false);
 
-                Entity entityNew = EntityList.newEntity(entity.getClass(), worldDst);
+                Entity entityNew = EntityList.createEntityByName(EntityList.getEntityString(entity), worldDst);
 
                 if (entityNew != null)
                 {
