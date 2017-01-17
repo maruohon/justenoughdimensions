@@ -11,12 +11,14 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 
-public class WorldProviderJED extends WorldProvider
+public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 {
     protected int dayLength = 12000;
     protected int nightLength = 12000;
     protected int cloudHeight = 128;
+    private int skyRenderType = 0;
     protected Vec3d skyColor = null;
     protected Vec3d cloudColor = null;
     protected Vec3d fogColor = null;
@@ -51,9 +53,7 @@ public class WorldProviderJED extends WorldProvider
         return this.world.isSpawnChunk(x, z) == false || this.getDimensionType().shouldLoadSpawn() == false;
     }
 
-    /**
-     * Set JED properties on the client side from a synced NBT tag
-     */
+    @Override
     public void setJEDPropertiesFromNBT(NBTTagCompound tag)
     {
         if (tag != null)
@@ -61,6 +61,7 @@ public class WorldProviderJED extends WorldProvider
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
+            if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
 
             if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = WorldInfoJED.hexStringToColor(tag.getString("CloudColor")); }
@@ -69,6 +70,15 @@ public class WorldProviderJED extends WorldProvider
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }
+
+        if (this.skyRenderType != 0)
+        {
+            this.setSkyRenderer(new SkyRenderer(this.skyRenderType));
+        }
+        else
+        {
+            this.setSkyRenderer(null);
+        }
     }
 
     /**

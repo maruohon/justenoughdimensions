@@ -10,8 +10,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
-import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
 import io.netty.buffer.ByteBuf;
 
 public class MessageSyncWorldProviderProperties implements IMessage
@@ -71,9 +71,9 @@ public class MessageSyncWorldProviderProperties implements IMessage
 
         protected void processMessage(final MessageSyncWorldProviderProperties message, final World world)
         {
-            if (world.provider instanceof WorldProviderJED)
+            if (world.provider instanceof IWorldProviderJED)
             {
-                ((WorldProviderJED) world.provider).setJEDPropertiesFromNBT(message.nbt);
+                ((IWorldProviderJED) world.provider).setJEDPropertiesFromNBT(message.nbt);
                 
                 JustEnoughDimensions.logInfo("MessageSyncWorldProviderProperties: Synced custom JED WorldProvider properties: {}", message.nbt);
             }

@@ -588,7 +588,7 @@ public class DimensionConfig
             else if (obj.has("JED") && obj.get("JED").isJsonObject())
             {
                 obj = obj.get("JED").getAsJsonObject();
-                // The requested key exists inside the JED object (which is a 'JED' Compound tag in level.dat)
+                // The requested key exists inside the JED object
                 return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
             }
         }
@@ -623,7 +623,8 @@ public class DimensionConfig
                 key.equals("CloudHeight") ||
                 key.equals("SkyColor") ||
                 key.equals("CloudColor") ||
-                key.equals("FogColor");
+                key.equals("FogColor") ||
+                key.equals("SkyRenderType");
     }
 
     private NBTBase getTagForValue(String key, JsonElement element)
@@ -689,6 +690,7 @@ public class DimensionConfig
         if (key.equals("SkyColor"))         { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("CloudColor"))       { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("FogColor"))         { return new NBTTagString(  element.getAsString()   ); }
+        if (key.equals("SkyRenderType"))    { return new NBTTagByte(    element.getAsByte()     ); }
 
         if (element.isJsonObject())
         {
