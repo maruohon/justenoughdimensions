@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.Teleporter;
 import net.minecraft.world.World;
@@ -81,397 +82,354 @@ public class CommandTeleportJED extends CommandBase
     @Override
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException
     {
-        CommandParser parser = CommandParser.parse(this, server, sender, args);
-        parser.execute(this, sender, server);
+        TeleportData data = this.parseArguments(server, sender, args);
+        Entity entity = this.teleportEntityToLocation(data.getEntity(), data, server);
+
+        if (entity != null)
+        {
+            notifyCommandListener(sender, this, "jed.commands.teleport.success.coordinates",
+                    entity.getName(),
+                    String.format("%.1f", entity.posX),
+                    String.format("%.1f", entity.posY),
+                    String.format("%.1f", entity.posZ),
+                    Integer.valueOf(entity.getEntityWorld().provider.getDimension()));
+        }
     }
 
-
-
-    private static class CommandParser
+    private TeleportData parseArguments(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException
     {
-        private CommandVariant variant = CommandVariant.INVALID;
-        private Entity target;
-        private Entity destEntity;
-        private int dimension;
-        private Vec3d destPos;
-        private float yaw;
-        private float pitch;
-        private boolean hasPosition;
-
-        private CommandParser()
+        if (args.length == 0)
         {
-        }
-
-        private CommandParser(Entity target, Entity destEntity)
-        {
-            this.variant = CommandVariant.ENTITY_TO_ENTITY;
-            this.target = target;
-            this.destEntity = destEntity;
-        }
-
-        private CommandParser(Entity target, int dimension)
-        {
-            this.variant = CommandVariant.ENTITY_TO_DIMENSION;
-            this.target = target;
-            this.dimension = dimension;
-        }
-
-        private CommandParser(Entity target, int dimension, Vec3d pos, float yaw, float pitch)
-        {
-            this.variant = CommandVariant.ENTITY_TO_DIMENSION;
-            this.target = target;
-            this.dimension = dimension;
-            this.destPos = pos;
-            this.yaw = yaw;
-            this.pitch = pitch;
-            this.hasPosition = true;
-        }
-
-        public static CommandParser parse(CommandTeleportJED cmd, MinecraftServer server, ICommandSender sender, String[] args) throws CommandException
-        {
-            if (args.length == 0)
+            if ((sender.getCommandSenderEntity() instanceof Entity))
             {
-                if ((sender.getCommandSenderEntity() instanceof Entity))
-                {
-                    int dim = sender.getCommandSenderEntity().getEntityWorld().provider.getDimension();
-                    notifyCommandListener(sender, cmd, "jed.commands.info.current.dimension", Integer.valueOf(dim));
-                }
-
-                CommandJED.throwUsage("tp");
+                int dim = sender.getCommandSenderEntity().getEntityWorld().provider.getDimension();
+                sender.sendMessage(new TextComponentTranslation("jed.commands.info.current.dimension", Integer.valueOf(dim)));
             }
 
-            // <to-entity> OR <dimensionId>
-            if (args.length == 1)
-            {
-                Entity entityDest = null;
+            CommandJED.throwUsage("tp");
+        }
 
-                try
-                {
-                    entityDest = getEntity(server, sender, args[0]);
-                }
-                catch (Exception e) { }
-
-                // Used from the console and an invalid entity selector for the first entity
-                if (entityDest == null && (sender.getCommandSenderEntity() instanceof Entity) == false)
-                {
-                    CommandJED.throwUsage("invalid.entity", args[0]);
-                }
-
-                if (entityDest != null)
-                {
-                    return new CommandParser(sender.getCommandSenderEntity(), entityDest);
-                }
-                else
-                {
-                    int dimension = parseInt(args[0]);
-                    return new CommandParser(sender.getCommandSenderEntity(), dimension);
-                }
-            }
-
-            // args.length >= 2 at this point
-            Entity target = null;
-            int dimension = 0;
-            int argIndex = 0;
+        // <to-entity> OR <dimensionId>
+        if (args.length == 1)
+        {
+            Entity entityDest = null;
 
             try
             {
-                target = getEntity(server, sender, args[argIndex++]);
+                entityDest = getEntity(server, sender, args[0]);
             }
-            catch (Exception e)
-            {
-                if (sender.getCommandSenderEntity() == null)
-                {
-                    CommandJED.throwUsage("no.targetentity");
-                }
+            catch (Exception e) { }
 
-                argIndex--;
-                target = sender.getCommandSenderEntity();
+            // Used from the console and an invalid entity selector for the first entity
+            if (entityDest == null && (sender.getCommandSenderEntity() instanceof Entity) == false)
+            {
+                CommandJED.throwUsage("invalid.entity", args[0]);
             }
 
-            // <entity> <to-entity>
-            if (argIndex == 1 && args.length == 2)
+            if (entityDest != null)
             {
-                try
-                {
-                    Entity destEntity = getEntity(server, sender, args[1]);
-                    return new CommandParser(target, destEntity);
-                }
-                // The second argument is not an entity, but possibly the dimension
-                catch (Exception e) { }
+                return new TeleportData(sender.getCommandSenderEntity(), entityDest);
+            }
+            else
+            {
+                return new TeleportData(sender.getCommandSenderEntity(), parseInt(args[0]), true, server);
+            }
+        }
+
+        // args.length >= 2 at this point
+        Entity target = null;
+        int dimension = 0;
+        int argIndex = 0;
+
+        try
+        {
+            target = getEntity(server, sender, args[argIndex++]);
+        }
+        catch (Exception e)
+        {
+            if (sender.getCommandSenderEntity() == null)
+            {
+                CommandJED.throwUsage("no.targetentity");
+            }
+
+            argIndex--;
+            target = sender.getCommandSenderEntity();
+        }
+
+        // <entity> <to-entity>
+        if (argIndex == 1 && args.length == 2)
+        {
+            try
+            {
+                Entity destEntity = getEntity(server, sender, args[1]);
+                return new TeleportData(target, destEntity);
+            }
+            // The second argument is not an entity, but possibly the dimension
+            catch (Exception e) { }
+        }
+
+        if (args.length >= (argIndex + 1))
+        {
+            dimension = parseInt(args[argIndex++]);
+        }
+
+        if (args.length >= (argIndex + 3))
+        {
+            Vec3d pos = target.getPositionVector();
+            double x = parseCoordinate(pos.xCoord, args[argIndex++], true).getResult();
+            double y = parseCoordinate(pos.yCoord, args[argIndex++], false).getResult();
+            double z = parseCoordinate(pos.zCoord, args[argIndex++], true).getResult();
+            float yaw = target.rotationYaw;
+            float pitch = target.rotationPitch;
+
+            if (args.length >= (argIndex + 1))
+            {
+                yaw = (float) parseDouble(args[argIndex++]);
             }
 
             if (args.length >= (argIndex + 1))
             {
-                dimension = parseInt(args[argIndex++]);
+                pitch = (float) parseDouble(args[argIndex++]);
             }
 
-            if (args.length >= (argIndex + 3))
-            {
-                Vec3d pos = target.getPositionVector();
-                double x = parseCoordinate(pos.xCoord, args[argIndex++], true).getResult();
-                double y = parseCoordinate(pos.yCoord, args[argIndex++], false).getResult();
-                double z = parseCoordinate(pos.zCoord, args[argIndex++], true).getResult();
-                float yaw = target.rotationYaw;
-                float pitch = target.rotationPitch;
-
-                if (args.length >= (argIndex + 1))
-                {
-                    yaw = (float) parseDouble(args[argIndex++]);
-                }
-
-                if (args.length >= (argIndex + 1))
-                {
-                    pitch = (float) parseDouble(args[argIndex++]);
-                }
-
-                if (args.length > argIndex)
-                {
-                    CommandJED.throwUsage("tp");
-                }
-
-                return new CommandParser(target, dimension, new Vec3d(x, y, z), yaw, pitch);
-            }
-            else if (args.length > argIndex)
+            if (args.length > argIndex)
             {
                 CommandJED.throwUsage("tp");
             }
 
-            return new CommandParser(target, dimension);
+            return new TeleportData(target, dimension, x, y, z, yaw, pitch);
+        }
+        else if (args.length > argIndex)
+        {
+            CommandJED.throwUsage("tp");
         }
 
-        public void execute(CommandTeleportJED cmd, ICommandSender sender, MinecraftServer server) throws CommandException
+        return new TeleportData(target, dimension, true, server);
+    }
+
+    private Entity teleportEntityToLocation(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
+    {
+        // TODO hook up the mounted entity TP code from Ender Utilities?
+        entity.dismountRidingEntity();
+        entity.removePassengers();
+
+        if (entity.getEntityWorld().provider.getDimension() != data.getDimension())
         {
-            if (this.variant == CommandVariant.INVALID)
-            {
-                return;
-            }
+            return this.teleportEntityToDimension(entity, data, server);
+        }
+        else
+        {
+            return this.teleportEntityInsideSameDimension(entity, data);
+        }
+    }
 
-            // TODO hook up the mounted entity TP code from Ender Utilities?
-            this.target.dismountRidingEntity();
-            this.target.removePassengers();
+    private Entity teleportEntityInsideSameDimension(Entity entity, TeleportData data)
+    {
+        Vec3d pos = data.getPosition();
+        pos = getClampedDestinationPosition(pos, entity.getEntityWorld());
+        entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, data.getYaw(), data.getPitch());
+        entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
+        return entity;
+    }
 
-            Entity entity = null;
-            int dim = 0;
+    private Entity teleportEntityToDimension(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
+    {
+        WorldServer worldDst = server.worldServerForDimension(data.getDimension());
 
-            if (this.variant == CommandVariant.ENTITY_TO_ENTITY)
-            {
-                this.teleportToEntity(cmd, this.target, this.destEntity, server);
-                entity = this.destEntity;
-                dim = destEntity.getEntityWorld().provider.getDimension();
-            }
-            else if (this.variant == CommandVariant.ENTITY_TO_DIMENSION)
-            {
-                entity = this.teleportToDimension(cmd, this.target, this.dimension, server);
-                dim = this.dimension;
-            }
-
-            if (entity != null)
-            {
-                notifyCommandListener(sender, cmd, "jed.commands.teleport.success.coordinates",
-                        this.target.getName(),
-                        String.format("%.1f", entity.posX),
-                        String.format("%.1f", entity.posY),
-                        String.format("%.1f", entity.posZ),
-                        Integer.valueOf(dim));
-            }
+        if (worldDst == null)
+        {
+            CommandJED.throwNumber("unable.to.load.world", Integer.valueOf(data.getDimension()));
         }
 
-        private void teleportToEntity(CommandTeleportJED cmd, Entity target, Entity destEntity, MinecraftServer server) throws CommandException
+        Vec3d pos = getClampedDestinationPosition(data.getPosition(), worldDst);
+        double x = pos.xCoord;
+        double y = pos.yCoord;
+        double z = pos.zCoord;
+
+        if (entity instanceof EntityPlayerMP)
         {
-            int dimTgt = target.getEntityWorld().provider.getDimension();
-            int dimDst = destEntity.getEntityWorld().provider.getDimension();
+            EntityPlayerMP player = (EntityPlayerMP) entity;
+            World worldOld = player.getEntityWorld();
+            // Set the yaw and pitch at this point
+            entity.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
+            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), new DummyTeleporter(worldDst));
+            player.setPositionAndUpdate(x, y, z);
 
-            if (dimTgt != dimDst)
+            // Teleporting FROM The End
+            if (worldOld.provider instanceof WorldProviderEnd)
             {
-                target = this.changeToDimension(cmd, target, dimDst, false, server);
-            }
-
-            this.teleportEntityTo(target, destEntity.getPositionVector(), destEntity.rotationYaw, destEntity.rotationPitch);
-        }
-
-        private Entity teleportToDimension(CommandTeleportJED cmd, Entity entity, int dimension, MinecraftServer server) throws CommandException
-        {
-            if (entity.getEntityWorld().provider.getDimension() != dimension)
-            {
-                return this.changeToDimension(cmd, entity, dimension, this.hasPosition == false, server);
-            }
-            else
-            {
-                if (this.hasPosition)
-                {
-                    this.teleportEntityTo(entity, this.destPos, this.yaw, this.pitch);
-                }
-                else
-                {
-                    this.teleportEntityTo(entity, entity.getEntityWorld().getSpawnPoint(), entity.rotationYaw, entity.rotationPitch);
-                }
-            }
-
-            return entity;
-        }
-
-        private void teleportEntityTo(Entity entity, BlockPos pos, float yaw, float pitch)
-        {
-            this.teleportEntityTo(entity, new Vec3d(pos), yaw, pitch);
-        }
-
-        private void teleportEntityTo(Entity entity, Vec3d pos, float yaw, float pitch)
-        {
-            pos = this.getClampedDestinationPosition(pos, entity.getEntityWorld());
-            entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, yaw, pitch);
-            entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
-        }
-
-        private Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
-        {
-            WorldBorder border = worldDst.getWorldBorder();
-
-            double x = MathHelper.clamp(posIn.xCoord, border.minX() + 2, border.maxX() - 2);
-            double y = MathHelper.clamp(posIn.yCoord, -4096, 4096);
-            double z = MathHelper.clamp(posIn.zCoord, border.minZ() + 2, border.maxZ() - 2);
-
-            return new Vec3d(x, y, z);
-        }
-
-        private Entity changeToDimension(CommandTeleportJED cmd, Entity entity, int dimension, boolean useSpawnPoint, MinecraftServer server) throws CommandException
-        {
-            WorldServer worldDst = server.worldServerForDimension(dimension);
-            if (worldDst == null)
-            {
-                CommandJED.throwNumber("unable.to.load.world", Integer.valueOf(dimension));
-            }
-
-            double x = entity.posX;
-            double y = entity.posY;
-            double z = entity.posZ;
-            float yaw = entity.rotationYaw;
-            float pitch = entity.rotationPitch;
-
-            if (this.hasPosition)
-            {
-                x = this.destPos.xCoord;
-                y = this.destPos.yCoord;
-                z = this.destPos.zCoord;
-                yaw = this.yaw;
-                pitch = this.pitch;
-            }
-            else if (useSpawnPoint)
-            {
-                BlockPos spawn = worldDst.getSpawnCoordinate();
-                if (spawn == null)
-                {
-                    spawn = worldDst.getSpawnPoint();
-                }
-
-                if (spawn != null)
-                {
-                    x = spawn.getX() + 0.5;
-                    y = spawn.getY();
-                    z = spawn.getZ() + 0.5;
-                }
-            }
-
-            Vec3d pos = this.getClampedDestinationPosition(new Vec3d(x, y, z), worldDst);
-            x = pos.xCoord;
-            y = pos.yCoord;
-            z = pos.zCoord;
-
-            if (entity instanceof EntityPlayerMP)
-            {
-                EntityPlayerMP player = (EntityPlayerMP) entity;
-                World worldOld = player.getEntityWorld();
-                // Set the yaw and pitch at this point
-                entity.setLocationAndAngles(x, y, z, yaw, pitch);
-                server.getPlayerList().transferPlayerToDimension(player, dimension, new DummyTeleporter(worldDst));
                 player.setPositionAndUpdate(x, y, z);
-
-                // Teleporting FROM The End
-                if (worldOld.provider instanceof WorldProviderEnd)
-                {
-                    player.setPositionAndUpdate(x, y, z);
-                    worldDst.spawnEntity(player);
-                    worldDst.updateEntityWithOptionalForce(player, false);
-                    this.removeDragonBossBarHack(player, (WorldServer) worldOld);
-                }
+                worldDst.spawnEntity(player);
+                worldDst.updateEntityWithOptionalForce(player, false);
+                this.removeDragonBossBarHack(player, (WorldProviderEnd) worldOld.provider);
             }
-            else
-            {
-                int dimSrc = entity.getEntityWorld().provider.getDimension();
-                WorldServer worldSrc = server.worldServerForDimension(dimSrc);
-                World worldEntity = entity.getEntityWorld();
-
-                worldEntity.removeEntity(entity);
-                entity.isDead = false;
-                worldEntity.updateEntityWithOptionalForce(entity, false);
-
-                Entity entityNew = EntityList.newEntity(entity.getClass(), worldDst);
-
-                if (entityNew != null)
-                {
-                    this.copyDataFromOld(cmd, entityNew, entity);
-                    entityNew.setLocationAndAngles(x, y, z, yaw, pitch);
-
-                    boolean flag = entityNew.forceSpawn;
-                    entityNew.forceSpawn = true;
-                    worldDst.spawnEntity(entityNew);
-                    entityNew.forceSpawn = flag;
-
-                    worldDst.updateEntityWithOptionalForce(entityNew, false);
-                    entity.isDead = true;
-
-                    worldSrc.resetUpdateEntityTick();
-                    worldDst.resetUpdateEntityTick();
-                }
-
-                entity = entityNew;
-            }
-
-            return entity;
         }
-
-        private void removeDragonBossBarHack(EntityPlayerMP player, WorldServer worldSrc)
+        else
         {
-            // FIXME 1.9 - Somewhat ugly way to clear the Boss Info stuff when teleporting FROM The End
-            if (worldSrc.provider instanceof WorldProviderEnd)
-            {
-                DragonFightManager manager = ((WorldProviderEnd) worldSrc.provider).getDragonFightManager();
+            WorldServer worldSrc = (WorldServer) entity.getEntityWorld();
 
-                if (manager != null)
-                {
-                    try
-                    {
-                        BossInfoServer bossInfo = ReflectionHelper.getPrivateValue(DragonFightManager.class, manager, "field_186109_c", "bossInfo");
-                        if (bossInfo != null)
-                        {
-                            bossInfo.removePlayer(player);
-                        }
-                    }
-                    catch (UnableToAccessFieldException e)
-                    {
-                        JustEnoughDimensions.logger.warn("tpj: Failed to get DragonFightManager#bossInfo");
-                    }
-                }
+            worldSrc.removeEntity(entity);
+            entity.isDead = false;
+            worldSrc.updateEntityWithOptionalForce(entity, false);
+
+            Entity entityNew = EntityList.newEntity(entity.getClass(), worldDst);
+
+            if (entityNew != null)
+            {
+                this.copyDataFromOld(entityNew, entity);
+                entityNew.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
+
+                boolean flag = entityNew.forceSpawn;
+                entityNew.forceSpawn = true;
+                worldDst.spawnEntity(entityNew);
+                entityNew.forceSpawn = flag;
+
+                worldDst.updateEntityWithOptionalForce(entityNew, false);
+                entity.isDead = true;
+
+                worldSrc.resetUpdateEntityTick();
+                worldDst.resetUpdateEntityTick();
             }
+
+            entity = entityNew;
         }
 
-        private void copyDataFromOld(CommandTeleportJED cmd, Entity target, Entity old)
+        return entity;
+    }
+
+    public static Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
+    {
+        WorldBorder border = worldDst.getWorldBorder();
+
+        double x = MathHelper.clamp(posIn.xCoord, border.minX() + 2, border.maxX() - 2);
+        double y = MathHelper.clamp(posIn.yCoord, -4096, 4096);
+        double z = MathHelper.clamp(posIn.zCoord, border.minZ() + 2, border.maxZ() - 2);
+
+        return new Vec3d(x, y, z);
+    }
+
+    private void removeDragonBossBarHack(EntityPlayerMP player, WorldProviderEnd provider)
+    {
+        // FIXME 1.9 - Somewhat ugly way to clear the Boss Info stuff when teleporting FROM The End
+        DragonFightManager manager = provider.getDragonFightManager();
+
+        if (manager != null)
         {
             try
             {
-                cmd.methodHandle_Entity_copyDataFromOld.invokeExact(target, old);
+                BossInfoServer bossInfo = ReflectionHelper.getPrivateValue(DragonFightManager.class, manager, "field_186109_c", "bossInfo");
+                if (bossInfo != null)
+                {
+                    bossInfo.removePlayer(player);
+                }
             }
-            catch (Throwable e)
+            catch (UnableToAccessFieldException e)
             {
-                JustEnoughDimensions.logger.error("Error while trying invoke Entity#copyDataFromOld()", e);
+                JustEnoughDimensions.logger.warn("tpj: Failed to get DragonFightManager#bossInfo");
             }
         }
     }
 
-    private enum CommandVariant
+    private void copyDataFromOld(Entity target, Entity old)
     {
-        INVALID,
-        ENTITY_TO_ENTITY,
-        ENTITY_TO_DIMENSION;
+        try
+        {
+            this.methodHandle_Entity_copyDataFromOld.invokeExact(target, old);
+        }
+        catch (Throwable e)
+        {
+            JustEnoughDimensions.logger.error("Error while trying invoke Entity#copyDataFromOld()", e);
+        }
+    }
+
+    public static class TeleportData
+    {
+        private final Entity entity;
+        private int dimension;
+        private double posX;
+        private double posY;
+        private double posZ;
+        private float yaw;
+        private float pitch;
+
+        public TeleportData(Entity entity, int dimension, boolean useSpawn, MinecraftServer server)
+        {
+            this.entity = entity;
+            this.dimension = dimension;
+            this.posX = entity.posX;
+            this.posY = entity.posY;
+            this.posZ = entity.posZ;
+            this.yaw = entity.rotationYaw;
+            this.pitch = entity.rotationPitch;
+
+            if (useSpawn)
+            {
+                WorldServer world = server.worldServerForDimension(dimension);
+
+                if (world != null)
+                {
+                    BlockPos spawn = world.getSpawnCoordinate();
+
+                    if (spawn == null)
+                    {
+                        spawn = world.getSpawnPoint();
+                    }
+
+                    if (spawn != null)
+                    {
+                        this.posX = spawn.getX() + 0.5;
+                        this.posY = spawn.getY();
+                        this.posZ = spawn.getZ() + 0.5;
+                    }
+                }
+            }
+        }
+
+        public TeleportData(Entity entity, int dimension, double x, double y, double z)
+        {
+            this.entity = entity;
+            this.dimension = dimension;
+            this.posX = x;
+            this.posY = y;
+            this.posZ = z;
+            this.yaw = entity.rotationYaw;
+            this.pitch = entity.rotationPitch;
+        }
+
+        public TeleportData(Entity entity, int dimension, double x, double y, double z, float yaw, float pitch)
+        {
+            this.entity = entity;
+            this.dimension = dimension;
+            this.posX = x;
+            this.posY = y;
+            this.posZ = z;
+            this.yaw = yaw;
+            this.pitch = pitch;
+        }
+
+        public TeleportData(Entity entity, Entity otherEntity)
+        {
+            this.entity = entity;
+            this.dimension = otherEntity.getEntityWorld().provider.getDimension();
+            this.posX = otherEntity.posX;
+            this.posY = otherEntity.posY;
+            this.posZ = otherEntity.posZ;
+            this.yaw = otherEntity.rotationYaw;
+            this.pitch = otherEntity.rotationPitch;
+        }
+
+        public Entity getEntity() { return this.entity;    }
+        public int getDimension() { return this.dimension; }
+        public double getX()      { return this.posX;      }
+        public double getY()      { return this.posY;      }
+        public double getZ()      { return this.posZ;      }
+        public float getYaw()     { return this.yaw;       }
+        public float getPitch()   { return this.pitch;     }
+
+        public Vec3d getPosition()
+        {
+            return new Vec3d(this.posX, this.posY, this.posZ);
+        }
     }
 
     private static class DummyTeleporter extends Teleporter
