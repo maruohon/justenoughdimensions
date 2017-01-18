@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
+import net.minecraft.world.WorldSettings;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
@@ -273,6 +274,7 @@ public class JEDEventHandler
 
             NBTTagCompound nbt = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
+            boolean findSpawn = false;
 
             // No level.dat exists for this dimension yet, inherit the values from the overworld
             if (nbt == null)
@@ -287,12 +289,22 @@ public class JEDEventHandler
                 playerNBT.setInteger("Dimension", dimension);
 
                 nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
+
+                // Set the initialized status to false, which causes a new spawn point to be searched for
+                // for this dimension, instead of using the exact same location as the overworld, see WorldServer#initialize().
+                nbt.setBoolean("initialized", false);
+                findSpawn = true;
             }
 
             // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
             nbt.merge(DimensionConfig.instance().getWorldInfoValues(dimension, nbt));
 
             this.setWorldInfo(world, new WorldInfoJED(nbt));
+
+            if (findSpawn)
+            {
+                world.initialize(new WorldSettings(world.getWorldInfo()));
+            }
         }
     }
 
