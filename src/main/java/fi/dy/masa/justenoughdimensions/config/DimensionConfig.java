@@ -300,9 +300,14 @@ public class DimensionConfig
 
     public void removeDimensionAndSaveConfig(int dimension)
     {
+        this.removeDimension(dimension);
+        this.saveConfig();
+    }
+
+    private void removeDimension(int dimension)
+    {
         this.dimensions.remove(dimension);
         this.customWorldInfo.remove(dimension);
-        this.saveConfig();
     }
 
     private void saveConfig()
@@ -516,7 +521,7 @@ public class DimensionConfig
 
     public void dimbuilderSaveAs(int dimension)
     {
-        this.removeDimensionAndSaveConfig(dimension);
+        this.removeDimension(dimension);
         this.parseDimensionConfigEntry(dimension, this.dimBuilderData);
         this.saveConfig();
     }
