@@ -847,7 +847,7 @@ public class DimensionConfig
         private boolean override;
         private boolean unregister;
         private String biome; // if != null, then use BiomeProviderSingle with this biome
-        private JsonObject worldInfojson;
+        private JsonObject worldInfoJson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
         {
@@ -901,7 +901,7 @@ public class DimensionConfig
 
         public DimensionEntry setWorldInfoJson(JsonObject obj)
         {
-            this.worldInfojson = obj;
+            this.worldInfoJson = obj;
             return this;
         }
 
@@ -972,9 +972,27 @@ public class DimensionConfig
             worldType.addProperty("worldprovider", getNameForWorldProvider(this.providerClass));
             jsonEntry.add("dimensiontype", worldType);
 
-            if (this.worldInfojson != null)
+            if (this.worldInfoJson != null)
             {
-                jsonEntry.add("worldinfo", this.worldInfojson);
+                try
+                {
+                    Gson gson = new GsonBuilder().create();
+                    JsonParser parser = new JsonParser();
+                    JsonElement root = parser.parse(gson.toJson(this.worldInfoJson));
+
+                    if (root != null && root.isJsonObject())
+                    {
+                        jsonEntry.add("worldinfo", root.getAsJsonObject());
+                    }
+                    else
+                    {
+                        JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject");
+                    }
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject", e);
+                }
             }
 
             return jsonEntry;
