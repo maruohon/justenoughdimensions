@@ -167,6 +167,16 @@ public class JEDEventHandler
         }
     }
 
+    @SubscribeEvent
+    public void onPlayerLoadingEvent(net.minecraftforge.event.entity.player.PlayerEvent.LoadFromFile event)
+    {
+        // No player file yet, so this is the player's first time joining this server/world
+        if (Configs.enableInitialSpawnDimensionOverride && new File(event.getPlayerDirectory(), event.getPlayerUUID() + ".dat").exists() == false)
+        {
+            event.getEntityPlayer().dimension = Configs.initialSpawnDimensionId;
+        }
+    }
+
     private void syncWorldProviderProperties(EntityPlayer player)
     {
         World world = player.getEntityWorld();
