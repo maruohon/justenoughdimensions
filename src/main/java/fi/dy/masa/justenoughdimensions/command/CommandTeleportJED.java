@@ -227,6 +227,10 @@ public class CommandTeleportJED extends CommandBase
     {
         Vec3d pos = data.getPosition();
         pos = getClampedDestinationPosition(pos, entity.getEntityWorld());
+
+        // Load the chunk first
+        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.xCoord) >> 4, (int) Math.floor(pos.zCoord) >> 4);
+
         entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, data.getYaw(), data.getPitch());
         entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
         return entity;
@@ -245,6 +249,9 @@ public class CommandTeleportJED extends CommandBase
         double x = pos.xCoord;
         double y = pos.yCoord;
         double z = pos.zCoord;
+
+        // Load the chunk first
+        worldDst.getChunkFromChunkCoords((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
 
         if (entity instanceof EntityPlayerMP)
         {
