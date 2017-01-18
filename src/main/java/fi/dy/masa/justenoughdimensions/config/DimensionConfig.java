@@ -399,6 +399,13 @@ public class DimensionConfig
             entry.setUnregister(unregister);
             entry.setBiome(biome);
 
+            if (object.has("vanilladimensiontype") && object.get("vanilladimensiontype").isJsonPrimitive())
+            {
+                String typeName = object.get("vanilladimensiontype").getAsString();
+                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", typeName, dimension);
+                entry.setDimensionTypeName(typeName);
+            }
+
             if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
             {
                 JsonObject obj = object.get("worldinfo").getAsJsonObject();
@@ -428,7 +435,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("vanilladimensiontype"))
         {
             obj.add(key, new JsonPrimitive(value));
         }
@@ -453,7 +460,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("vanilladimensiontype"))
         {
             return obj.remove(key) != null;
         }
@@ -562,7 +569,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister") || key.equals("biome")) &&
+        if ((key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("vanilladimensiontype")) &&
                 obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
@@ -742,10 +749,11 @@ public class DimensionConfig
         boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
 
         Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
+        String providerName = "";
 
         if (dimType.has("worldprovider") && dimType.get("worldprovider").isJsonPrimitive())
         {
-            String providerName = dimType.get("worldprovider").getAsString();
+            providerName = dimType.get("worldprovider").getAsString();
 
             // Don't allow using the vanilla surface or hell providers for the vanilla end dimension,
             // because that will lead to a crash in the teleport code (null returned from getSpawnCoordinate() for
@@ -772,7 +780,7 @@ public class DimensionConfig
             providerClass = WorldProviderSurfaceJED.class;
 
             JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
-                    dimType.get("worldprovider").getAsString(), getNameForWorldProvider(providerClass));
+                    providerName, getNameForWorldProvider(providerClass));
         }
 
         JustEnoughDimensions.logInfo("Creating a customized DimensionType for dimension {}", dimension);
@@ -849,6 +857,7 @@ public class DimensionConfig
         private final String suffix;
         private final boolean keepLoaded;
         private final Class<? extends WorldProvider> providerClass;
+        private String dimensionTypeName = null;
         private boolean override;
         private boolean unregister;
         private String biome; // if != null, then use BiomeProviderSingle with this biome
@@ -861,6 +870,7 @@ public class DimensionConfig
             this.suffix = suffix;
             this.keepLoaded = id == 0 ? true : keepLoaded;
             this.providerClass = providerClass;
+            this.dimensionTypeName = null;
         }
 
         public int getId()
@@ -888,6 +898,11 @@ public class DimensionConfig
             return this.biome;
         }
 
+        public void setDimensionTypeName(String typeName)
+        {
+            this.dimensionTypeName = typeName;
+        }
+
         public void setOverride(boolean override)
         {
             this.override = override;
@@ -895,7 +910,7 @@ public class DimensionConfig
 
         public void setUnregister(boolean unregister)
         {
-            // Don't allow unregistering the overworld, or bad thing will happen!
+            // Don't allow unregistering the overworld, or bad things will happen!
             this.unregister = unregister && this.id != 0;
         }
 
@@ -912,9 +927,30 @@ public class DimensionConfig
 
         public DimensionType registerDimensionType()
         {
-            JustEnoughDimensions.logInfo("Registering a DimensionType with values: {}", this.getDescription());
+            if (this.dimensionTypeName != null)
+            {
+                DimensionType type = null;
+                try
+                {
+                    type = DimensionType.valueOf(this.dimensionTypeName);
+                    JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dim {}", type, this.id);
+                }
+                catch (Exception e) { }
 
-            return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
+                if (type == null)
+                {
+                    type = DimensionType.OVERWORLD;
+                    JustEnoughDimensions.logger.warn("Failed to get a DimensionType by the name '{}' for dim {}, falling back to DimensionType.OVERWORLD",
+                            this.dimensionTypeName, this.id);
+                }
+
+                return type;
+            }
+            else
+            {
+                JustEnoughDimensions.logInfo("Registering a DimensionType with values: {}", this.getDescription());
+                return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
+            }
         }
 
         public void writeToByteBuf(ByteBuf buf)
@@ -924,6 +960,16 @@ public class DimensionConfig
             ByteBufUtils.writeUTF8String(buf, this.suffix);
             ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
             buf.writeBoolean(this.unregister);
+
+            if (this.dimensionTypeName != null)
+            {
+                buf.writeByte(1);
+                ByteBufUtils.writeUTF8String(buf, this.dimensionTypeName);
+            }
+            else
+            {
+                buf.writeByte(0);
+            }
         }
 
         public static DimensionEntry fromByteBuf(ByteBuf buf)
@@ -933,6 +979,8 @@ public class DimensionConfig
             String suffix = ByteBufUtils.readUTF8String(buf);
             String providerClassName = ByteBufUtils.readUTF8String(buf);
             boolean unregister = buf.readBoolean();
+            byte type = buf.readByte();
+            String dimTypeName = type == 1 ? ByteBufUtils.readUTF8String(buf) : null;
 
             try
             {
@@ -940,6 +988,7 @@ public class DimensionConfig
                 Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
                 DimensionEntry entry = new DimensionEntry(id, name, suffix, false, providerClass);
                 entry.setUnregister(unregister);
+                entry.setDimensionTypeName(dimTypeName);
                 return entry;
             }
             catch (Exception e)
@@ -977,10 +1026,16 @@ public class DimensionConfig
             worldType.addProperty("worldprovider", getNameForWorldProvider(this.providerClass));
             jsonEntry.add("dimensiontype", worldType);
 
+            if (this.dimensionTypeName != null)
+            {
+                jsonEntry.addProperty("vanilladimensiontype", this.dimensionTypeName);
+            }
+
             if (this.worldInfoJson != null)
             {
                 try
                 {
+                    // Serialize and deserialize as a way to make a copy
                     Gson gson = new GsonBuilder().create();
                     JsonParser parser = new JsonParser();
                     JsonElement root = parser.parse(gson.toJson(this.worldInfoJson));
