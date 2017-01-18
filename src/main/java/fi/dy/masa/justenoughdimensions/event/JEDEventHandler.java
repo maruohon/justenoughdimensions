@@ -191,11 +191,7 @@ public class JEDEventHandler
             {
                 this.field_WorldProvider_biomeProvider.set(world.provider, provider);
             }
-            catch (IllegalArgumentException e)
-            {
-                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
             }
@@ -278,9 +274,18 @@ public class JEDEventHandler
             NBTTagCompound nbt = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
 
-            // No level.dat exists for this dimensions yet, inherit the values from the overworld
+            // No level.dat exists for this dimension yet, inherit the values from the overworld
             if (nbt == null)
             {
+                if (playerNBT == null)
+                {
+                    playerNBT = new NBTTagCompound();
+                }
+
+                // This is just to set the dimension field in WorldInfo, so that
+                // the crash report shows the correct dimension ID... maybe
+                playerNBT.setInteger("Dimension", dimension);
+
                 nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
             }
 
@@ -360,7 +365,17 @@ public class JEDEventHandler
         info.setBorderLerpTime(world.getWorldBorder().getTimeUntilTarget());
 
         NBTTagCompound rootTag = new NBTTagCompound();
-        rootTag.setTag("Data", info.cloneNBTCompound(world.getMinecraftServer().getPlayerList().getHostPlayerData()));
+        NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
+        if (playerNBT == null)
+        {
+            playerNBT = new NBTTagCompound();
+        }
+
+        // This is just to set the dimension field in WorldInfo, so that
+        // the crash report shows the correct dimension ID... maybe
+        playerNBT.setInteger("Dimension", world.provider.getDimension());
+
+        rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
 
         if (world.getSaveHandler() instanceof SaveHandler)
         {
@@ -494,17 +509,10 @@ public class JEDEventHandler
             {
                 this.field_ChunkProviderServer_chunkGenerator.set((ChunkProviderServer) world.getChunkProvider(), newChunkProvider);
             }
-            catch (IllegalArgumentException e)
+            catch (Exception e)
             {
                 JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkProvider.getClass().getName());
-                e.printStackTrace();
-            }
-            catch (IllegalAccessException e)
-            {
-                JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkProvider.getClass().getName());
-                e.printStackTrace();
+                        dimension, newChunkProvider.getClass().getName(), e);
             }
         }
     }
