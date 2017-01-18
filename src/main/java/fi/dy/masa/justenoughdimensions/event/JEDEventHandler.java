@@ -491,19 +491,15 @@ public class JEDEventHandler
 
     private void setChunkProvider(World world)
     {
-        World overworld = DimensionManager.getWorld(0);
-
-        // Don't override unless the WorldType has been changed from the default
-        if (overworld == null || world.getWorldInfo().getTerrainType().getName().equals(overworld.getWorldInfo().getTerrainType().getName()))
-        {
-            return;
-        }
-
-        if (world instanceof WorldServer)
+        if (world instanceof WorldServer && world.getChunkProvider() instanceof ChunkProviderServer)
         {
             // This sets the new WorldType to the WorldProvider
             world.provider.registerWorld(world);
 
+            // Always override the ChunkProvider when using overridden WorldInfo, otherwise
+            // the ChunkProvider will be using the settings from the overworld, because
+            // WorldEvent.Load obviously only happens after the world has been constructed...
+            ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 
             if (newChunkProvider == null)
@@ -514,12 +510,11 @@ public class JEDEventHandler
 
             int dimension = world.provider.getDimension();
             JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
-                    ((ChunkProviderServer) world.getChunkProvider()).chunkGenerator.getClass().getName(),
-                    dimension, newChunkProvider.getClass().getName());
+                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
 
             try
             {
-                this.field_ChunkProviderServer_chunkGenerator.set((ChunkProviderServer) world.getChunkProvider(), newChunkProvider);
+                this.field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkProvider);
             }
             catch (Exception e)
             {
