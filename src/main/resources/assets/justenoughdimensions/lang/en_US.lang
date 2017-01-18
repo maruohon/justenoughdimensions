@@ -13,7 +13,7 @@ jed.commands.dimbuilder.read.from.fail=Failed to read dimension settings from di
 jed.commands.dimbuilder.read.from.success=Successfully read dimension settings from dimension %s
 jed.commands.dimbuilder.remove.success=The key '%s' has been removed
 jed.commands.dimbuilder.save.as.success=The dimension was saved to the config as dimension %s
-jed.commands.dimbuilder.set.success=Value set
+jed.commands.dimbuilder.set.success=Value set: %s = %s
 jed.commands.error.boolean.invalid=%s is not a valid boolean value, expected true or false
 jed.commands.error.dimbuilder.list=Key '%s' was not found
 jed.commands.error.dimbuilder.remove.fail=Failed to remove key '%s' - not found

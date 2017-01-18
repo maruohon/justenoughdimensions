@@ -403,8 +403,9 @@ public class CommandJED extends CommandBase
             if (args.length >= 3)
             {
                 String[] valueParts = dropFirstStrings(args, 2);
-                DimensionConfig.instance().dimbuilderSet(args[1], String.join(" ", valueParts));
-                notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success");
+                String value = String.join(" ", valueParts);
+                DimensionConfig.instance().dimbuilderSet(args[1], value);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success", args[1], value);
             }
             else
             {
