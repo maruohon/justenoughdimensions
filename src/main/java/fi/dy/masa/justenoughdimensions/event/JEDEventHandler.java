@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketWorldBorder;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.datafix.FixTypes;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
@@ -303,7 +304,7 @@ public class JEDEventHandler
 
             if (findSpawn)
             {
-                world.initialize(new WorldSettings(world.getWorldInfo()));
+                this.findWorldSpawn(world);
             }
         }
     }
@@ -522,5 +523,21 @@ public class JEDEventHandler
                         dimension, newChunkProvider.getClass().getName(), e);
             }
         }
+    }
+
+    private void findWorldSpawn(World world)
+    {
+        // Try to find a spawn
+        world.initialize(new WorldSettings(world.getWorldInfo()));
+
+        // If the search fails, the spawn point may be left at sea level under ground,
+        // so let's raise it to the surface (see WorldServer#createSpawnPosition() for the faulty logic)
+        BlockPos pos = world.getSpawnPoint();
+        pos = pos.up();
+        for ( ; world.isAirBlock(pos) == false; pos = pos.up())
+        {
+        }
+
+        world.getWorldInfo().setSpawn(pos);
     }
 }
