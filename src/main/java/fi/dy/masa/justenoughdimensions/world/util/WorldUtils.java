@@ -3,13 +3,16 @@ package fi.dy.masa.justenoughdimensions.world.util;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nonnull;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
@@ -80,84 +83,137 @@ public class WorldUtils
         WorldInfo info = world.getWorldInfo();
         WorldSettings worldSettings = new WorldSettings(info);
         WorldProvider provider = world.provider;
+        BlockPos pos = null;
 
         JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", provider.getDimension());
 
+        if (fireEvent && net.minecraftforge.event.ForgeEventFactory.onCreateWorldSpawn(world, worldSettings))
+        {
+            JustEnoughDimensions.logInfo("Exiting due to a canceled WorldEvent.CreateSpawnPosition event!");
+            return;
+        }
+
         if (provider.canRespawnHere() == false)
         {
-            info.setSpawn(BlockPos.ORIGIN.up(provider.getAverageGroundLevel()));
+            if (provider.getDimensionType() == DimensionType.THE_END || provider instanceof WorldProviderEnd)
+            {
+                pos = provider.getSpawnCoordinate();
+
+                if (pos == null)
+                {
+                    pos = BlockPos.ORIGIN.up(provider.getAverageGroundLevel());
+                }
+            }
+            // Most likely nether type dimensions
+            else
+            {
+                pos = findNetherSpawnpoint(world);
+            }
         }
         else if (info.getTerrainType() == WorldType.DEBUG_WORLD)
         {
-            info.setSpawn(BlockPos.ORIGIN.up());
+            pos = BlockPos.ORIGIN.up();
+        }
+        // Mostly overworld type dimensions
+        else
+        {
+            pos = findOverworldSpawnpoint(world, worldSettings);
+        }
+
+        info.setSpawn(pos);
+        JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+    }
+
+    @Nonnull
+    private static BlockPos findNetherSpawnpoint(World world)
+    {
+        Random random = new Random(world.getSeed());
+        int x = 0;
+        int z = 0;
+        int iterations = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, 110, z);
+
+        while (iterations < 100)
+        {
+            while (pos.getY() >= 10)
+            {
+                if (world.isAirBlock(pos) && world.isAirBlock(pos.down(1)) && world.getBlockState(pos.down(2)).getMaterial().blocksMovement())
+                {
+                    return pos.down();
+                }
+
+                pos.setY(pos.getY() - 1);
+            }
+
+            x += random.nextInt(32) - random.nextInt(32);
+            z += random.nextInt(32) - random.nextInt(32);
+            pos.setPos(x, 110, z);
+            iterations++;
+        }
+
+        JustEnoughDimensions.logger.warn("Unable to find a nether spawn point for dimension {}", world.provider.getDimension());
+
+        return new BlockPos(0, 70, 0);
+    }
+
+    @Nonnull
+    private static BlockPos findOverworldSpawnpoint(World world, WorldSettings worldSettings)
+    {
+        WorldProvider provider = world.provider;
+        BiomeProvider biomeProvider = provider.getBiomeProvider();
+        List<Biome> list = biomeProvider.getBiomesToSpawnIn();
+        Random random = new Random(world.getSeed());
+        int x = 8;
+        int z = 8;
+
+        // This will not generate chunks, but only check the biome ID from the genBiomes.getInts() output
+        BlockPos pos = biomeProvider.findBiomePosition(0, 0, 512, list, random);
+
+        if (pos != null)
+        {
+            x = pos.getX();
+            z = pos.getZ();
         }
         else
         {
-            if (fireEvent && net.minecraftforge.event.ForgeEventFactory.onCreateWorldSpawn(world, worldSettings))
+            JustEnoughDimensions.logger.warn("Unable to find spawn biome for dimension {}", provider.getDimension());
+        }
+
+        int iterations = 0;
+
+        // Note: The canCoordinateBeSpawn() call will actually generate chunks!
+        while (provider.canCoordinateBeSpawn(x, z) == false)
+        {
+            x += random.nextInt(64) - random.nextInt(64);
+            z += random.nextInt(64) - random.nextInt(64);
+            iterations++;
+
+            if (iterations >= 100)
             {
-                JustEnoughDimensions.logInfo("Exiting due to a canceled WorldEvent.CreateSpawnPosition event!");
-                return;
-            }
-
-            BiomeProvider biomeProvider = provider.getBiomeProvider();
-            List<Biome> list = biomeProvider.getBiomesToSpawnIn();
-            Random random = new Random(world.getSeed());
-            int x = 8;
-            int z = 8;
-
-            // This will not generate chunks, but only check the biome ID from the genBiomes.getInts() output
-            BlockPos pos = biomeProvider.findBiomePosition(0, 0, 512, list, random);
-
-            if (pos != null)
-            {
-                x = pos.getX();
-                z = pos.getZ();
-            }
-            else
-            {
-                JustEnoughDimensions.logger.warn("Unable to find spawn biome");
-            }
-
-            int iterations = 0;
-
-            // Note: The canCoordinateBeSpawn() call will actually generate chunks!
-            while (provider.canCoordinateBeSpawn(x, z) == false)
-            {
-                x += random.nextInt(64) - random.nextInt(64);
-                z += random.nextInt(64) - random.nextInt(64);
-                iterations++;
-
-                if (iterations >= 100)
-                {
-                    break;
-                }
-            }
-
-            pos = getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up();
-            info.setSpawn(pos);
-
-            JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
-
-            if (worldSettings.isBonusChestEnabled())
-            {
-                createBonusChest(world);
+                break;
             }
         }
+
+        pos = getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up();
+
+        if (worldSettings.isBonusChestEnabled())
+        {
+            createBonusChest(world);
+        }
+
+        return pos;
     }
 
     // The one in world returns the position above the top solid block... >_>
-    public static BlockPos getTopSolidOrLiquidBlock(World world, BlockPos posIn)
+    @Nonnull
+    public static BlockPos getTopSolidOrLiquidBlock(World world, @Nonnull BlockPos posIn)
     {
         Chunk chunk = world.getChunkFromBlockCoords(posIn);
         BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 16, posIn.getZ());
 
         while (pos.getY() >= 0)
         {
-            IBlockState state = chunk.getBlockState(pos);
-
-            if (state.getMaterial().blocksMovement() &&
-                state.getBlock().isLeaves(state, world, pos) == false &&
-                state.getBlock().isFoliage(world, pos) == false)
+            if (isSuitableSpawnBlock(world, chunk, pos))
             {
                 return pos;
             }
@@ -166,6 +222,15 @@ public class WorldUtils
         }
 
         return posIn;
+    }
+
+    private static boolean isSuitableSpawnBlock(World world, Chunk chunk, BlockPos pos)
+    {
+        IBlockState state = chunk.getBlockState(pos);
+
+        return state.getMaterial().blocksMovement() &&
+               state.getBlock().isLeaves(state, world, pos) == false &&
+               state.getBlock().isFoliage(world, pos) == false;
     }
 
     private static void createBonusChest(World world)
