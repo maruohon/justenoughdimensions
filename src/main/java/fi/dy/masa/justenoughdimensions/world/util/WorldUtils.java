@@ -1,7 +1,11 @@
-package fi.dy.masa.justenoughdimensions.world;
+package fi.dy.masa.justenoughdimensions.world.util;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
@@ -9,12 +13,66 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
+import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderProperties;
+import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class WorldUtils
 {
+    private static Field field_WorldProvider_biomeProvider = null;
+
+    static
+    {
+        try
+        {
+            field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
+        }
+        catch (UnableToFindFieldException e)
+        {
+            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!", e);
+        }
+    }
+
+    public static void syncWorldProviderProperties(EntityPlayer player)
+    {
+        World world = player.getEntityWorld();
+
+        if (world.getWorldInfo() instanceof WorldInfoJED && player instanceof EntityPlayerMP)
+        {
+            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties((WorldInfoJED) world.getWorldInfo()), (EntityPlayerMP) player);
+        }
+    }
+
+    public static void overrideBiomeProvider(World world)
+    {
+        int dimension = world.provider.getDimension();
+        String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
+        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
+
+        if (biome != null)
+        {
+            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with BiomeProviderSingle" +
+                " using the biome '{}' ('{}')", dimension, biomeName, biome.getBiomeName());
+
+            BiomeProvider provider = new BiomeProviderSingle(biome);
+            try
+            {
+                field_WorldProvider_biomeProvider.set(world.provider, provider);
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+            }
+        }
+    }
+
     public static void findAndSetWorldSpawn(World world, boolean fireEvent)
     {
         WorldInfo info = world.getWorldInfo();
@@ -78,19 +136,9 @@ public class WorldUtils
                 createBonusChest(world);
             }
         }
-
-        // If the search fails, the spawn point may be left at sea level under ground,
-        // so let's raise it to the surface (see WorldServer#createSpawnPosition() for the faulty logic)
-        BlockPos pos = world.getSpawnPoint();
-        pos = pos.up();
-        for ( ; world.isAirBlock(pos) == false; pos = pos.up())
-        {
-        }
-
-        world.getWorldInfo().setSpawn(pos);
     }
 
-    public static void createBonusChest(World world)
+    private static void createBonusChest(World world)
     {
         WorldInfo info = world.getWorldInfo();
         WorldGeneratorBonusChest gen = new WorldGeneratorBonusChest();

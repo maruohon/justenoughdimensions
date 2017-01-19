@@ -18,11 +18,11 @@ import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.event.GamemodeTracker;
-import fi.dy.masa.justenoughdimensions.event.JEDEventHandler;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.IProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
+import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION,
     guiFactory = "fi.dy.masa.justenoughdimensions.config.JustEnoughDimensionsGuiFactory",
@@ -78,7 +78,7 @@ public class JustEnoughDimensions
     {
         // This removes the WorldBorder listeners that WorldServerMulti adds from other dimensions to the overworld border.
         // Thus this needs to be called after the static dimensions have loaded, ie. from this event specifically.
-        JEDEventHandler.instance().removeDefaultBorderListeners();
+        WorldBorderUtils.removeDefaultBorderListeners();
 
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
