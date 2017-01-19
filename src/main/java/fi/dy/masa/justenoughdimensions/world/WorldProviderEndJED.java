@@ -55,6 +55,11 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         }
     }
 
+    @Override
+    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
+    {
+    }
+
     @SideOnly(Side.CLIENT)
     @Override
     public boolean isSkyColored()

@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions.world.util;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ResourceLocation;
@@ -14,6 +15,7 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
@@ -128,14 +130,36 @@ public class WorldUtils
                 }
             }
 
-            pos = world.getTopSolidOrLiquidBlock(new BlockPos(x, 0, z)).up();
-            info.setSpawn(pos);
+            info.setSpawn(getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up());
 
             if (worldSettings.isBonusChestEnabled())
             {
                 createBonusChest(world);
             }
         }
+    }
+
+    // The one in world returns the position above the top solid block... >_>
+    public static BlockPos getTopSolidOrLiquidBlock(World world, BlockPos posIn)
+    {
+        Chunk chunk = world.getChunkFromBlockCoords(posIn);
+        BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 16, posIn.getZ());
+
+        while (pos.getY() >= 0)
+        {
+            IBlockState state = chunk.getBlockState(pos);
+
+            if (state.getMaterial().blocksMovement() &&
+                state.getBlock().isLeaves(state, world, pos) == false &&
+                state.getBlock().isFoliage(world, pos) == false)
+            {
+                return pos;
+            }
+
+            pos = pos.down();
+        }
+
+        return posIn;
     }
 
     private static void createBonusChest(World world)

@@ -9,4 +9,10 @@ public interface IWorldProviderJED
      * @param tag
      */
     public void setJEDPropertiesFromNBT(NBTTagCompound tag);
+
+    /**
+     * Set server-side required properties from WorldInfoJED
+     * @param worldInfo
+     */
+    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo);
 }

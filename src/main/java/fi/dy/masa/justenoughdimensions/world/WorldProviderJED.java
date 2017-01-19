@@ -81,19 +81,14 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
     }
 
-    /**
-     * Set server-side required properties from WorldInfo
-     */
+    @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
-        if (worldInfo != null)
-        {
-            this.dayLength = worldInfo.getDayLength();
-            this.nightLength = worldInfo.getNightLength();
+        this.dayLength = worldInfo.getDayLength();
+        this.nightLength = worldInfo.getNightLength();
 
-            if (this.dayLength   <= 0) { this.dayLength = 1; }
-            if (this.nightLength <= 0) { this.nightLength = 1; }
-        }
+        if (this.dayLength   <= 0) { this.dayLength = 1; }
+        if (this.nightLength <= 0) { this.nightLength = 1; }
     }
 
     public int getDayCycleLength()

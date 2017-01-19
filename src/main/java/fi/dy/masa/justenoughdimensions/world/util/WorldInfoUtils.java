@@ -20,8 +20,8 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldExcep
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
-import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
 
 public class WorldInfoUtils
 {
@@ -133,13 +133,14 @@ public class WorldInfoUtils
             try
             {
                 field_worldInfo.set(world, info);
+
+                if (world.provider instanceof IWorldProviderJED)
+                {
+                    ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
+                }
+
                 WorldBorderUtils.setWorldBorderValues(world);
                 setChunkProvider(world);
-
-                if (world.provider instanceof WorldProviderJED)
-                {
-                    ((WorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
-                }
             }
             catch (Exception e)
             {
