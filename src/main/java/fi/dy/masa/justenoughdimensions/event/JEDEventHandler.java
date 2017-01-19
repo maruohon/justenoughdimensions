@@ -105,7 +105,7 @@ public class JEDEventHandler
         {
             if (Configs.enableSeparateWorldInfo)
             {
-                this.loadAndSetCustomWorldInfo(world);
+                this.loadAndSetCustomWorldInfo(world, true);
             }
 
             if (Configs.enableSeparateWorldBorders)
@@ -117,6 +117,20 @@ public class JEDEventHandler
             if (Configs.enableOverrideBiomeProvider)
             {
                 this.overrideBiomeProvider(world);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
+    {
+        World world = event.getWorld();
+
+        if (world.isRemote == false)
+        {
+            if (Configs.enableSeparateWorldInfo)
+            {
+                this.loadAndSetCustomWorldInfo(world, false);
             }
         }
     }
@@ -275,7 +289,7 @@ public class JEDEventHandler
         }
     }
 
-    private void loadAndSetCustomWorldInfo(World world)
+    private void loadAndSetCustomWorldInfo(World world, boolean tryFindSpawn)
     {
         int dimension = world.provider.getDimension();
 
@@ -285,7 +299,7 @@ public class JEDEventHandler
 
             NBTTagCompound nbt = this.loadWorldInfoFromFile(world, this.getWorldDirectory(world));
             NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
-            boolean findSpawn = false;
+            boolean needToFindSpawn = false;
 
             // No level.dat exists for this dimension yet, inherit the values from the overworld
             if (nbt == null)
@@ -304,7 +318,7 @@ public class JEDEventHandler
                 // Set the initialized status to false, which causes a new spawn point to be searched for
                 // for this dimension, instead of using the exact same location as the overworld, see WorldServer#initialize().
                 nbt.setBoolean("initialized", false);
-                findSpawn = true;
+                needToFindSpawn = true;
             }
 
             // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
@@ -312,9 +326,11 @@ public class JEDEventHandler
 
             this.setWorldInfo(world, new WorldInfoJED(nbt));
 
-            if (findSpawn)
+            if (tryFindSpawn && needToFindSpawn)
             {
+                JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", dimension);
                 this.findWorldSpawn(world);
+                JustEnoughDimensions.logInfo("Set world spawnpoint to {}...", world.getSpawnPoint());
             }
         }
     }
