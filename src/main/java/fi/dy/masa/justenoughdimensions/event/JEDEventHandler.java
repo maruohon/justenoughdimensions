@@ -88,6 +88,11 @@ public class JEDEventHandler
             WorldInfoUtils.loadAndSetCustomWorldInfo(world, false);
         }
 
+        if (Configs.enableOverrideBiomeProvider)
+        {
+            WorldUtils.overrideBiomeProvider(world);
+        }
+
         // Find a proper spawn point for the overworld that isn't inside ground...
         // For other dimensions than the regular overworld, this is done after
         // (and only if) setting up the custom WorldInfo override for a newly

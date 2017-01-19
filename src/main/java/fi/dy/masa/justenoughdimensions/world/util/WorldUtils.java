@@ -61,15 +61,17 @@ public class WorldUtils
         String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
         Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
 
-        if (biome != null)
+        if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
+            world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
         {
-            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with BiomeProviderSingle" +
-                " using the biome '{}' ('{}')", dimension, biomeName, biome.getBiomeName());
+            BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
-            BiomeProvider provider = new BiomeProviderSingle(biome);
+            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with {}" +
+                " using the biome '{}' ('{}')", dimension, biomeProvider.getClass().getName(), biomeName, biome.getBiomeName());
+
             try
             {
-                field_WorldProvider_biomeProvider.set(world.provider, provider);
+                field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
             }
             catch (Exception e)
             {
