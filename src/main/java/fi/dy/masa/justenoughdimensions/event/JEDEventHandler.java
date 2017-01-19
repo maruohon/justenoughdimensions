@@ -187,7 +187,14 @@ public class JEDEventHandler
         // No player file yet, so this is the player's first time joining this server/world
         if (Configs.enableInitialSpawnDimensionOverride && new File(event.getPlayerDirectory(), event.getPlayerUUID() + ".dat").exists() == false)
         {
-            event.getEntityPlayer().dimension = Configs.initialSpawnDimensionId;
+            World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(Configs.initialSpawnDimensionId);
+
+            if (world != null)
+            {
+                EntityPlayer player = event.getEntityPlayer();
+                player.dimension = Configs.initialSpawnDimensionId;
+                player.moveToBlockPosAndAngles(world.getSpawnPoint(), 0f, 0f);
+            }
         }
     }
 
