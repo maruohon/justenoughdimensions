@@ -20,6 +20,7 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
@@ -52,7 +53,10 @@ public class JEDEventHandler
 
         if (world.isRemote == false)
         {
-            if (Configs.enableSeparateWorldInfo)
+            // The WorldInfoJED check is necessary for the case where WorldEvent.CreateSpawnPosition has ran before
+            // and already set it. After that initial world creation, in any subsequent world loads
+            // the WorldInfo in this event should be the vanilla one.
+            if (Configs.enableSeparateWorldInfo && (world.getWorldInfo() instanceof WorldInfoJED) == false)
             {
                 WorldInfoUtils.loadAndSetCustomWorldInfo(world, true);
             }
@@ -75,7 +79,11 @@ public class JEDEventHandler
     {
         World world = event.getWorld();
 
-        if (Configs.enableSeparateWorldInfo)
+        // The WorldInfoJED check here is necessary (or at least possibly nice) to avoid settings the things twice.
+        // That would happen, when WorldEvent.Load calls WorldInfoUtils.loadAndSetCustomWorldInfo()
+        // for custom dimensions, and that WorldInfoUtils.loadAndSetCustomWorldInfo() method then calls
+        // WorldUtils.findAndSetWorldSpawn(), which then fires this event.
+        if (Configs.enableSeparateWorldInfo && (world.getWorldInfo() instanceof WorldInfoJED) == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world, false);
         }

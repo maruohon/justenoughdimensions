@@ -79,9 +79,7 @@ public class WorldInfoUtils
 
             if (tryFindSpawn && needToFindSpawn)
             {
-                JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", dimension);
                 WorldUtils.findAndSetWorldSpawn(world, true);
-                JustEnoughDimensions.logInfo("Set world spawnpoint to {}...", world.getSpawnPoint());
             }
         }
     }

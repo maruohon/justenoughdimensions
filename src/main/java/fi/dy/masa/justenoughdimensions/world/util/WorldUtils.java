@@ -81,6 +81,8 @@ public class WorldUtils
         WorldSettings worldSettings = new WorldSettings(info);
         WorldProvider provider = world.provider;
 
+        JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", provider.getDimension());
+
         if (provider.canRespawnHere() == false)
         {
             info.setSpawn(BlockPos.ORIGIN.up(provider.getAverageGroundLevel()));
@@ -93,6 +95,7 @@ public class WorldUtils
         {
             if (fireEvent && net.minecraftforge.event.ForgeEventFactory.onCreateWorldSpawn(world, worldSettings))
             {
+                JustEnoughDimensions.logInfo("Exiting due to a canceled WorldEvent.CreateSpawnPosition event!");
                 return;
             }
 
@@ -130,7 +133,10 @@ public class WorldUtils
                 }
             }
 
-            info.setSpawn(getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up());
+            pos = getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up();
+            info.setSpawn(pos);
+
+            JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
 
             if (worldSettings.isBonusChestEnabled())
             {
