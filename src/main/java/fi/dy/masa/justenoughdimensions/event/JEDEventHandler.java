@@ -13,12 +13,10 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketWorldBorder;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.datafix.FixTypes;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
-import net.minecraft.world.WorldSettings;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
@@ -53,6 +51,7 @@ import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderPropertie
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderJED;
+import fi.dy.masa.justenoughdimensions.world.WorldUtils;
 
 public class JEDEventHandler
 {
@@ -121,17 +120,24 @@ public class JEDEventHandler
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
     {
         World world = event.getWorld();
 
-        if (world.isRemote == false)
+        if (Configs.enableSeparateWorldInfo)
         {
-            if (Configs.enableSeparateWorldInfo)
-            {
-                this.loadAndSetCustomWorldInfo(world, false);
-            }
+            this.loadAndSetCustomWorldInfo(world, false);
+        }
+
+        // Find a proper spawn point for the overworld that isn't inside ground...
+        // For other dimensions than the regular overworld, this is done after
+        // (and only if) setting up the custom WorldInfo override for a newly
+        // created dimension, see loadAndSetCustomWorldInfo().
+        if (world.provider.getDimension() == 0)
+        {
+            WorldUtils.findAndSetWorldSpawn(world, false);
+            event.setCanceled(true);
         }
     }
 
@@ -191,6 +197,7 @@ public class JEDEventHandler
 
             if (world != null)
             {
+                // Set the player's initial spawn dimension, and move them to the world spawn
                 EntityPlayer player = event.getEntityPlayer();
                 player.dimension = Configs.initialSpawnDimensionId;
                 player.moveToBlockPosAndAngles(world.getSpawnPoint(), 0f, 0f);
@@ -320,11 +327,10 @@ public class JEDEventHandler
                 // the crash report shows the correct dimension ID... maybe
                 playerNBT.setInteger("Dimension", dimension);
 
+                // Get the values from the overworld WorldInfo
                 nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
 
-                // Set the initialized status to false, which causes a new spawn point to be searched for
-                // for this dimension, instead of using the exact same location as the overworld, see WorldServer#initialize().
-                nbt.setBoolean("initialized", false);
+                // Search for a proper suitable spawn position
                 needToFindSpawn = true;
             }
 
@@ -336,7 +342,7 @@ public class JEDEventHandler
             if (tryFindSpawn && needToFindSpawn)
             {
                 JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", dimension);
-                this.findWorldSpawn(world);
+                WorldUtils.findAndSetWorldSpawn(world, true);
                 JustEnoughDimensions.logInfo("Set world spawnpoint to {}...", world.getSpawnPoint());
             }
         }
@@ -556,21 +562,5 @@ public class JEDEventHandler
                         dimension, newChunkProvider.getClass().getName(), e);
             }
         }
-    }
-
-    private void findWorldSpawn(World world)
-    {
-        // Try to find a spawn
-        world.initialize(new WorldSettings(world.getWorldInfo()));
-
-        // If the search fails, the spawn point may be left at sea level under ground,
-        // so let's raise it to the surface (see WorldServer#createSpawnPosition() for the faulty logic)
-        BlockPos pos = world.getSpawnPoint();
-        pos = pos.up();
-        for ( ; world.isAirBlock(pos) == false; pos = pos.up())
-        {
-        }
-
-        world.getWorldInfo().setSpawn(pos);
     }
 }
