@@ -28,6 +28,7 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldExc
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils.UnableToFindMethodHandleException;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class CommandTeleportJED extends CommandBase
 {
@@ -379,7 +380,9 @@ public class CommandTeleportJED extends CommandBase
                 {
                     BlockPos spawn = world.getSpawnCoordinate();
 
-                    if (spawn == null)
+                    // If the spawn point of End type dimensions (that are using separate WorldInfo) has been moved,
+                    // then use that manually set spawn point instead
+                    if (spawn == null || (world.getSpawnPoint().equals(spawn) == false && world.getWorldInfo() instanceof WorldInfoJED))
                     {
                         spawn = world.getSpawnPoint();
                     }
@@ -466,8 +469,12 @@ public class CommandTeleportJED extends CommandBase
         @Override
         public void placeInPortal(Entity entityIn, float rotationYaw)
         {
-            // For End type dimensions, generate the platform
-            if (this.world.provider.getDimensionType().getId() == 1 || this.world.provider instanceof WorldProviderEnd)
+            BlockPos spawnCoord = this.world.provider.getSpawnCoordinate();
+
+            // For End type dimensions, generate the platform and place the entity there,
+            // UNLESS the world has a different spawn point set.
+            if ((this.world.provider.getDimensionType().getId() == 1 || this.world.provider instanceof WorldProviderEnd)
+                 && this.world.getSpawnPoint().equals(spawnCoord))
             {
                 IBlockState obsidian = Blocks.OBSIDIAN.getDefaultState();
                 IBlockState air = Blocks.AIR.getDefaultState();
