@@ -7,20 +7,26 @@ import javax.annotation.Nonnull;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
+import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -43,6 +49,71 @@ public class WorldUtils
         {
             JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!", e);
         }
+    }
+
+    public static int getLoadedChunkCount(WorldServer world)
+    {
+        return world.getChunkProvider().getLoadedChunkCount();
+    }
+
+    /**
+     * Unloads all empty dimensions (with no chunks loaded)
+     * @param tryUnloadChunks if true, then tries to first save and unload all non-player-loaded and non-force-loaded chunks
+     * @return the number of dimensions successfully unloaded
+     */
+    public static int unloadEmptyDimensions(boolean tryUnloadChunks)
+    {
+        int count = 0;
+        Integer[] dims = DimensionManager.getIDs();
+
+        for (int dim : dims)
+        {
+            WorldServer world = DimensionManager.getWorld(dim);
+            if (world == null)
+            {
+                continue;
+            }
+
+            ChunkProviderServer chunkProviderServer = world.getChunkProvider();
+
+            if (tryUnloadChunks && chunkProviderServer.getLoadedChunkCount() > 0)
+            {
+                boolean disable = world.disableLevelSaving;
+                world.disableLevelSaving = false;
+
+                try
+                {
+                    // This also tries to unload all chunks that are not loaded by players
+                    world.saveAllChunks(true, (IProgressUpdate) null);
+                }
+                catch (MinecraftException e)
+                {
+                    JustEnoughDimensions.logger.warn("Exception while trying to save chunks for dimension {}", world.provider.getDimension(), e);
+                }
+
+                // This would flush the chunks to disk from the AnvilChunkLoader. Probably not what we want to do.
+                //world.saveChunkData();
+
+                world.disableLevelSaving = disable;
+
+                // This will unload the dimension, if it unloaded at least one chunk, and it has no loaded chunks anymore
+                chunkProviderServer.tick();
+
+                if (chunkProviderServer.getLoadedChunkCount() == 0)
+                {
+                    count++;
+                }
+            }
+            else if (chunkProviderServer.getLoadedChunkCount() == 0 &&
+                world.provider.getDimensionType().shouldLoadSpawn() == false &&
+                ForgeChunkManager.getPersistentChunksFor(world).size() == 0)
+            {
+                DimensionManager.unloadWorld(world.provider.getDimension());
+                count++;
+            }
+        }
+
+        return count;
     }
 
     public static void syncWorldProviderProperties(EntityPlayer player)

@@ -28,6 +28,8 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
+import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class CommandJED extends CommandBase
 {
@@ -55,12 +57,14 @@ public class CommandJED extends CommandBase
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
-                    "listdims",
+                    "listloadeddimensions",
+                    "listregistereddimensions",
                     "register",
                     "reload",
                     "seed",
                     "setworldspawn",
                     "time",
+                    "unloademptydimensions",
                     "unregister",
                     "unregister-remove",
                     "weather",
@@ -181,12 +185,33 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
         }
-        else if (cmd.equals("listdims"))
+        else if (cmd.equals("listregistereddimensions"))
         {
             Integer[] dims = DimensionManager.getStaticDimensionIDs();
             String[] dimsStr = new String[dims.length];
             for (int i = 0; i < dimsStr.length; i++) { dimsStr[i] = String.valueOf(dims[i]); }
+
+            for (String line : DimensionDump.getFormattedRegisteredDimensionsDump())
+            {
+                JustEnoughDimensions.logger.info(line);
+            }
+
             sender.sendMessage(new TextComponentTranslation("jed.commands.listdims.list", String.join(", ", dimsStr)));
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console.full"));
+        }
+        else if (cmd.equals("listloadeddimensions"))
+        {
+            for (String line : DimensionDump.getFormattedLoadedDimensionsDump())
+            {
+                JustEnoughDimensions.logger.info(line);
+            }
+
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
+        }
+        else if (cmd.equals("unloademptydimensions"))
+        {
+            int count = WorldUtils.unloadEmptyDimensions(args.length == 2 && args[1].equals("true"));
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
         else if (cmd.equals("dimbuilder"))
         {
@@ -252,7 +277,7 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("Vanilla level NBT: {}", tag.toString());
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 
-                sender.sendMessage(new TextComponentString("Debug output printed to console"));
+                sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
             }
         }
         else
