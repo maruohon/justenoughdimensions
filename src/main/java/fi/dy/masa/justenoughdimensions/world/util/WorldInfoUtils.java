@@ -51,7 +51,7 @@ public class WorldInfoUtils
 
             NBTTagCompound nbt = loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world));
             NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
-            boolean needToFindSpawn = false;
+            boolean isDimensionInit = false;
 
             // No level.dat exists for this dimension yet, inherit the values from the overworld
             if (nbt == null)
@@ -69,15 +69,22 @@ public class WorldInfoUtils
                 nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
 
                 // Search for a proper suitable spawn position
-                needToFindSpawn = true;
+                isDimensionInit = true;
             }
 
             // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
-            nbt.merge(DimensionConfig.instance().getWorldInfoValues(dimension, nbt));
+            DimensionConfig.instance().setWorldInfoValues(dimension, nbt, false);
+
+            // On the first time this dimension loads (at least with custom WorldInfo),
+            // set the worldinfo_onetime values
+            if (isDimensionInit)
+            {
+                DimensionConfig.instance().setWorldInfoValues(dimension, nbt, true);
+            }
 
             setWorldInfo(world, new WorldInfoJED(nbt));
 
-            if (tryFindSpawn && needToFindSpawn)
+            if (tryFindSpawn && isDimensionInit)
             {
                 WorldUtils.findAndSetWorldSpawn(world, true);
             }

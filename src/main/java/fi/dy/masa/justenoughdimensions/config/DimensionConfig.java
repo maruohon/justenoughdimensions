@@ -55,6 +55,7 @@ public class DimensionConfig
     private final File dimensionFileConfigs;
     private final Map<Integer, DimensionEntry> dimensions = new HashMap<Integer, DimensionEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
+    private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private JsonObject dimBuilderData = new JsonObject();
 
     private DimensionConfig(File configDir)
@@ -90,24 +91,16 @@ public class DimensionConfig
         return entry != null ? entry.getBiome() : null;
     }
 
-    public NBTTagCompound getWorldInfoValues(int dimension, NBTTagCompound tagIn)
+    public void setWorldInfoValues(int dimension, NBTTagCompound tagIn, boolean oneTimeValues)
     {
-        NBTTagCompound dimNBT = this.customWorldInfo.get(dimension);
+        Map<Integer, NBTTagCompound> map = oneTimeValues ? this.onetimeWorldInfo : this.customWorldInfo;
+        NBTTagCompound dimNBT = map.get(dimension);
 
         if (dimNBT != null)
         {
-            for (String key : dimNBT.getKeySet())
-            {
-                NBTBase tag = dimNBT.getTag(key);
-
-                if (tag != null)
-                {
-                    tagIn.setTag(key, tag.copy());
-                }
-            }
+            tagIn.merge(dimNBT);
+            if (dimension == 6 && oneTimeValues) System.out.printf("setting one time values... '%s'\n", dimNBT.toString());
         }
-
-        return tagIn;
     }
 
     private File getConfigFile(File worldDir)
@@ -308,6 +301,7 @@ public class DimensionConfig
     {
         this.dimensions.remove(dimension);
         this.customWorldInfo.remove(dimension);
+        this.onetimeWorldInfo.remove(dimension);
     }
 
     private void saveConfig()
@@ -356,6 +350,7 @@ public class DimensionConfig
         JsonObject object;
         int count = 0;
         this.customWorldInfo.clear();
+        this.onetimeWorldInfo.clear();
         this.dimensions.clear();
 
         for (JsonElement el : array)
@@ -411,6 +406,13 @@ public class DimensionConfig
                 JsonObject obj = object.get("worldinfo").getAsJsonObject();
                 entry.setWorldInfoJson(obj);
                 this.customWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
+            }
+
+            if (object.has("worldinfo_onetime") && object.get("worldinfo_onetime").isJsonObject())
+            {
+                JsonObject obj = object.get("worldinfo_onetime").getAsJsonObject();
+                entry.setOneTimeWorldInfoJson(obj);
+                this.onetimeWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
             }
 
             this.dimensions.put(dimension, entry);
@@ -864,6 +866,7 @@ public class DimensionConfig
         private boolean unregister;
         private String biome; // if != null, then use BiomeProviderSingle with this biome
         private JsonObject worldInfoJson;
+        private JsonObject oneTimeWorldInfoJson;
 
         public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
         {
@@ -924,6 +927,12 @@ public class DimensionConfig
         public DimensionEntry setWorldInfoJson(JsonObject obj)
         {
             this.worldInfoJson = obj;
+            return this;
+        }
+
+        public DimensionEntry setOneTimeWorldInfoJson(JsonObject obj)
+        {
+            this.oneTimeWorldInfoJson = obj;
             return this;
         }
 
@@ -1033,18 +1042,26 @@ public class DimensionConfig
                 jsonEntry.addProperty("vanilladimensiontype", this.dimensionTypeName);
             }
 
-            if (this.worldInfoJson != null)
+            this.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
+            this.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
+
+            return jsonEntry;
+        }
+
+        private void copyJsonObject(JsonObject wrapper, String key, JsonObject obj)
+        {
+            if (obj != null)
             {
                 try
                 {
                     // Serialize and deserialize as a way to make a copy
                     Gson gson = new GsonBuilder().create();
                     JsonParser parser = new JsonParser();
-                    JsonElement root = parser.parse(gson.toJson(this.worldInfoJson));
+                    JsonElement root = parser.parse(gson.toJson(obj));
 
                     if (root != null && root.isJsonObject())
                     {
-                        jsonEntry.add("worldinfo", root.getAsJsonObject());
+                        wrapper.add(key, root.getAsJsonObject());
                     }
                     else
                     {
@@ -1056,8 +1073,6 @@ public class DimensionConfig
                     JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject", e);
                 }
             }
-
-            return jsonEntry;
         }
 
         public String getDescription()
