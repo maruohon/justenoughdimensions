@@ -3,12 +3,14 @@ package fi.dy.masa.justenoughdimensions.command;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -259,7 +261,7 @@ public class CommandTeleportJED extends CommandBase
             World worldOld = player.getEntityWorld();
             // Set the yaw and pitch at this point
             entity.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
-            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), new DummyTeleporter(worldDst));
+            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), new TeleporterJED(worldDst));
             player.setPositionAndUpdate(x, y, z);
 
             // Teleporting FROM The End
@@ -439,11 +441,14 @@ public class CommandTeleportJED extends CommandBase
         }
     }
 
-    private static class DummyTeleporter extends Teleporter
+    private static class TeleporterJED extends Teleporter
     {
-        public DummyTeleporter(WorldServer worldIn)
+        private final WorldServer world;
+
+        public TeleporterJED(WorldServer worldIn)
         {
             super(worldIn);
+            this.world = worldIn;
         }
 
         @Override
@@ -461,6 +466,31 @@ public class CommandTeleportJED extends CommandBase
         @Override
         public void placeInPortal(Entity entityIn, float rotationYaw)
         {
+            // For End type dimensions, generate the platform
+            if (this.world.provider.getDimensionType().getId() == 1 || this.world.provider instanceof WorldProviderEnd)
+            {
+                IBlockState obsidian = Blocks.OBSIDIAN.getDefaultState();
+                IBlockState air = Blocks.AIR.getDefaultState();
+                int entityX = MathHelper.floor(entityIn.posX);
+                int entityY = MathHelper.floor(entityIn.posY) - 1;
+                int entityZ = MathHelper.floor(entityIn.posZ);
+
+                for (int zOff = -2; zOff <= 2; ++zOff)
+                {
+                    for (int xOff = -2; xOff <= 2; ++xOff)
+                    {
+                        for (int yOff = -1; yOff < 3; yOff++)
+                        {
+                            this.world.setBlockState(new BlockPos(entityX + xOff, entityY + yOff, entityZ + zOff), yOff < 0 ? obsidian : air);
+                        }
+                    }
+                }
+
+                entityIn.setLocationAndAngles((double)entityX, (double)entityY, (double)entityZ, entityIn.rotationYaw, 0.0F);
+                entityIn.motionX = 0.0D;
+                entityIn.motionY = 0.0D;
+                entityIn.motionZ = 0.0D;
+            }
         }
     }
 }
