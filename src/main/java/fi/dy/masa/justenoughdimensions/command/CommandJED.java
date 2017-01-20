@@ -7,6 +7,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
@@ -26,6 +27,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDTime;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class CommandJED extends CommandBase
 {
@@ -241,6 +243,13 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
                         ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
+                if (world.getWorldInfo() instanceof WorldInfoJED)
+                {
+                    JustEnoughDimensions.logger.info("JED NBT tag: {}", ((WorldInfoJED) world.getWorldInfo()).getJEDTag().toString());
+                }
+                NBTTagCompound tag = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
+                tag.removeTag("JED");
+                JustEnoughDimensions.logger.info("Vanilla level NBT: {}", tag.toString());
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 
                 sender.sendMessage(new TextComponentString("Debug output printed to console"));

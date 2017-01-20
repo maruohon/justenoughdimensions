@@ -16,6 +16,7 @@ import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
     private int skyRenderType = 0;
+    private int skyDisableFlags = 0;
     protected Vec3d skyColor = null;
     protected Vec3d fogColor = null;
 
@@ -42,11 +43,12 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         {
             if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = WorldInfoJED.hexStringToColor(tag.getString("FogColor")); }
-            if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE)) { this.skyRenderType = tag.getByte("SkyRenderType"); }
+            if (tag.hasKey("SkyRenderType",   Constants.NBT.TAG_BYTE)) { this.skyRenderType   = tag.getByte("SkyRenderType");   }
+            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
             if (this.skyRenderType != 0)
             {
-                this.setSkyRenderer(new SkyRenderer(this.skyRenderType));
+                this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
             }
             else
             {

@@ -636,7 +636,8 @@ public class DimensionConfig
                 key.equals("SkyColor") ||
                 key.equals("CloudColor") ||
                 key.equals("FogColor") ||
-                key.equals("SkyRenderType");
+                key.equals("SkyRenderType") ||
+                key.equals("SkyDisableFlags");
     }
 
     private NBTBase getTagForValue(String key, JsonElement element)
@@ -703,6 +704,7 @@ public class DimensionConfig
         if (key.equals("CloudColor"))       { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("FogColor"))         { return new NBTTagString(  element.getAsString()   ); }
         if (key.equals("SkyRenderType"))    { return new NBTTagByte(    element.getAsByte()     ); }
+        if (key.equals("SkyDisableFlags"))  { return new NBTTagByte(    element.getAsByte()     ); }
 
         if (element.isJsonObject())
         {

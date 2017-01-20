@@ -19,6 +19,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected int nightLength = 12000;
     protected int cloudHeight = 128;
     private int skyRenderType = 0;
+    private int skyDisableFlags = 0;
     protected Vec3d skyColor = null;
     protected Vec3d cloudColor = null;
     protected Vec3d fogColor = null;
@@ -62,6 +63,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
             if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
+            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
             if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = WorldInfoJED.hexStringToColor(tag.getString("CloudColor")); }
@@ -73,7 +75,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 
         if (this.skyRenderType != 0)
         {
-            this.setSkyRenderer(new SkyRenderer(this.skyRenderType));
+            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
         }
         else
         {

@@ -15,6 +15,7 @@ public class WorldInfoJED extends WorldInfo
     private int nightLength = 12000;
     private int cloudHeight = 128;
     private int skyRenderType;
+    private int skyDisableFlags;
     private Vec3d skyColor = null;
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
@@ -31,6 +32,7 @@ public class WorldInfoJED extends WorldInfo
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
             if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
+            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
             if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = hexStringToColor(tag.getString("CloudColor")); }
@@ -61,6 +63,7 @@ public class WorldInfoJED extends WorldInfo
         tag.setInteger("NightLength", this.nightLength);
         tag.setInteger("CloudHeight", this.cloudHeight);
         tag.setByte("SkyRenderType", (byte) this.skyRenderType);
+        tag.setByte("SkyDisableFlags", (byte) this.skyDisableFlags);
 
         if (this.forceGamemode)      { tag.setBoolean("ForceGamemode", this.forceGamemode); }
         if (this.skyColor != null)   { tag.setString("SkyColor",   colorToHexString(this.skyColor)); }

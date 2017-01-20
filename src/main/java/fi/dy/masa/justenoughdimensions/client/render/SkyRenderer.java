@@ -22,7 +22,10 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private static final ResourceLocation MOON_PHASES_TEXTURES  = new ResourceLocation("textures/environment/moon_phases.png");
     private static final ResourceLocation SUN_TEXTURES          = new ResourceLocation("textures/environment/sun.png");
 
-    protected int skyRenderType;
+    private int skyRenderType;
+    private boolean disableSun;
+    private boolean disableMoon;
+    private boolean disableStars;
     private boolean vboEnabled;
     private int starGLCallList = -1;
     private int glSkyList = -1;
@@ -32,12 +35,15 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private net.minecraft.client.renderer.vertex.VertexBuffer skyVBO;
     private net.minecraft.client.renderer.vertex.VertexBuffer sky2VBO;
 
-    public SkyRenderer(int skyRenderType)
+    public SkyRenderer(int skyRenderType, int disableFlags)
     {
-        this.skyRenderType = skyRenderType;
         this.vboEnabled = OpenGlHelper.useVbo();
         this.vertexBufferFormat = new VertexFormat();
         this.vertexBufferFormat.addElement(new VertexFormatElement(0, VertexFormatElement.EnumType.FLOAT, VertexFormatElement.EnumUsage.POSITION, 3));
+        this.skyRenderType = skyRenderType;
+        this.disableSun   = (disableFlags & 0x01) != 0;
+        this.disableMoon  = (disableFlags & 0x02) != 0;
+        this.disableStars = (disableFlags & 0x04) != 0;
         this.generateStars();
         this.generateSky();
         this.generateSky2();
@@ -114,28 +120,28 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     protected void renderSkySurface(WorldClient world, Minecraft mc, float partialTicks)
     {
         GlStateManager.disableTexture2D();
-        Vec3d vec3d = world.getSkyColor(mc.getRenderViewEntity(), partialTicks);
-        float f = (float)vec3d.xCoord;
-        float f1 = (float)vec3d.yCoord;
-        float f2 = (float)vec3d.zCoord;
+        Vec3d skyColor = world.getSkyColor(mc.getRenderViewEntity(), partialTicks);
+        float r = (float)skyColor.xCoord;
+        float g = (float)skyColor.yCoord;
+        float b = (float)skyColor.zCoord;
         int pass = 2;
 
         if (pass != 2)
         {
-            float f3 = (f * 30.0F + f1 * 59.0F + f2 * 11.0F) / 100.0F;
-            float f4 = (f * 30.0F + f1 * 70.0F) / 100.0F;
-            float f5 = (f * 30.0F + f2 * 70.0F) / 100.0F;
-            f = f3;
-            f1 = f4;
-            f2 = f5;
+            float f3 = (r * 30.0F + g * 59.0F + b * 11.0F) / 100.0F;
+            float f4 = (r * 30.0F + g * 70.0F) / 100.0F;
+            float f5 = (r * 30.0F + b * 70.0F) / 100.0F;
+            r = f3;
+            g = f4;
+            b = f5;
         }
 
-        GlStateManager.color(f, f1, f2);
+        GlStateManager.color(r, g, b);
         Tessellator tessellator = Tessellator.getInstance();
         VertexBuffer vertexbuffer = tessellator.getBuffer();
         GlStateManager.depthMask(false);
         GlStateManager.enableFog();
-        GlStateManager.color(f, f1, f2);
+        GlStateManager.color(r, g, b);
 
         if (this.vboEnabled)
         {
@@ -166,22 +172,22 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
             GlStateManager.rotate(MathHelper.sin(world.getCelestialAngleRadians(partialTicks)) < 0.0F ? 180.0F : 0.0F, 0.0F, 0.0F, 1.0F);
             GlStateManager.rotate(90.0F, 0.0F, 0.0F, 1.0F);
-            float f6 = afloat[0];
-            float f7 = afloat[1];
-            float f8 = afloat[2];
+            float rsr = afloat[0];
+            float gsr = afloat[1];
+            float bsr = afloat[2];
 
             if (pass != 2)
             {
-                float f9 = (f6 * 30.0F + f7 * 59.0F + f8 * 11.0F) / 100.0F;
-                float f10 = (f6 * 30.0F + f7 * 70.0F) / 100.0F;
-                float f11 = (f6 * 30.0F + f8 * 70.0F) / 100.0F;
-                f6 = f9;
-                f7 = f10;
-                f8 = f11;
+                float f9 = (rsr * 30.0F + gsr * 59.0F + bsr * 11.0F) / 100.0F;
+                float f10 = (rsr * 30.0F + gsr * 70.0F) / 100.0F;
+                float f11 = (rsr * 30.0F + bsr * 70.0F) / 100.0F;
+                rsr = f9;
+                gsr = f10;
+                bsr = f11;
             }
 
             vertexbuffer.begin(6, DefaultVertexFormats.POSITION_COLOR);
-            vertexbuffer.pos(0.0D, 100.0D, 0.0D).color(f6, f7, f8, afloat[3]).endVertex();
+            vertexbuffer.pos(0.0D, 100.0D, 0.0D).color(rsr, gsr, bsr, afloat[3]).endVertex();
 
             for (int l = 0; l <= 16; ++l)
             {
@@ -203,48 +209,61 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         GlStateManager.color(1.0F, 1.0F, 1.0F, f16);
         GlStateManager.rotate(-90.0F, 0.0F, 1.0F, 0.0F);
         GlStateManager.rotate(world.getCelestialAngle(partialTicks) * 360.0F, 1.0F, 0.0F, 0.0F);
-        float f17 = 30.0F;
-        mc.getTextureManager().bindTexture(SUN_TEXTURES);
-        vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
-        vertexbuffer.pos((double)(-f17), 100.0D, (double)(-f17)).tex(0.0D, 0.0D).endVertex();
-        vertexbuffer.pos((double)f17, 100.0D, (double)(-f17)).tex(1.0D, 0.0D).endVertex();
-        vertexbuffer.pos((double)f17, 100.0D, (double)f17).tex(1.0D, 1.0D).endVertex();
-        vertexbuffer.pos((double)(-f17), 100.0D, (double)f17).tex(0.0D, 1.0D).endVertex();
-        tessellator.draw();
-        f17 = 20.0F;
-        mc.getTextureManager().bindTexture(MOON_PHASES_TEXTURES);
-        int i = world.getMoonPhase();
-        int k = i % 4;
-        int i1 = i / 4 % 2;
-        float f22 = (float)(k + 0) / 4.0F;
-        float f23 = (float)(i1 + 0) / 2.0F;
-        float f24 = (float)(k + 1) / 4.0F;
-        float f14 = (float)(i1 + 1) / 2.0F;
-        vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
-        vertexbuffer.pos((double)(-f17), -100.0D, (double)f17).tex((double)f24, (double)f14).endVertex();
-        vertexbuffer.pos((double)f17, -100.0D, (double)f17).tex((double)f22, (double)f14).endVertex();
-        vertexbuffer.pos((double)f17, -100.0D, (double)(-f17)).tex((double)f22, (double)f23).endVertex();
-        vertexbuffer.pos((double)(-f17), -100.0D, (double)(-f17)).tex((double)f24, (double)f23).endVertex();
-        tessellator.draw();
-        GlStateManager.disableTexture2D();
-        float f15 = world.getStarBrightness(partialTicks) * f16;
 
-        if (f15 > 0.0F)
+        double d17 = 30.0D;
+
+        if (this.disableSun == false)
         {
-            GlStateManager.color(f15, f15, f15, f15);
+            mc.getTextureManager().bindTexture(SUN_TEXTURES);
+            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+            vertexbuffer.pos(-d17, 100.0D, -d17).tex(0.0D, 0.0D).endVertex();
+            vertexbuffer.pos( d17, 100.0D, -d17).tex(1.0D, 0.0D).endVertex();
+            vertexbuffer.pos( d17, 100.0D,  d17).tex(1.0D, 1.0D).endVertex();
+            vertexbuffer.pos(-d17, 100.0D,  d17).tex(0.0D, 1.0D).endVertex();
+            tessellator.draw();
+        }
 
-            if (this.vboEnabled)
+        if (this.disableMoon == false)
+        {
+            d17 = 20.0D;
+            mc.getTextureManager().bindTexture(MOON_PHASES_TEXTURES);
+            int i = world.getMoonPhase();
+            int k = i % 4;
+            int j = i / 4 % 2;
+            double f22 = (double)(k + 0) / 4.0D;
+            double f23 = (double)(j + 0) / 2.0D;
+            double f24 = (double)(k + 1) / 4.0D;
+            double f14 = (double)(j + 1) / 2.0D;
+            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+            vertexbuffer.pos(-d17, -100.0D,  d17).tex(f24, f14).endVertex();
+            vertexbuffer.pos( d17, -100.0D,  d17).tex(f22, f14).endVertex();
+            vertexbuffer.pos( d17, -100.0D, -d17).tex(f22, f23).endVertex();
+            vertexbuffer.pos(-d17, -100.0D, -d17).tex(f24, f23).endVertex();
+            tessellator.draw();
+        }
+
+        if (this.disableStars == false)
+        {
+            GlStateManager.disableTexture2D();
+            float brightness = world.getStarBrightness(partialTicks) * f16;
+
+            if (brightness > 0.0F)
             {
-                this.starVBO.bindBuffer();
-                GlStateManager.glEnableClientState(32884);
-                GlStateManager.glVertexPointer(3, 5126, 12, 0);
-                this.starVBO.drawArrays(7);
-                this.starVBO.unbindBuffer();
-                GlStateManager.glDisableClientState(32884);
-            }
-            else
-            {
-                GlStateManager.callList(this.starGLCallList);
+                GlStateManager.color(brightness, brightness, brightness, brightness);
+
+                if (this.vboEnabled)
+                {
+                    this.starVBO.bindBuffer();
+                    GlStateManager.glEnableClientState(32884);
+                    GlStateManager.glVertexPointer(3, 5126, 12, 0);
+                    this.starVBO.drawArrays(7);
+                    this.starVBO.unbindBuffer();
+                    GlStateManager.glDisableClientState(32884);
+                }
+                else
+                {
+                    GlStateManager.callList(this.starGLCallList);
+                }
             }
         }
 
@@ -277,38 +296,38 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             }
 
             GlStateManager.popMatrix();
-            float f19 = -((float)(d0 + 65.0D));
+            double d19 = -(d0 + 65.0D);
             vertexbuffer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-            vertexbuffer.pos(-1.0D, (double)f19, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, (double)f19, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
             vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, (double)f19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, (double)f19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, (double)f19, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, (double)f19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, (double)f19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, (double)f19, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
             vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
             vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
             tessellator.draw();
         }
 
         if (world.provider.isSkyColored())
         {
-            GlStateManager.color(f * 0.2F + 0.04F, f1 * 0.2F + 0.04F, f2 * 0.6F + 0.1F);
+            GlStateManager.color(r * 0.2F + 0.04F, g * 0.2F + 0.04F, b * 0.6F + 0.1F);
         }
         else
         {
-            GlStateManager.color(f, f1, f2);
+            GlStateManager.color(r, g, b);
         }
 
         GlStateManager.pushMatrix();
