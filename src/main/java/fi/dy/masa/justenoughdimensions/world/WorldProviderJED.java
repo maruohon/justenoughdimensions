@@ -20,6 +20,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected int cloudHeight = 128;
     private int skyRenderType = 0;
     private int skyDisableFlags = 0;
+    private boolean useCustomDayCycle;
     protected Vec3d skyColor = null;
     protected Vec3d cloudColor = null;
     protected Vec3d fogColor = null;
@@ -59,6 +60,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     {
         if (tag != null)
         {
+            this.useCustomDayCycle = tag.getBoolean("CustomDayCycle");
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
@@ -86,6 +88,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
+        this.useCustomDayCycle = worldInfo.getUseCustomDayCycle();
         this.dayLength = worldInfo.getDayLength();
         this.nightLength = worldInfo.getNightLength();
 
@@ -108,6 +111,11 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public float calculateCelestialAngle(long worldTime, float partialTicks)
     {
+        if (this.useCustomDayCycle == false)
+        {
+            return super.calculateCelestialAngle(worldTime, partialTicks);
+        }
+
         int cycleLength = this.getDayCycleLength();
         int i = (int) (worldTime % cycleLength);
         int duskOrDawnLength = (int) (0.075f * cycleLength);

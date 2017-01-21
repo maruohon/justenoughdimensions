@@ -632,6 +632,7 @@ public class DimensionConfig
     private boolean isJEDProperty(String key)
     {
         return  key.equals("ForceGamemode") ||
+                key.equals("CustomDayCycle") ||
                 key.equals("DayLength") ||
                 key.equals("NightLength") ||
                 key.equals("CloudHeight") ||
@@ -699,6 +700,7 @@ public class DimensionConfig
 
         // Custom JED properties
         if (key.equals("ForceGamemode"))    { return new NBTTagByte(    element.getAsBoolean() ? (byte) 1 : 0); }
+        if (key.equals("CustomDayCycle"))   { return new NBTTagByte(    element.getAsBoolean() ? (byte) 1 : 0); }
         if (key.equals("DayLength"))        { return new NBTTagInt(     element.getAsInt()      ); }
         if (key.equals("NightLength"))      { return new NBTTagInt(     element.getAsInt()      ); }
         if (key.equals("CloudHeight"))      { return new NBTTagInt(     element.getAsInt()      ); }
