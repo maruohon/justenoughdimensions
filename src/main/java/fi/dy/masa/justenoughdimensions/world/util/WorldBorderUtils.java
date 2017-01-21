@@ -31,7 +31,7 @@ public class WorldBorderUtils
         }
         catch (UnableToFindFieldException e)
         {
-            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!", e);
+            JustEnoughDimensions.logger.error("WorldBorderUtils: Reflection failed!!", e);
         }
     }
 

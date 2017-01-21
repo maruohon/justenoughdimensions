@@ -9,9 +9,6 @@ import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.datafix.FixTypes;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.IChunkGenerator;
-import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.SaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -26,14 +23,12 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 public class WorldInfoUtils
 {
     private static Field field_worldInfo = null;
-    private static Field field_ChunkProviderServer_chunkGenerator = null;
 
     static
     {
         try
         {
             field_worldInfo = ReflectionHelper.findField(World.class, "field_72986_A", "worldInfo");
-            field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
         catch (UnableToFindFieldException e)
         {
@@ -83,6 +78,11 @@ public class WorldInfoUtils
             }
 
             setWorldInfo(world, new WorldInfoJED(nbt));
+
+            if (Configs.enableOverrideBiomeProvider)
+            {
+                WorldUtils.overrideBiomeProvider(world);
+            }
 
             if (tryFindSpawn && isDimensionInit)
             {
@@ -145,7 +145,7 @@ public class WorldInfoUtils
                 }
 
                 WorldBorderUtils.setWorldBorderValues(world);
-                setChunkProvider(world);
+                WorldUtils.setChunkProvider(world);
             }
             catch (Exception e)
             {
@@ -222,41 +222,6 @@ public class WorldInfoUtils
         catch (Exception e)
         {
             e.printStackTrace();
-        }
-    }
-
-    private static void setChunkProvider(World world)
-    {
-        if (world instanceof WorldServer && world.getChunkProvider() instanceof ChunkProviderServer)
-        {
-            // This sets the new WorldType to the WorldProvider
-            world.provider.registerWorld(world);
-
-            // Always override the ChunkProvider when using overridden WorldInfo, otherwise
-            // the ChunkProvider will be using the settings from the overworld, because
-            // WorldEvent.Load obviously only happens after the world has been constructed...
-            ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
-            IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
-
-            if (newChunkProvider == null)
-            {
-                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider");
-                return;
-            }
-
-            int dimension = world.provider.getDimension();
-            JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
-                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
-
-            try
-            {
-                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkProvider);
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkProvider.getClass().getName(), e);
-            }
         }
     }
 }

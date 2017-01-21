@@ -22,6 +22,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
@@ -38,16 +39,18 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 public class WorldUtils
 {
     private static Field field_WorldProvider_biomeProvider = null;
+    private static Field field_ChunkProviderServer_chunkGenerator = null;
 
     static
     {
         try
         {
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
+            field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
         catch (UnableToFindFieldException e)
         {
-            JustEnoughDimensions.logger.error("JEDEventHandler: Reflection failed!!", e);
+            JustEnoughDimensions.logger.error("WorldUtils: Reflection failed!!", e);
         }
     }
 
@@ -147,6 +150,41 @@ public class WorldUtils
             catch (Exception e)
             {
                 JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+            }
+        }
+    }
+
+    public static void setChunkProvider(World world)
+    {
+        if (world instanceof WorldServer && world.getChunkProvider() instanceof ChunkProviderServer)
+        {
+            // This sets the new WorldType to the WorldProvider
+            world.provider.registerWorld(world);
+
+            // Always override the ChunkProvider when using overridden WorldInfo, otherwise
+            // the ChunkProvider will be using the settings from the overworld, because
+            // WorldEvent.Load obviously only happens after the world has been constructed...
+            ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
+            IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
+
+            if (newChunkProvider == null)
+            {
+                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider");
+                return;
+            }
+
+            int dimension = world.provider.getDimension();
+            JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
+                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
+
+            try
+            {
+                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkProvider);
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
+                        dimension, newChunkProvider.getClass().getName(), e);
             }
         }
     }

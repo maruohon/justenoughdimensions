@@ -66,11 +66,6 @@ public class JEDEventHandler
                 WorldBorderUtils.removeOverworldBorderListener(world);
                 world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
             }
-
-            if (Configs.enableOverrideBiomeProvider)
-            {
-                WorldUtils.overrideBiomeProvider(world);
-            }
         }
     }
 
@@ -86,11 +81,6 @@ public class JEDEventHandler
         if (Configs.enableSeparateWorldInfo && (world.getWorldInfo() instanceof WorldInfoJED) == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world, false);
-        }
-
-        if (Configs.enableOverrideBiomeProvider)
-        {
-            WorldUtils.overrideBiomeProvider(world);
         }
 
         // Find a proper spawn point for the overworld that isn't inside ground...
