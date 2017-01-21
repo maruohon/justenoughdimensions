@@ -17,6 +17,7 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldExcep
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
 import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
@@ -68,13 +69,13 @@ public class WorldInfoUtils
             }
 
             // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
-            DimensionConfig.instance().setWorldInfoValues(dimension, nbt, false);
+            DimensionConfig.instance().setWorldInfoValues(dimension, nbt, WorldInfoType.REGULAR);
 
             // On the first time this dimension loads (at least with custom WorldInfo),
             // set the worldinfo_onetime values
             if (isDimensionInit)
             {
-                DimensionConfig.instance().setWorldInfoValues(dimension, nbt, true);
+                DimensionConfig.instance().setWorldInfoValues(dimension, nbt, WorldInfoType.ONE_TIME);
             }
 
             setWorldInfo(world, new WorldInfoJED(nbt));

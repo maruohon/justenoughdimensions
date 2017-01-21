@@ -27,6 +27,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDTime;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
@@ -77,7 +78,9 @@ public class CommandJED extends CommandBase
             {
                 if (args.length == 2)
                 {
-                    return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "read-from", "remove", "save-as", "set");
+                    return getListOfStringsMatchingLastWord(args,
+                            "clear", "create-as", "dimtype", "list", "list-onetime", "read-from",
+                            "remove", "remove-onetime", "save-as", "set", "set-onetime");
                 }
                 else
                 {
@@ -432,13 +435,14 @@ public class CommandJED extends CommandBase
                 throwUsage("dimbuilder.clear");
             }
         }
-        else if (args[0].equals("set"))
+        else if (args[0].equals("set") || args[0].equals("set-onetime"))
         {
             if (args.length >= 3)
             {
+                WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
                 String[] valueParts = dropFirstStrings(args, 2);
                 String value = String.join(" ", valueParts);
-                DimensionConfig.instance().dimbuilderSet(args[1], value);
+                DimensionConfig.instance().dimbuilderSet(args[1], value, type);
                 notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success", args[1], value);
             }
             else
@@ -446,13 +450,15 @@ public class CommandJED extends CommandBase
                 throwUsage("dimbuilder.set");
             }
         }
-        else if (args[0].equals("remove"))
+        else if (args[0].equals("remove") || args[0].equals("remove-onetime"))
         {
             if (args.length >= 2)
             {
+                WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+
                 for (int i = 1; i < args.length; i++)
                 {
-                    if (DimensionConfig.instance().dimbuilderRemove(args[i]))
+                    if (DimensionConfig.instance().dimbuilderRemove(args[i], type))
                     {
                         notifyCommandListener(sender, this, "jed.commands.dimbuilder.remove.success", args[i]);
                     }
@@ -467,18 +473,20 @@ public class CommandJED extends CommandBase
                 throwUsage("dimbuilder.remove");
             }
         }
-        else if (args[0].equals("list"))
+        else if (args[0].equals("list") || args[0].equals("list-onetime"))
         {
+            WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+
             if (args.length > 1)
             {
                 for (int i = 1; i < args.length; i++)
                 {
-                    DimensionConfig.instance().dimbuilderList(args[i], sender);
+                    DimensionConfig.instance().dimbuilderList(args[i], type, sender);
                 }
             }
             else
             {
-                DimensionConfig.instance().dimbuilderList(null, sender);
+                DimensionConfig.instance().dimbuilderList(null, type, sender);
             }
         }
         else if (args[0].equals("read-from"))

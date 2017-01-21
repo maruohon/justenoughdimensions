@@ -91,15 +91,14 @@ public class DimensionConfig
         return entry != null ? entry.getBiome() : null;
     }
 
-    public void setWorldInfoValues(int dimension, NBTTagCompound tagIn, boolean oneTimeValues)
+    public void setWorldInfoValues(int dimension, NBTTagCompound tagIn, WorldInfoType type)
     {
-        Map<Integer, NBTTagCompound> map = oneTimeValues ? this.onetimeWorldInfo : this.customWorldInfo;
+        Map<Integer, NBTTagCompound> map = type == WorldInfoType.ONE_TIME ? this.onetimeWorldInfo : this.customWorldInfo;
         NBTTagCompound dimNBT = map.get(dimension);
 
         if (dimNBT != null)
         {
             tagIn.merge(dimNBT);
-            if (dimension == 6 && oneTimeValues) System.out.printf("setting one time values... '%s'\n", dimNBT.toString());
         }
     }
 
@@ -433,7 +432,7 @@ public class DimensionConfig
         dimType.add("worldprovider", new JsonPrimitive(worldProvider));
     }
 
-    public void dimbuilderSet(String key, String value)
+    public void dimbuilderSet(String key, String value, WorldInfoType type)
     {
         JsonObject obj = this.dimBuilderData;
 
@@ -447,7 +446,7 @@ public class DimensionConfig
         }
         else
         {
-            obj = this.getOrCreateNestedObject(obj, "worldinfo");
+            obj = this.getOrCreateNestedObject(obj, type.getKeyName());
 
             if (this.isJEDProperty(key))
             {
@@ -458,7 +457,7 @@ public class DimensionConfig
         }
     }
 
-    public boolean dimbuilderRemove(String key)
+    public boolean dimbuilderRemove(String key, WorldInfoType type)
     {
         JsonObject obj = this.dimBuilderData;
 
@@ -473,7 +472,7 @@ public class DimensionConfig
         }
         else
         {
-            obj = this.getNestedObject(obj, "worldinfo", false);
+            obj = this.getNestedObject(obj, type.getKeyName(), false);
 
             if (obj != null)
             {
@@ -489,11 +488,11 @@ public class DimensionConfig
         }
     }
 
-    public void dimbuilderList(@Nullable String key, ICommandSender sender) throws CommandException
+    public void dimbuilderList(@Nullable String key, WorldInfoType type, ICommandSender sender) throws CommandException
     {
         if (key != null)
         {
-            JsonPrimitive prim = this.getDimbuilderPrimitive(key);
+            JsonPrimitive prim = this.getDimbuilderPrimitive(key, type);
 
             if (prim != null)
             {
@@ -567,7 +566,7 @@ public class DimensionConfig
     }
 
     @Nullable
-    private JsonPrimitive getDimbuilderPrimitive(String key)
+    private JsonPrimitive getDimbuilderPrimitive(String key, WorldInfoType type)
     {
         JsonObject obj = this.dimBuilderData;
 
@@ -590,20 +589,20 @@ public class DimensionConfig
             }
         }
 
-        if (obj.has("worldinfo") && obj.get("worldinfo").isJsonObject())
+        if (obj.has(type.getKeyName()) && obj.get(type.getKeyName()).isJsonObject())
         {
-            obj = obj.get("worldinfo").getAsJsonObject();
+            obj = obj.get(type.getKeyName()).getAsJsonObject();
 
-            // The requested key is a value directly inside the worldinfo object
-            if (obj.has(key) && obj.get(key).isJsonPrimitive())
-            {
-                return obj.get(key).getAsJsonPrimitive();
-            }
-            else if (obj.has("JED") && obj.get("JED").isJsonObject())
+            if (this.isJEDProperty(key) && obj.has("JED") && obj.get("JED").isJsonObject())
             {
                 obj = obj.get("JED").getAsJsonObject();
                 // The requested key exists inside the JED object
                 return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+            }
+            // The requested key is a value directly inside the worldinfo object
+            else if (obj.has(key) && obj.get(key).isJsonPrimitive())
+            {
+                return obj.get(key).getAsJsonPrimitive();
             }
         }
 
@@ -1111,6 +1110,24 @@ public class DimensionConfig
             if (getClass() != other.getClass()) { return false; }
 
             return this.getId() == ((DimensionEntry) other).getId();
+        }
+    }
+
+    public enum WorldInfoType
+    {
+        REGULAR ("worldinfo"),
+        ONE_TIME ("worldinfo_onetime");
+
+        private final String keyName;
+
+        private WorldInfoType(String keyName)
+        {
+            this.keyName = keyName;
+        }
+
+        public String getKeyName()
+        {
+            return this.keyName;
         }
     }
 }
