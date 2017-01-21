@@ -5,7 +5,7 @@ import java.util.List;
 import net.minecraft.world.DimensionType;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.config.DimensionConfig.DimensionEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 

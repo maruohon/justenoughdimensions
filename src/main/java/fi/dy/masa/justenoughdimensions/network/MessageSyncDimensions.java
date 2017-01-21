@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.config.DimensionConfig.DimensionEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionEntry;
 import io.netty.buffer.ByteBuf;
 
 public class MessageSyncDimensions implements IMessage
