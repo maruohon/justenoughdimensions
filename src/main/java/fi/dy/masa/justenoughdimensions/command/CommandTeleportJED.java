@@ -228,11 +228,10 @@ public class CommandTeleportJED extends CommandBase
 
     private Entity teleportEntityInsideSameDimension(Entity entity, TeleportData data)
     {
-        Vec3d pos = data.getPosition();
-        pos = getClampedDestinationPosition(pos, entity.getEntityWorld());
+        Vec3d pos = data.getPosition(entity.getEntityWorld());
 
         // Load the chunk first
-        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.xCoord) >> 4, (int) Math.floor(pos.zCoord) >> 4);
+        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.xCoord / 16D), (int) Math.floor(pos.zCoord / 16D));
 
         entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, data.getYaw(), data.getPitch());
         entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
@@ -248,31 +247,34 @@ public class CommandTeleportJED extends CommandBase
             CommandJED.throwNumber("unable.to.load.world", Integer.valueOf(data.getDimension()));
         }
 
-        Vec3d pos = getClampedDestinationPosition(data.getPosition(), worldDst);
+        Vec3d pos = data.getPosition(worldDst);
         double x = pos.xCoord;
         double y = pos.yCoord;
         double z = pos.zCoord;
 
         // Load the chunk first
-        worldDst.getChunkFromChunkCoords((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
+        worldDst.getChunkFromChunkCoords((int) Math.floor(x / 16D), (int) Math.floor(z / 16D));
 
         if (entity instanceof EntityPlayerMP)
         {
             EntityPlayerMP player = (EntityPlayerMP) entity;
             World worldOld = player.getEntityWorld();
-            // Set the yaw and pitch at this point
-            entity.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
-            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), new TeleporterJED(worldDst));
-            player.setPositionAndUpdate(x, y, z);
+            TeleporterJED teleporter = new TeleporterJED(worldDst, data);
+
+            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), teleporter);
 
             // Teleporting FROM The End
             if (worldOld.provider instanceof WorldProviderEnd)
             {
-                player.setPositionAndUpdate(x, y, z);
+                teleporter.placeInPortal(player, data.getYaw());
                 worldDst.spawnEntity(player);
-                worldDst.updateEntityWithOptionalForce(player, false);
                 this.removeDragonBossBarHack(player, (WorldProviderEnd) worldOld.provider);
             }
+
+            player.setPositionAndUpdate(x, y, z);
+            worldDst.updateEntityWithOptionalForce(player, false);
+            player.addExperience(0);
+            player.setPlayerHealthUpdated();
         }
         else
         {
@@ -309,11 +311,16 @@ public class CommandTeleportJED extends CommandBase
 
     public static Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
     {
+        return getClampedDestinationPosition(posIn.xCoord, posIn.yCoord, posIn.zCoord, worldDst);
+    }
+
+    public static Vec3d getClampedDestinationPosition(double x, double y, double z, World worldDst)
+    {
         WorldBorder border = worldDst.getWorldBorder();
 
-        double x = MathHelper.clamp(posIn.xCoord, border.minX() + 2, border.maxX() - 2);
-        double y = MathHelper.clamp(posIn.yCoord, -4096, 4096);
-        double z = MathHelper.clamp(posIn.zCoord, border.minZ() + 2, border.maxZ() - 2);
+        x = MathHelper.clamp(x, border.minX() + 2, border.maxX() - 2);
+        y = MathHelper.clamp(y, -4096, 4096);
+        z = MathHelper.clamp(z, border.minZ() + 2, border.maxZ() - 2);
 
         return new Vec3d(x, y, z);
     }
@@ -438,20 +445,23 @@ public class CommandTeleportJED extends CommandBase
         public float getYaw()     { return this.yaw;       }
         public float getPitch()   { return this.pitch;     }
 
-        public Vec3d getPosition()
+        public Vec3d getPosition(World world)
         {
-            return new Vec3d(this.posX, this.posY, this.posZ);
+            return getClampedDestinationPosition(this.posX, this.posY, this.posZ, world);
         }
     }
 
     private static class TeleporterJED extends Teleporter
     {
         private final WorldServer world;
+        private final TeleportData data;
 
-        public TeleporterJED(WorldServer worldIn)
+        public TeleporterJED(WorldServer worldIn, TeleportData data)
         {
             super(worldIn);
+
             this.world = worldIn;
+            this.data = data;
         }
 
         @Override
@@ -463,7 +473,15 @@ public class CommandTeleportJED extends CommandBase
         @Override
         public boolean placeInExistingPortal(Entity entityIn, float rotationYaw)
         {
+            Vec3d pos = this.data.getPosition(entityIn.getEntityWorld());
+            entityIn.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, this.data.getYaw(), this.data.getPitch());
             return true;
+        }
+
+        @Override
+        public void removeStalePortalLocations(long worldTime)
+        {
+            // NO-OP
         }
 
         @Override
