@@ -5,20 +5,20 @@ import java.util.List;
 import net.minecraft.world.DimensionType;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.config.DimensionEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class DimensionSyncPacket
 {
     private ByteBuf buffer = Unpooled.buffer();
-    private List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
+    private List<DimensionConfigEntry> dimensions = new ArrayList<DimensionConfigEntry>();
 
-    public void addDimensionData(List<DimensionEntry> entries)
+    public void addDimensionData(List<DimensionConfigEntry> entries)
     {
         this.buffer.writeInt(entries.size());
 
-        for (DimensionEntry entry : entries)
+        for (DimensionConfigEntry entry : entries)
         {
             entry.writeToByteBuf(this.buffer);
         }
@@ -31,7 +31,7 @@ public class DimensionSyncPacket
 
         for (int i = 0 ; i < count ; i++)
         {
-            DimensionEntry entry = DimensionEntry.fromByteBuf(buf);
+            DimensionConfigEntry entry = DimensionConfigEntry.fromByteBuf(buf);
 
             if (entry != null && entry.getUnregister() == false)
             {
@@ -49,7 +49,7 @@ public class DimensionSyncPacket
     {
         List<String> ids = new ArrayList<String>();
 
-        for (DimensionEntry entry : this.dimensions)
+        for (DimensionConfigEntry entry : this.dimensions)
         {
             int id = entry.getId();
             ids.add(String.valueOf(id));
@@ -59,7 +59,7 @@ public class DimensionSyncPacket
         JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
     }
 
-    public static void registerDimension(int id, DimensionEntry entry)
+    public static void registerDimension(int id, DimensionConfigEntry entry)
     {
         if (entry.getUnregister())
         {

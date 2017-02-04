@@ -45,7 +45,7 @@ public class DimensionConfig
     private static DimensionConfig instance;
     private final File configDirConfigs;
     private final File dimensionFileConfigs;
-    private final Map<Integer, DimensionEntry> dimensions = new HashMap<Integer, DimensionEntry>();
+    private final Map<Integer, DimensionConfigEntry> dimensions = new HashMap<Integer, DimensionConfigEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private JsonObject dimBuilderData = new JsonObject();
@@ -67,9 +67,9 @@ public class DimensionConfig
         return instance;
     }
 
-    public List<DimensionEntry> getRegisteredDimensions()
+    public List<DimensionConfigEntry> getRegisteredDimensions()
     {
-        return ImmutableList.<DimensionEntry>copyOf(this.dimensions.values());
+        return ImmutableList.<DimensionConfigEntry>copyOf(this.dimensions.values());
     }
 
     public boolean useCustomWorldInfoFor(int dimension)
@@ -79,7 +79,7 @@ public class DimensionConfig
 
     public String getBiomeFor(int dimension)
     {
-        DimensionEntry entry = this.dimensions.get(dimension);
+        DimensionConfigEntry entry = this.dimensions.get(dimension);
         return entry != null ? entry.getBiome() : null;
     }
 
@@ -153,7 +153,7 @@ public class DimensionConfig
 
     public void registerDimensions()
     {
-        for (DimensionEntry entry : this.dimensions.values())
+        for (DimensionConfigEntry entry : this.dimensions.values())
         {
             this.registerDimension(entry.getId(), entry);
         }
@@ -165,7 +165,7 @@ public class DimensionConfig
     {
         if (Configs.enableReplacingRegisteredDimensions)
         {
-            for (DimensionEntry entry : this.dimensions.values())
+            for (DimensionConfigEntry entry : this.dimensions.values())
             {
                 if (DimensionManager.isDimensionRegistered(entry.getId()))
                 {
@@ -183,7 +183,7 @@ public class DimensionConfig
         }
     }
 
-    private boolean registerDimension(int dimension, DimensionEntry entry)
+    private boolean registerDimension(int dimension, DimensionConfigEntry entry)
     {
         if (entry.getUnregister())
         {
@@ -220,7 +220,7 @@ public class DimensionConfig
 
     public String registerDimensionFromConfig(int dimension) throws CommandException
     {
-        DimensionEntry entry = this.dimensions.get(dimension);
+        DimensionConfigEntry entry = this.dimensions.get(dimension);
 
         if (entry != null)
         {
@@ -246,11 +246,11 @@ public class DimensionConfig
 
     public String registerNewDimension(int dimension) throws CommandException
     {
-        DimensionEntry entry = this.createDefaultDimensionEntry(dimension);
+        DimensionConfigEntry entry = this.createDefaultDimensionEntry(dimension);
         return this.registerNewDimension(dimension, entry);
     }
 
-    private String registerNewDimension(int dimension, DimensionEntry entry) throws CommandException
+    private String registerNewDimension(int dimension, DimensionConfigEntry entry) throws CommandException
     {
         boolean success = this.registerDimension(dimension, entry);
 
@@ -269,14 +269,14 @@ public class DimensionConfig
     public String registerNewDimension(int dimension, String name, String suffix, boolean keepLoaded,
             String providerClassName, boolean override) throws CommandException
     {
-        Class<? extends WorldProvider> providerClass = DimensionEntry.getProviderClass(providerClassName);
+        Class<? extends WorldProvider> providerClass = DimensionConfigEntry.getProviderClass(providerClassName);
 
         if (providerClass == null)
         {
             CommandJED.throwCommand("invalid.worldprovider.name", providerClassName);
         }
 
-        DimensionEntry entry = new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+        DimensionConfigEntry entry = new DimensionConfigEntry(dimension, name, suffix, keepLoaded, providerClass);
         entry.setOverride(override);
 
         return this.registerNewDimension(dimension, entry);
@@ -297,14 +297,14 @@ public class DimensionConfig
 
     private void saveConfig()
     {
-        List<DimensionEntry> dims = new ArrayList<DimensionEntry>();
+        List<DimensionConfigEntry> dims = new ArrayList<DimensionConfigEntry>();
         dims.addAll(this.getRegisteredDimensions());
         Collections.sort(dims);
 
         JsonObject root = new JsonObject();
         JsonArray array = new JsonArray();
 
-        for (DimensionEntry dimEntry : dims)
+        for (DimensionConfigEntry dimEntry : dims)
         {
             array.add(dimEntry.toJson());
         }
@@ -360,7 +360,7 @@ public class DimensionConfig
 
     private void parseDimensionConfigEntry(int dimension, JsonObject object)
     {
-        DimensionEntry entry = null;
+        DimensionConfigEntry entry = null;
 
         if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
         {
@@ -507,7 +507,7 @@ public class DimensionConfig
 
     public boolean dimbuilderReadFrom(int dimension)
     {
-        DimensionEntry entry = this.dimensions.get(dimension);
+        DimensionConfigEntry entry = this.dimensions.get(dimension);
 
         if (entry != null)
         {
@@ -729,12 +729,12 @@ public class DimensionConfig
         return null;
     }
 
-    private DimensionEntry createDefaultDimensionEntry(int dimension)
+    private DimensionConfigEntry createDefaultDimensionEntry(int dimension)
     {
-        return new DimensionEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
+        return new DimensionConfigEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
     }
 
-    private DimensionEntry parseDimensionType(int dimension, JsonObject dimType)
+    private DimensionConfigEntry parseDimensionType(int dimension, JsonObject dimType)
     {
         String name = (dimType.has("name") && dimType.get("name").isJsonPrimitive()) ?
                 dimType.get("name").getAsString() : "DIM" + dimension;
@@ -769,7 +769,7 @@ public class DimensionConfig
                 }
             }
 
-            providerClass = DimensionEntry.getProviderClass(providerName);
+            providerClass = DimensionConfigEntry.getProviderClass(providerName);
         }
 
         if (providerClass == null)
@@ -777,12 +777,12 @@ public class DimensionConfig
             providerClass = WorldProviderSurfaceJED.class;
 
             JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
-                    providerName, DimensionEntry.getNameForWorldProvider(providerClass));
+                    providerName, DimensionConfigEntry.getNameForWorldProvider(providerClass));
         }
 
         JustEnoughDimensions.logInfo("Creating a customized DimensionType for dimension {}", dimension);
 
-        return new DimensionEntry(dimension, name, suffix, keepLoaded, providerClass);
+        return new DimensionConfigEntry(dimension, name, suffix, keepLoaded, providerClass);
     }
 
     public enum WorldInfoType

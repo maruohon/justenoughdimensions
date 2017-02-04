@@ -18,7 +18,7 @@ import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 import io.netty.buffer.ByteBuf;
 
-public class DimensionEntry implements Comparable<DimensionEntry>
+public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 {
     private final int id;
     private final String name;
@@ -32,7 +32,7 @@ public class DimensionEntry implements Comparable<DimensionEntry>
     private JsonObject worldInfoJson;
     private JsonObject oneTimeWorldInfoJson;
 
-    public DimensionEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
+    public DimensionConfigEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
     {
         this.id = id;
         this.name = name;
@@ -88,13 +88,13 @@ public class DimensionEntry implements Comparable<DimensionEntry>
         this.biome = biome;
     }
 
-    public DimensionEntry setWorldInfoJson(JsonObject obj)
+    public DimensionConfigEntry setWorldInfoJson(JsonObject obj)
     {
         this.worldInfoJson = obj;
         return this;
     }
 
-    public DimensionEntry setOneTimeWorldInfoJson(JsonObject obj)
+    public DimensionConfigEntry setOneTimeWorldInfoJson(JsonObject obj)
     {
         this.oneTimeWorldInfoJson = obj;
         return this;
@@ -147,7 +147,7 @@ public class DimensionEntry implements Comparable<DimensionEntry>
         }
     }
 
-    public static DimensionEntry fromByteBuf(ByteBuf buf)
+    public static DimensionConfigEntry fromByteBuf(ByteBuf buf)
     {
         int id = buf.readInt();
         String name = ByteBufUtils.readUTF8String(buf);
@@ -161,7 +161,7 @@ public class DimensionEntry implements Comparable<DimensionEntry>
         {
             @SuppressWarnings("unchecked")
             Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
-            DimensionEntry entry = new DimensionEntry(id, name, suffix, false, providerClass);
+            DimensionConfigEntry entry = new DimensionConfigEntry(id, name, suffix, false, providerClass);
             entry.setUnregister(unregister);
             entry.setDimensionTypeName(dimTypeName);
             return entry;
@@ -246,7 +246,7 @@ public class DimensionEntry implements Comparable<DimensionEntry>
     }
 
     @Override
-    public int compareTo(DimensionEntry other)
+    public int compareTo(DimensionConfigEntry other)
     {
         if (this.getId() == other.getId())
         {
@@ -272,7 +272,7 @@ public class DimensionEntry implements Comparable<DimensionEntry>
         if (other == null) { return false; }
         if (getClass() != other.getClass()) { return false; }
 
-        return this.getId() == ((DimensionEntry) other).getId();
+        return this.getId() == ((DimensionConfigEntry) other).getId();
     }
 
     @SuppressWarnings("unchecked")
