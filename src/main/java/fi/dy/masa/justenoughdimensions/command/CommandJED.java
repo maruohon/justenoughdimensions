@@ -145,6 +145,10 @@ public class CommandJED extends CommandBase
             {
                 return getListOfStringsMatchingLastWord(args, "query");
             }
+            else if (cmd.equals("unloademptydimensions"))
+            {
+                return getListOfStringsMatchingLastWord(args, "true");
+            }
             else if (cmd.equals("worldborder"))
             {
                 if (len == 1)
@@ -234,7 +238,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("unregister");
+                throw new WrongUsageException("/jed unregister <dimension id>");
             }
         }
         else if (cmd.equals("unregister-remove"))
@@ -248,7 +252,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("unregister.remove");
+                throw new WrongUsageException("/jed unregister-remove <dimension id>");
             }
         }
         else if (cmd.equals("debug"))
@@ -406,12 +410,11 @@ public class CommandJED extends CommandBase
 
     private void dimBuilder(String[] args, ICommandSender sender) throws CommandException
     {
-        if (args.length == 0)
+        if (args.length < 1)
         {
-            throwUsage("dimbuilder");
+            this.dimBuilderPrintHelp(sender);
         }
-
-        if (args[0].equals("dimtype"))
+        else if (args[0].equals("dimtype"))
         {
             if (args.length == 6)
             {
@@ -420,7 +423,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.dimtype");
+                throw new WrongUsageException("/jed dimbuilder dimtype <DimensionType id> <name> <suffix> <keeploaded true/false> <worldprovidername>");
             }
         }
         else if (args[0].equals("clear"))
@@ -432,7 +435,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.clear");
+                throw new WrongUsageException("/jed dimbuilder clear");
             }
         }
         else if (args[0].equals("set") || args[0].equals("set-onetime"))
@@ -447,7 +450,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.set");
+                throw new WrongUsageException("/jed dimbuilder <set | set-onetime> <key> <value>");
             }
         }
         else if (args[0].equals("remove") || args[0].equals("remove-onetime"))
@@ -470,7 +473,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.remove");
+                throw new WrongUsageException("/jed dimbuilder <remove | remove-onetime> <key> [key] ...");
             }
         }
         else if (args[0].equals("list") || args[0].equals("list-onetime"))
@@ -505,7 +508,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.read.from");
+                throw new WrongUsageException("/jed dimbuilder read-from <dimension id>");
             }
         }
         else if (args[0].equals("save-as"))
@@ -518,7 +521,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.save.as");
+                throw new WrongUsageException("/jed dimbuilder save-as <dimension id>");
             }
         }
         else if (args[0].equals("create-as"))
@@ -531,13 +534,25 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.create.as");
+                throw new WrongUsageException("/jed dimbuilder create-as <dimension id>");
             }
         }
         else
         {
-            throwUsage("dimbuilder");
+            this.dimBuilderPrintHelp(sender);
         }
+    }
+
+    private void dimBuilderPrintHelp(ICommandSender sender)
+    {
+        sender.sendMessage(new TextComponentString("/jed dimbuilder clear"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder create-as <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <name> <suffix> <keeploaded> <worldprovider>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <list | list-onetime> [key1] [key2] ..."));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <remove | remove-onetime> <key>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder read-from <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder save-as <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <set | set-onetime> <key> <value which can have spaces>"));
     }
 
     public static String[] dropFirstStrings(String[] input, int toDrop)

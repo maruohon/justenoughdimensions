@@ -181,9 +181,12 @@ public class CommandJEDWorldBorder
         else if (cmdName.equals("get"))
         {
             double diameter = border.getDiameter();
+            double centerX = border.getCenterX();
+            double centerZ = border.getCenterZ();
             sender.setCommandStat(CommandResultStats.Type.QUERY_RESULT, MathHelper.floor(diameter + 0.5D));
             sender.sendMessage(new TextComponentTranslation("jed.commands.worldborder.get.success",
-                    Integer.valueOf(dimension), String.format("%.0f", diameter)));
+                    Integer.valueOf(dimension), String.format("%.2f", diameter),
+                    String.format("%.1f", centerX), String.format("%.1f", centerZ)));
         }
         else
         {
