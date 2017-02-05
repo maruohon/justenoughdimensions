@@ -21,6 +21,7 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
+import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.gen.ChunkProviderServer;
@@ -223,7 +224,7 @@ public class WorldUtils
         }
         else if (info.getTerrainType() == WorldType.DEBUG_WORLD)
         {
-            pos = BlockPos.ORIGIN.up();
+            pos = BlockPos.ORIGIN.up(64);
         }
         // Mostly overworld type dimensions
         else
@@ -233,6 +234,14 @@ public class WorldUtils
 
         info.setSpawn(pos);
         JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+
+        WorldBorder border = world.getWorldBorder();
+
+        if (border.contains(pos) == false)
+        {
+            border.setCenter(pos.getX(), pos.getZ());
+            JustEnoughDimensions.logInfo("Moved the WorldBorder of dimension {} to the world's spawn, because the spawn was outside the border", provider.getDimension());
+        }
     }
 
     @Nonnull
