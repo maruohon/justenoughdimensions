@@ -1,24 +1,27 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.11.2-latest": "1.2.0",
-        "1.11.2-recommended": "1.2.0",
-        "1.11-latest": "1.2.0",
-        "1.11-recommended": "1.2.0",
-        "1.10.2-latest": "1.2.0",
-        "1.10.2-recommended": "1.2.0"
+        "1.11.2-latest": "1.3.0",
+        "1.11.2-recommended": "1.3.0",
+        "1.11-latest": "1.3.0",
+        "1.11-recommended": "1.3.0",
+        "1.10.2-latest": "1.3.0",
+        "1.10.2-recommended": "1.3.0"
     },
     "1.11.2": {
+        "1.3.0": "Several bug fixes and improvements to various things\nAdded worldinfo_onetime\nAdded some new commands",
         "1.2.0": "Added the option SkyRenderType to change sky rendering between Overworld or End sky type\nRewrote the teleport command code, again...",
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions"
     },
     "1.11": {
+        "1.3.0": "Several bug fixes and improvements to various things\nAdded worldinfo_onetime\nAdded some new commands",
         "1.2.0": "Added the option SkyRenderType to change sky rendering between Overworld or End sky type\nRewrote the teleport command code, again...",
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions",
         "1.0.0": "Countless fixes, improvements and additions. See the changelog on the CurseForge files page.",
         "1.0.0-beta.1": "Major improvements: new commands, re-written teleport command (now supports all entities and entity selectors), per-dimension gamerules/time/weather/WorldBorder/WorldType"
     },
     "1.10.2": {
+        "1.3.0": "Several bug fixes and improvements to various things\nAdded worldinfo_onetime\nAdded some new commands",
         "1.2.0": "Added the option SkyRenderType to change sky rendering between Overworld or End sky type\nRewrote the teleport command code, again...",
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions",
         "1.0.0": "Countless fixes, improvements and additions. See the changelog on the CurseForge files page.",
