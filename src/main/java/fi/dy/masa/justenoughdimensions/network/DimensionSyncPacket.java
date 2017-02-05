@@ -5,20 +5,20 @@ import java.util.List;
 import net.minecraft.world.DimensionType;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.config.DimensionConfig.DimensionEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class DimensionSyncPacket
 {
     private ByteBuf buffer = Unpooled.buffer();
-    private List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
+    private List<DimensionConfigEntry> dimensions = new ArrayList<DimensionConfigEntry>();
 
-    public void addDimensionData(List<DimensionEntry> entries)
+    public void addDimensionData(List<DimensionConfigEntry> entries)
     {
         this.buffer.writeInt(entries.size());
 
-        for (DimensionEntry entry : entries)
+        for (DimensionConfigEntry entry : entries)
         {
             entry.writeToByteBuf(this.buffer);
         }
@@ -31,9 +31,9 @@ public class DimensionSyncPacket
 
         for (int i = 0 ; i < count ; i++)
         {
-            DimensionEntry entry = DimensionEntry.fromByteBuf(buf);
+            DimensionConfigEntry entry = DimensionConfigEntry.fromByteBuf(buf);
 
-            if (entry != null && entry.getUnregister() == false)
+            if (entry != null)
             {
                 this.dimensions.add(entry);
             }
@@ -49,19 +49,22 @@ public class DimensionSyncPacket
     {
         List<String> ids = new ArrayList<String>();
 
-        for (DimensionEntry entry : this.dimensions)
+        for (DimensionConfigEntry entry : this.dimensions)
         {
-            int id = entry.getId();
-            ids.add(String.valueOf(id));
-            registerDimension(id, entry);
+            registerDimension(entry.getId(), entry);
+
+            if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
+            {
+                ids.add(String.valueOf(entry.getId()));
+            }
         }
 
         JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
     }
 
-    public static void registerDimension(int id, DimensionEntry entry)
+    public static void registerDimension(int id, DimensionConfigEntry entry)
     {
-        if (entry.getUnregister())
+        if (entry.getUnregister() || entry.hasDimensionTypeEntry() == false)
         {
             return;
         }
@@ -70,7 +73,7 @@ public class DimensionSyncPacket
         {
             DimensionType type = DimensionManager.getProviderType(id);
 
-            if (type.createDimension().getClass() != entry.getProviderClass())
+            if (type.createDimension().getClass() != entry.getDimensionTypeEntry().getProviderClass())
             {
                 DimensionManager.unregisterDimension(id);
             }
@@ -78,7 +81,7 @@ public class DimensionSyncPacket
 
         if (DimensionManager.isDimensionRegistered(id) == false)
         {
-            DimensionManager.registerDimension(id, entry.registerDimensionType());
+            DimensionManager.registerDimension(id, entry.getDimensionTypeEntry().registerDimensionType());
         }
     }
 }

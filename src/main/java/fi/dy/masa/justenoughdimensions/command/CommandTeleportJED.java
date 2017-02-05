@@ -3,12 +3,14 @@ package fi.dy.masa.justenoughdimensions.command;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -26,6 +28,7 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldExc
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils.UnableToFindMethodHandleException;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class CommandTeleportJED extends CommandBase
 {
@@ -225,8 +228,11 @@ public class CommandTeleportJED extends CommandBase
 
     private Entity teleportEntityInsideSameDimension(Entity entity, TeleportData data)
     {
-        Vec3d pos = data.getPosition();
-        pos = getClampedDestinationPosition(pos, entity.getEntityWorld());
+        Vec3d pos = data.getPosition(entity.getEntityWorld());
+
+        // Load the chunk first
+        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.xCoord / 16D), (int) Math.floor(pos.zCoord / 16D));
+
         entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, data.getYaw(), data.getPitch());
         entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
         return entity;
@@ -241,28 +247,34 @@ public class CommandTeleportJED extends CommandBase
             CommandJED.throwNumber("unable.to.load.world", Integer.valueOf(data.getDimension()));
         }
 
-        Vec3d pos = getClampedDestinationPosition(data.getPosition(), worldDst);
+        Vec3d pos = data.getPosition(worldDst);
         double x = pos.xCoord;
         double y = pos.yCoord;
         double z = pos.zCoord;
+
+        // Load the chunk first
+        worldDst.getChunkFromChunkCoords((int) Math.floor(x / 16D), (int) Math.floor(z / 16D));
 
         if (entity instanceof EntityPlayerMP)
         {
             EntityPlayerMP player = (EntityPlayerMP) entity;
             World worldOld = player.getEntityWorld();
-            // Set the yaw and pitch at this point
-            entity.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
-            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), new DummyTeleporter(worldDst));
-            player.setPositionAndUpdate(x, y, z);
+            TeleporterJED teleporter = new TeleporterJED(worldDst, data);
+
+            server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), teleporter);
 
             // Teleporting FROM The End
             if (worldOld.provider instanceof WorldProviderEnd)
             {
-                player.setPositionAndUpdate(x, y, z);
+                teleporter.placeInPortal(player, data.getYaw());
                 worldDst.spawnEntity(player);
-                worldDst.updateEntityWithOptionalForce(player, false);
                 this.removeDragonBossBarHack(player, (WorldProviderEnd) worldOld.provider);
             }
+
+            player.setPositionAndUpdate(x, y, z);
+            worldDst.updateEntityWithOptionalForce(player, false);
+            player.addExperience(0);
+            player.setPlayerHealthUpdated();
         }
         else
         {
@@ -299,11 +311,16 @@ public class CommandTeleportJED extends CommandBase
 
     public static Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
     {
+        return getClampedDestinationPosition(posIn.xCoord, posIn.yCoord, posIn.zCoord, worldDst);
+    }
+
+    public static Vec3d getClampedDestinationPosition(double x, double y, double z, World worldDst)
+    {
         WorldBorder border = worldDst.getWorldBorder();
 
-        double x = MathHelper.clamp(posIn.xCoord, border.minX() + 2, border.maxX() - 2);
-        double y = MathHelper.clamp(posIn.yCoord, -4096, 4096);
-        double z = MathHelper.clamp(posIn.zCoord, border.minZ() + 2, border.maxZ() - 2);
+        x = MathHelper.clamp(x, border.minX() + 2, border.maxX() - 2);
+        y = MathHelper.clamp(y, -4096, 4096);
+        z = MathHelper.clamp(z, border.minZ() + 2, border.maxZ() - 2);
 
         return new Vec3d(x, y, z);
     }
@@ -370,7 +387,9 @@ public class CommandTeleportJED extends CommandBase
                 {
                     BlockPos spawn = world.getSpawnCoordinate();
 
-                    if (spawn == null)
+                    // If the spawn point of End type dimensions (that are using separate WorldInfo) has been moved,
+                    // then use that manually set spawn point instead
+                    if (spawn == null || (world.getSpawnPoint().equals(spawn) == false && world.getWorldInfo() instanceof WorldInfoJED))
                     {
                         spawn = world.getSpawnPoint();
                     }
@@ -426,17 +445,23 @@ public class CommandTeleportJED extends CommandBase
         public float getYaw()     { return this.yaw;       }
         public float getPitch()   { return this.pitch;     }
 
-        public Vec3d getPosition()
+        public Vec3d getPosition(World world)
         {
-            return new Vec3d(this.posX, this.posY, this.posZ);
+            return getClampedDestinationPosition(this.posX, this.posY, this.posZ, world);
         }
     }
 
-    private static class DummyTeleporter extends Teleporter
+    private static class TeleporterJED extends Teleporter
     {
-        public DummyTeleporter(WorldServer worldIn)
+        private final WorldServer world;
+        private final TeleportData data;
+
+        public TeleporterJED(WorldServer worldIn, TeleportData data)
         {
             super(worldIn);
+
+            this.world = worldIn;
+            this.data = data;
         }
 
         @Override
@@ -448,12 +473,49 @@ public class CommandTeleportJED extends CommandBase
         @Override
         public boolean placeInExistingPortal(Entity entityIn, float rotationYaw)
         {
+            Vec3d pos = this.data.getPosition(entityIn.getEntityWorld());
+            entityIn.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, this.data.getYaw(), this.data.getPitch());
             return true;
+        }
+
+        @Override
+        public void removeStalePortalLocations(long worldTime)
+        {
+            // NO-OP
         }
 
         @Override
         public void placeInPortal(Entity entityIn, float rotationYaw)
         {
+            BlockPos spawnCoord = this.world.provider.getSpawnCoordinate();
+
+            // For End type dimensions, generate the platform and place the entity there,
+            // UNLESS the world has a different spawn point set.
+            if ((this.world.provider.getDimensionType().getId() == 1 || this.world.provider instanceof WorldProviderEnd)
+                 && this.world.getSpawnPoint().equals(spawnCoord))
+            {
+                IBlockState obsidian = Blocks.OBSIDIAN.getDefaultState();
+                IBlockState air = Blocks.AIR.getDefaultState();
+                int entityX = MathHelper.floor(entityIn.posX);
+                int entityY = MathHelper.floor(entityIn.posY) - 1;
+                int entityZ = MathHelper.floor(entityIn.posZ);
+
+                for (int zOff = -2; zOff <= 2; ++zOff)
+                {
+                    for (int xOff = -2; xOff <= 2; ++xOff)
+                    {
+                        for (int yOff = -1; yOff < 3; yOff++)
+                        {
+                            this.world.setBlockState(new BlockPos(entityX + xOff, entityY + yOff, entityZ + zOff), yOff < 0 ? obsidian : air);
+                        }
+                    }
+                }
+
+                entityIn.setLocationAndAngles((double)entityX, (double)entityY, (double)entityZ, entityIn.rotationYaw, 0.0F);
+                entityIn.motionX = 0.0D;
+                entityIn.motionY = 0.0D;
+                entityIn.motionZ = 0.0D;
+            }
         }
     }
 }

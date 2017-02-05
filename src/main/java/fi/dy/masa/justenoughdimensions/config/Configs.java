@@ -15,12 +15,15 @@ public class Configs
     public static final String CATEGORY_GENERIC = "Generic";
 
     public static boolean enableForcedGamemodes;
+    public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
     public static boolean enableUnregisteringDimensions;
+
+    public static int initialSpawnDimensionId;
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
@@ -48,6 +51,10 @@ public class Configs
         prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");
         enableForcedGamemodes = prop.getBoolean();
 
+        prop = conf.get(CATEGORY_GENERIC, "enableInitialSpawnDimensionOverride", false).setRequiresMcRestart(false);
+        prop.setComment("Enables overriding the initial spawning dimension to something other than dim 0 (overworld).");
+        enableInitialSpawnDimensionOverride = prop.getBoolean();
+
         prop = conf.get(CATEGORY_GENERIC, "enableLoggingInfo", false).setRequiresMcRestart(false);
         prop.setComment("Enables a bunch of extra logging on the INFO level for registrations etc.");
         enableLoggingInfo = prop.getBoolean();
@@ -71,6 +78,10 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldInfo", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
         prop.setComment("If enabled, all dimensions that exist in dimensions.json and have the \"worldinfo\" key present (an empty object is enough - works even if the dimension isn't registered by this mod because it already exist!), will use separate WorldInfo instances (separate time, weather, world border, gamerules etc.)");
         enableSeparateWorldInfo = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "initialSpawnDimensionId", 0).setRequiresWorldRestart(true).setRequiresMcRestart(false);
+        prop.setComment("If enabled with the enableInitialSpawnDimensionOverride option, this will be used as the initial spawn dimension ID");
+        initialSpawnDimensionId = prop.getInt();
 
         if (conf.hasChanged() == true)
         {

@@ -10,11 +10,13 @@ import net.minecraftforge.common.util.Constants;
 
 public class WorldInfoJED extends WorldInfo
 {
-    private boolean forceGamemode;
+    private boolean forceGameMode;
+    private boolean useCustomDayCycle;
     private int dayLength = 12000;
     private int nightLength = 12000;
     private int cloudHeight = 128;
     private int skyRenderType;
+    private int skyDisableFlags;
     private Vec3d skyColor = null;
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
@@ -26,11 +28,13 @@ public class WorldInfoJED extends WorldInfo
         if (nbt.hasKey("JED", Constants.NBT.TAG_COMPOUND))
         {
             NBTTagCompound tag = nbt.getCompoundTag("JED");
-            if (tag.hasKey("ForceGamemode", Constants.NBT.TAG_BYTE))   { this.forceGamemode = tag.getBoolean("ForceGamemode"); }
+            if (tag.hasKey("ForceGameMode", Constants.NBT.TAG_BYTE))   { this.forceGameMode = tag.getBoolean("ForceGameMode"); }
+            if (tag.hasKey("CustomDayCycle", Constants.NBT.TAG_BYTE))   { this.useCustomDayCycle = tag.getBoolean("CustomDayCycle"); }
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
             if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
+            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
             if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = hexStringToColor(tag.getString("CloudColor")); }
@@ -61,8 +65,10 @@ public class WorldInfoJED extends WorldInfo
         tag.setInteger("NightLength", this.nightLength);
         tag.setInteger("CloudHeight", this.cloudHeight);
         tag.setByte("SkyRenderType", (byte) this.skyRenderType);
+        tag.setByte("SkyDisableFlags", (byte) this.skyDisableFlags);
 
-        if (this.forceGamemode)      { tag.setBoolean("ForceGamemode", this.forceGamemode); }
+        if (this.forceGameMode)      { tag.setBoolean("ForceGameMode", this.forceGameMode); }
+        if (this.useCustomDayCycle)  { tag.setBoolean("CustomDayCycle", this.useCustomDayCycle); }
         if (this.skyColor != null)   { tag.setString("SkyColor",   colorToHexString(this.skyColor)); }
         if (this.cloudColor != null) { tag.setString("CloudColor", colorToHexString(this.cloudColor)); }
         if (this.fogColor != null)   { tag.setString("FogColor",   colorToHexString(this.fogColor)); }
@@ -126,7 +132,12 @@ public class WorldInfoJED extends WorldInfo
 
     public boolean getForceGamemode()
     {
-        return this.forceGamemode;
+        return this.forceGameMode;
+    }
+
+    public boolean getUseCustomDayCycle()
+    {
+        return this.useCustomDayCycle;
     }
 
     public int getDayLength()

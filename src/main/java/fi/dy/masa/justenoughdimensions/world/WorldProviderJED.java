@@ -19,6 +19,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected int nightLength = 12000;
     protected int cloudHeight = 128;
     private int skyRenderType = 0;
+    private int skyDisableFlags = 0;
+    private boolean useCustomDayCycle;
     protected Vec3d skyColor = null;
     protected Vec3d cloudColor = null;
     protected Vec3d fogColor = null;
@@ -58,10 +60,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     {
         if (tag != null)
         {
+            this.useCustomDayCycle = tag.getBoolean("CustomDayCycle");
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
             if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
             if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
+            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
             if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
             if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = WorldInfoJED.hexStringToColor(tag.getString("CloudColor")); }
@@ -73,7 +77,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 
         if (this.skyRenderType != 0)
         {
-            this.setSkyRenderer(new SkyRenderer(this.skyRenderType));
+            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
         }
         else
         {
@@ -81,19 +85,15 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
     }
 
-    /**
-     * Set server-side required properties from WorldInfo
-     */
+    @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
-        if (worldInfo != null)
-        {
-            this.dayLength = worldInfo.getDayLength();
-            this.nightLength = worldInfo.getNightLength();
+        this.useCustomDayCycle = worldInfo.getUseCustomDayCycle();
+        this.dayLength = worldInfo.getDayLength();
+        this.nightLength = worldInfo.getNightLength();
 
-            if (this.dayLength   <= 0) { this.dayLength = 1; }
-            if (this.nightLength <= 0) { this.nightLength = 1; }
-        }
+        if (this.dayLength   <= 0) { this.dayLength = 1; }
+        if (this.nightLength <= 0) { this.nightLength = 1; }
     }
 
     public int getDayCycleLength()
@@ -111,10 +111,15 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public float calculateCelestialAngle(long worldTime, float partialTicks)
     {
+        if (this.useCustomDayCycle == false)
+        {
+            return super.calculateCelestialAngle(worldTime, partialTicks);
+        }
+
         int cycleLength = this.getDayCycleLength();
-        int i = (int) (worldTime % cycleLength);
+        int dayTicks = (int) (worldTime % cycleLength);
         int duskOrDawnLength = (int) (0.075f * cycleLength);
-        float f;
+        float angle;
 
         // This fixes the sun/moon spazzing out in-place noticeably with short day cycles
         if (this.world.getGameRules().getBoolean("doDaylightCycle") == false)
@@ -125,37 +130,37 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // Day, including dusk (The day part starts duskOrDawnLength before 0, so
         // subtract the duskOrDawnLength length from the day length to get the upper limit
         // of the day part of the cycle.)
-        if (i > cycleLength - duskOrDawnLength || i < this.dayLength - duskOrDawnLength)
+        if (dayTicks > cycleLength - duskOrDawnLength || dayTicks < this.dayLength - duskOrDawnLength)
         {
             // Dawn (1.5 / 20)th of the full day cycle just before the day rolls over to 0 ticks
-            if (i > this.dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
+            if (dayTicks > this.dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
             {
-                i -= cycleLength - duskOrDawnLength;
+                dayTicks -= cycleLength - duskOrDawnLength;
             }
             // Day, starts from 0 ticks, so we need to add the dawn part
             else
             {
-                i += duskOrDawnLength;
+                dayTicks += duskOrDawnLength;
             }
 
-            f = (((float) i + partialTicks) / (float) this.dayLength * 0.65f) + 0.675f;
+            angle = (((float) dayTicks + partialTicks) / (float) this.dayLength * 0.65f) + 0.675f;
         }
         // Night
         else
         {
-            i -= (this.dayLength - duskOrDawnLength);
-            f = (((float) i + partialTicks) / (float) this.nightLength * 0.35f) + 0.325f;
+            dayTicks -= (this.dayLength - duskOrDawnLength);
+            angle = (((float) dayTicks + partialTicks) / (float) this.nightLength * 0.35f) + 0.325f;
         }
 
-        if (f > 1.0F)
+        if (angle > 1.0F)
         {
-            --f;
+            --angle;
         }
 
-        float f1 = 1.0F - (float) ((Math.cos(f * Math.PI) + 1.0D) / 2.0D);
-        f = f + (f1 - f) / 3.0F;
+        float f1 = 1.0F - (float) ((Math.cos(angle * Math.PI) + 1.0D) / 2.0D);
+        angle = angle + (f1 - angle) / 3.0F;
 
-        return f;
+        return angle;
     }
 
     @SideOnly(Side.CLIENT)

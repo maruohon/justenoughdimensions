@@ -9,18 +9,18 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.config.DimensionConfig.DimensionEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import io.netty.buffer.ByteBuf;
 
 public class MessageSyncDimensions implements IMessage
 {
-    private List<DimensionEntry> dimensions = new ArrayList<DimensionEntry>();
+    private List<DimensionConfigEntry> dimensions = new ArrayList<DimensionConfigEntry>();
 
     public MessageSyncDimensions()
     {
     }
 
-    public MessageSyncDimensions(List<DimensionEntry> entries)
+    public MessageSyncDimensions(List<DimensionConfigEntry> entries)
     {
         this.dimensions.addAll(entries);
     }
@@ -33,9 +33,9 @@ public class MessageSyncDimensions implements IMessage
 
         for (int i = 0 ; i < count ; i++)
         {
-            DimensionEntry entry = DimensionEntry.fromByteBuf(buf);
+            DimensionConfigEntry entry = DimensionConfigEntry.fromByteBuf(buf);
 
-            if (entry != null && entry.getUnregister() == false)
+            if (entry != null)
             {
                 this.dimensions.add(entry);
             }
@@ -47,7 +47,7 @@ public class MessageSyncDimensions implements IMessage
     {
         buf.writeInt(this.dimensions.size());
 
-        for (DimensionEntry entry : this.dimensions)
+        for (DimensionConfigEntry entry : this.dimensions)
         {
             entry.writeToByteBuf(buf);
         }
@@ -86,11 +86,14 @@ public class MessageSyncDimensions implements IMessage
         {
             List<String> ids = new ArrayList<String>();
 
-            for (DimensionEntry entry : message.dimensions)
+            for (DimensionConfigEntry entry : message.dimensions)
             {
-                int id = entry.getId();
-                ids.add(String.valueOf(id));
-                DimensionSyncPacket.registerDimension(id, entry);
+                DimensionSyncPacket.registerDimension(entry.getId(), entry);
+
+                if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
+                {
+                    ids.add(String.valueOf(entry.getId()));
+                }
             }
 
             JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");

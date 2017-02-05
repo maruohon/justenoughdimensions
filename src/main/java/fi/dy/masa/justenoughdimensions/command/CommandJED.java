@@ -7,6 +7,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
@@ -26,6 +27,10 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDTime;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
+import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class CommandJED extends CommandBase
 {
@@ -53,12 +58,14 @@ public class CommandJED extends CommandBase
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
-                    "listdims",
+                    "listloadeddimensions",
+                    "listregistereddimensions",
                     "register",
                     "reload",
                     "seed",
                     "setworldspawn",
                     "time",
+                    "unloademptydimensions",
                     "unregister",
                     "unregister-remove",
                     "weather",
@@ -71,7 +78,9 @@ public class CommandJED extends CommandBase
             {
                 if (args.length == 2)
                 {
-                    return getListOfStringsMatchingLastWord(args, "clear", "create-as", "dimtype", "list", "read-from", "remove", "save-as", "set");
+                    return getListOfStringsMatchingLastWord(args,
+                            "clear", "create-as", "dimtype", "list", "list-onetime", "read-from",
+                            "remove", "remove-onetime", "save-as", "set", "set-onetime");
                 }
                 else
                 {
@@ -136,6 +145,10 @@ public class CommandJED extends CommandBase
             {
                 return getListOfStringsMatchingLastWord(args, "query");
             }
+            else if (cmd.equals("unloademptydimensions"))
+            {
+                return getListOfStringsMatchingLastWord(args, "true");
+            }
             else if (cmd.equals("worldborder"))
             {
                 if (len == 1)
@@ -179,12 +192,33 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
         }
-        else if (cmd.equals("listdims"))
+        else if (cmd.equals("listregistereddimensions"))
         {
             Integer[] dims = DimensionManager.getStaticDimensionIDs();
             String[] dimsStr = new String[dims.length];
             for (int i = 0; i < dimsStr.length; i++) { dimsStr[i] = String.valueOf(dims[i]); }
+
+            for (String line : DimensionDump.getFormattedRegisteredDimensionsDump())
+            {
+                JustEnoughDimensions.logger.info(line);
+            }
+
             sender.sendMessage(new TextComponentTranslation("jed.commands.listdims.list", String.join(", ", dimsStr)));
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console.full"));
+        }
+        else if (cmd.equals("listloadeddimensions"))
+        {
+            for (String line : DimensionDump.getFormattedLoadedDimensionsDump())
+            {
+                JustEnoughDimensions.logger.info(line);
+            }
+
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
+        }
+        else if (cmd.equals("unloademptydimensions"))
+        {
+            int count = WorldUtils.unloadEmptyDimensions(args.length == 2 && args[1].equals("true"));
+            sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
         else if (cmd.equals("dimbuilder"))
         {
@@ -204,7 +238,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("unregister");
+                throw new WrongUsageException("/jed unregister <dimension id>");
             }
         }
         else if (cmd.equals("unregister-remove"))
@@ -218,7 +252,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("unregister.remove");
+                throw new WrongUsageException("/jed unregister-remove <dimension id>");
             }
         }
         else if (cmd.equals("debug"))
@@ -241,9 +275,16 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
                         ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
+                if (world.getWorldInfo() instanceof WorldInfoJED)
+                {
+                    JustEnoughDimensions.logger.info("JED NBT tag: {}", ((WorldInfoJED) world.getWorldInfo()).getJEDTag().toString());
+                }
+                NBTTagCompound tag = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
+                tag.removeTag("JED");
+                JustEnoughDimensions.logger.info("Vanilla level NBT: {}", tag.toString());
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 
-                sender.sendMessage(new TextComponentString("Debug output printed to console"));
+                sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
             }
         }
         else
@@ -369,21 +410,20 @@ public class CommandJED extends CommandBase
 
     private void dimBuilder(String[] args, ICommandSender sender) throws CommandException
     {
-        if (args.length == 0)
+        if (args.length < 1)
         {
-            throwUsage("dimbuilder");
+            this.dimBuilderPrintHelp(sender);
         }
-
-        if (args[0].equals("dimtype"))
+        else if (args[0].equals("dimtype"))
         {
-            if (args.length == 5)
+            if (args.length == 6)
             {
-                DimensionConfig.instance().dimbuilderDimtype(args[1], args[2], args[3], args[4]);
+                DimensionConfig.instance().dimbuilderDimtype(parseInt(args[1]), args[2], args[3], args[4], args[5]);
                 notifyCommandListener(sender, this, "jed.commands.dimbuilder.dimtype.success");
             }
             else
             {
-                throwUsage("dimbuilder.dimtype");
+                throw new WrongUsageException("/jed dimbuilder dimtype <DimensionType id> <name> <suffix> <keeploaded true/false> <worldprovidername>");
             }
         }
         else if (args[0].equals("clear"))
@@ -395,29 +435,33 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.clear");
+                throw new WrongUsageException("/jed dimbuilder clear");
             }
         }
-        else if (args[0].equals("set"))
+        else if (args[0].equals("set") || args[0].equals("set-onetime"))
         {
             if (args.length >= 3)
             {
+                WorldInfoType type = args[0].equals("set-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
                 String[] valueParts = dropFirstStrings(args, 2);
-                DimensionConfig.instance().dimbuilderSet(args[1], String.join(" ", valueParts));
-                notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success");
+                String value = String.join(" ", valueParts);
+                DimensionConfig.instance().dimbuilderSet(args[1], value, type);
+                notifyCommandListener(sender, this, "jed.commands.dimbuilder.set.success", args[1], value);
             }
             else
             {
-                throwUsage("dimbuilder.set");
+                throw new WrongUsageException("/jed dimbuilder <set | set-onetime> <key> <value>");
             }
         }
-        else if (args[0].equals("remove"))
+        else if (args[0].equals("remove") || args[0].equals("remove-onetime"))
         {
             if (args.length >= 2)
             {
+                WorldInfoType type = args[0].equals("remove-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+
                 for (int i = 1; i < args.length; i++)
                 {
-                    if (DimensionConfig.instance().dimbuilderRemove(args[i]))
+                    if (DimensionConfig.instance().dimbuilderRemove(args[i], type))
                     {
                         notifyCommandListener(sender, this, "jed.commands.dimbuilder.remove.success", args[i]);
                     }
@@ -429,21 +473,23 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.remove");
+                throw new WrongUsageException("/jed dimbuilder <remove | remove-onetime> <key> [key] ...");
             }
         }
-        else if (args[0].equals("list"))
+        else if (args[0].equals("list") || args[0].equals("list-onetime"))
         {
+            WorldInfoType type = args[0].equals("list-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+
             if (args.length > 1)
             {
                 for (int i = 1; i < args.length; i++)
                 {
-                    DimensionConfig.instance().dimbuilderList(args[i], sender);
+                    DimensionConfig.instance().dimbuilderList(args[i], type, sender);
                 }
             }
             else
             {
-                DimensionConfig.instance().dimbuilderList(null, sender);
+                DimensionConfig.instance().dimbuilderList(null, type, sender);
             }
         }
         else if (args[0].equals("read-from"))
@@ -462,7 +508,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.read.from");
+                throw new WrongUsageException("/jed dimbuilder read-from <dimension id>");
             }
         }
         else if (args[0].equals("save-as"))
@@ -475,7 +521,7 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.save.as");
+                throw new WrongUsageException("/jed dimbuilder save-as <dimension id>");
             }
         }
         else if (args[0].equals("create-as"))
@@ -488,13 +534,25 @@ public class CommandJED extends CommandBase
             }
             else
             {
-                throwUsage("dimbuilder.create.as");
+                throw new WrongUsageException("/jed dimbuilder create-as <dimension id>");
             }
         }
         else
         {
-            throwUsage("dimbuilder");
+            this.dimBuilderPrintHelp(sender);
         }
+    }
+
+    private void dimBuilderPrintHelp(ICommandSender sender)
+    {
+        sender.sendMessage(new TextComponentString("/jed dimbuilder clear"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder create-as <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <name> <suffix> <keeploaded> <worldprovider>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <list | list-onetime> [key1] [key2] ..."));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <remove | remove-onetime> <key>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder read-from <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder save-as <dim id>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder <set | set-onetime> <key> <value which can have spaces>"));
     }
 
     public static String[] dropFirstStrings(String[] input, int toDrop)
