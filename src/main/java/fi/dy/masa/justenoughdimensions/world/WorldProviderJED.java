@@ -117,9 +117,9 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
 
         int cycleLength = this.getDayCycleLength();
-        int i = (int) (worldTime % cycleLength);
+        int dayTicks = (int) (worldTime % cycleLength);
         int duskOrDawnLength = (int) (0.075f * cycleLength);
-        float f;
+        float angle;
 
         // This fixes the sun/moon spazzing out in-place noticeably with short day cycles
         if (this.world.getGameRules().getBoolean("doDaylightCycle") == false)
@@ -130,37 +130,37 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // Day, including dusk (The day part starts duskOrDawnLength before 0, so
         // subtract the duskOrDawnLength length from the day length to get the upper limit
         // of the day part of the cycle.)
-        if (i > cycleLength - duskOrDawnLength || i < this.dayLength - duskOrDawnLength)
+        if (dayTicks > cycleLength - duskOrDawnLength || dayTicks < this.dayLength - duskOrDawnLength)
         {
             // Dawn (1.5 / 20)th of the full day cycle just before the day rolls over to 0 ticks
-            if (i > this.dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
+            if (dayTicks > this.dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
             {
-                i -= cycleLength - duskOrDawnLength;
+                dayTicks -= cycleLength - duskOrDawnLength;
             }
             // Day, starts from 0 ticks, so we need to add the dawn part
             else
             {
-                i += duskOrDawnLength;
+                dayTicks += duskOrDawnLength;
             }
 
-            f = (((float) i + partialTicks) / (float) this.dayLength * 0.65f) + 0.675f;
+            angle = (((float) dayTicks + partialTicks) / (float) this.dayLength * 0.65f) + 0.675f;
         }
         // Night
         else
         {
-            i -= (this.dayLength - duskOrDawnLength);
-            f = (((float) i + partialTicks) / (float) this.nightLength * 0.35f) + 0.325f;
+            dayTicks -= (this.dayLength - duskOrDawnLength);
+            angle = (((float) dayTicks + partialTicks) / (float) this.nightLength * 0.35f) + 0.325f;
         }
 
-        if (f > 1.0F)
+        if (angle > 1.0F)
         {
-            --f;
+            --angle;
         }
 
-        float f1 = 1.0F - (float) ((Math.cos(f * Math.PI) + 1.0D) / 2.0D);
-        f = f + (f1 - f) / 3.0F;
+        float f1 = 1.0F - (float) ((Math.cos(angle * Math.PI) + 1.0D) / 2.0D);
+        angle = angle + (f1 - angle) / 3.0F;
 
-        return f;
+        return angle;
     }
 
     @SideOnly(Side.CLIENT)
