@@ -35,7 +35,7 @@ public class MessageSyncDimensions implements IMessage
         {
             DimensionConfigEntry entry = DimensionConfigEntry.fromByteBuf(buf);
 
-            if (entry != null && entry.getUnregister() == false)
+            if (entry != null)
             {
                 this.dimensions.add(entry);
             }
@@ -88,9 +88,12 @@ public class MessageSyncDimensions implements IMessage
 
             for (DimensionConfigEntry entry : message.dimensions)
             {
-                int id = entry.getId();
-                ids.add(String.valueOf(id));
-                DimensionSyncPacket.registerDimension(id, entry);
+                DimensionSyncPacket.registerDimension(entry.getId(), entry);
+
+                if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
+                {
+                    ids.add(String.valueOf(entry.getId()));
+                }
             }
 
             JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");

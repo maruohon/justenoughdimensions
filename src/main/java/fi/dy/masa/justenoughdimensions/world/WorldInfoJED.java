@@ -10,7 +10,7 @@ import net.minecraftforge.common.util.Constants;
 
 public class WorldInfoJED extends WorldInfo
 {
-    private boolean forceGamemode;
+    private boolean forceGameMode;
     private boolean useCustomDayCycle;
     private int dayLength = 12000;
     private int nightLength = 12000;
@@ -28,7 +28,7 @@ public class WorldInfoJED extends WorldInfo
         if (nbt.hasKey("JED", Constants.NBT.TAG_COMPOUND))
         {
             NBTTagCompound tag = nbt.getCompoundTag("JED");
-            if (tag.hasKey("ForceGamemode", Constants.NBT.TAG_BYTE))   { this.forceGamemode = tag.getBoolean("ForceGamemode"); }
+            if (tag.hasKey("ForceGameMode", Constants.NBT.TAG_BYTE))   { this.forceGameMode = tag.getBoolean("ForceGameMode"); }
             if (tag.hasKey("CustomDayCycle", Constants.NBT.TAG_BYTE))   { this.useCustomDayCycle = tag.getBoolean("CustomDayCycle"); }
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
             if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
@@ -67,7 +67,7 @@ public class WorldInfoJED extends WorldInfo
         tag.setByte("SkyRenderType", (byte) this.skyRenderType);
         tag.setByte("SkyDisableFlags", (byte) this.skyDisableFlags);
 
-        if (this.forceGamemode)      { tag.setBoolean("ForceGamemode", this.forceGamemode); }
+        if (this.forceGameMode)      { tag.setBoolean("ForceGameMode", this.forceGameMode); }
         if (this.useCustomDayCycle)  { tag.setBoolean("CustomDayCycle", this.useCustomDayCycle); }
         if (this.skyColor != null)   { tag.setString("SkyColor",   colorToHexString(this.skyColor)); }
         if (this.cloudColor != null) { tag.setString("CloudColor", colorToHexString(this.cloudColor)); }
@@ -132,7 +132,7 @@ public class WorldInfoJED extends WorldInfo
 
     public boolean getForceGamemode()
     {
-        return this.forceGamemode;
+        return this.forceGameMode;
     }
 
     public boolean getUseCustomDayCycle()

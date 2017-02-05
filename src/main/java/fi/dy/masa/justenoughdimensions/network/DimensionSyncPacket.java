@@ -33,7 +33,7 @@ public class DimensionSyncPacket
         {
             DimensionConfigEntry entry = DimensionConfigEntry.fromByteBuf(buf);
 
-            if (entry != null && entry.getUnregister() == false)
+            if (entry != null)
             {
                 this.dimensions.add(entry);
             }
@@ -51,9 +51,12 @@ public class DimensionSyncPacket
 
         for (DimensionConfigEntry entry : this.dimensions)
         {
-            int id = entry.getId();
-            ids.add(String.valueOf(id));
-            registerDimension(id, entry);
+            registerDimension(entry.getId(), entry);
+
+            if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
+            {
+                ids.add(String.valueOf(entry.getId()));
+            }
         }
 
         JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
@@ -61,7 +64,7 @@ public class DimensionSyncPacket
 
     public static void registerDimension(int id, DimensionConfigEntry entry)
     {
-        if (entry.getUnregister())
+        if (entry.getUnregister() || entry.hasDimensionTypeEntry() == false)
         {
             return;
         }
@@ -70,7 +73,7 @@ public class DimensionSyncPacket
         {
             DimensionType type = DimensionManager.getProviderType(id);
 
-            if (type.createDimension().getClass() != entry.getProviderClass())
+            if (type.createDimension().getClass() != entry.getDimensionTypeEntry().getProviderClass())
             {
                 DimensionManager.unregisterDimension(id);
             }
@@ -78,7 +81,7 @@ public class DimensionSyncPacket
 
         if (DimensionManager.isDimensionRegistered(id) == false)
         {
-            DimensionManager.registerDimension(id, entry.registerDimensionType());
+            DimensionManager.registerDimension(id, entry.getDimensionTypeEntry().registerDimensionType());
         }
     }
 }

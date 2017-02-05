@@ -413,9 +413,9 @@ public class CommandJED extends CommandBase
 
         if (args[0].equals("dimtype"))
         {
-            if (args.length == 5)
+            if (args.length == 6)
             {
-                DimensionConfig.instance().dimbuilderDimtype(args[1], args[2], args[3], args[4]);
+                DimensionConfig.instance().dimbuilderDimtype(parseInt(args[1]), args[2], args[3], args[4], args[5]);
                 notifyCommandListener(sender, this, "jed.commands.dimbuilder.dimtype.success");
             }
             else
@@ -439,7 +439,7 @@ public class CommandJED extends CommandBase
         {
             if (args.length >= 3)
             {
-                WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+                WorldInfoType type = args[0].equals("set-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
                 String[] valueParts = dropFirstStrings(args, 2);
                 String value = String.join(" ", valueParts);
                 DimensionConfig.instance().dimbuilderSet(args[1], value, type);
@@ -454,7 +454,7 @@ public class CommandJED extends CommandBase
         {
             if (args.length >= 2)
             {
-                WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+                WorldInfoType type = args[0].equals("remove-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
 
                 for (int i = 1; i < args.length; i++)
                 {
@@ -475,7 +475,7 @@ public class CommandJED extends CommandBase
         }
         else if (args[0].equals("list") || args[0].equals("list-onetime"))
         {
-            WorldInfoType type = args[0].endsWith("-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
+            WorldInfoType type = args[0].equals("list-onetime") ? WorldInfoType.ONE_TIME : WorldInfoType.REGULAR;
 
             if (args.length > 1)
             {
