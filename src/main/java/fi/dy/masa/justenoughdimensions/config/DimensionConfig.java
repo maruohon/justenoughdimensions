@@ -285,6 +285,21 @@ public class DimensionConfig
         return this.registerNewDimension(dimension, entry);
     }
 
+    public void unregisterCustomDimensions()
+    {
+        for (DimensionConfigEntry entry : this.dimensions.values())
+        {
+            if (entry.getUnregister() == false &&
+                entry.getOverride() == false &&
+                entry.hasDimensionTypeEntry() &&
+                DimensionManager.isDimensionRegistered(entry.getId()))
+            {
+                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
+                DimensionManager.unregisterDimension(entry.getId());
+            }
+        }
+    }
+
     public void removeDimensionAndSaveConfig(int dimension)
     {
         this.removeDimension(dimension);

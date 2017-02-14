@@ -164,7 +164,8 @@ public class WorldUtils
 
             // Always override the ChunkProvider when using overridden WorldInfo, otherwise
             // the ChunkProvider will be using the settings from the overworld, because
-            // WorldEvent.Load obviously only happens after the world has been constructed...
+            // WorldEvent.Load (where the WorldInfo gets overridden) obviously only happens after
+            // the world has been constructed and the CunkProvider set.
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 
