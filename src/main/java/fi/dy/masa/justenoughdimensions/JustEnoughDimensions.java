@@ -10,6 +10,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
@@ -86,6 +87,14 @@ public class JustEnoughDimensions
         DimensionConfig.instance().registerDimensions();
 
         GamemodeTracker.getInstance().readFromDisk();
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event)
+    {
+        // Unregister custom dimensions. This is only useful in single player,
+        // so that all the dimensions won't immediately load when joining a world again.
+        DimensionConfig.instance().unregisterCustomDimensions();
     }
 
     public static void logInfo(String message, Object... params)

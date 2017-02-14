@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -164,7 +165,8 @@ public class WorldUtils
 
             // Always override the ChunkProvider when using overridden WorldInfo, otherwise
             // the ChunkProvider will be using the settings from the overworld, because
-            // WorldEvent.Load obviously only happens after the world has been constructed...
+            // WorldEvent.Load (where the WorldInfo gets overridden) obviously only happens after
+            // the world has been constructed and the CunkProvider set.
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 
@@ -301,20 +303,29 @@ public class WorldUtils
 
         int iterations = 0;
 
-        // Note: The canCoordinateBeSpawn() call will actually generate chunks!
-        while (provider.canCoordinateBeSpawn(x, z) == false)
+        // Note: This will generate chunks! Also note that the returned position might
+        // still end up inside a tree or something, since decoration hasn't necessarily been done yet.
+        while (iterations < 1000)
         {
-            x += random.nextInt(64) - random.nextInt(64);
-            z += random.nextInt(64) - random.nextInt(64);
-            iterations++;
+            Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
+            pos = new BlockPos(x, chunk.getTopFilledSegment() + 15, z);
 
-            if (iterations >= 100)
+            while (pos.getY() >= 0)
             {
-                break;
+                if (isSuitableSpawnBlock(world, pos))
+                {
+                    return pos.up();
+                }
+
+                pos = pos.down();
             }
+
+            x += random.nextInt(32) - random.nextInt(32);
+            z += random.nextInt(32) - random.nextInt(32);
+            iterations++;
         }
 
-        pos = getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up();
+        pos = getSuitableSpawnBlockInColumn(world, new BlockPos(x, 70, z)).up();
 
         if (worldSettings.isBonusChestEnabled())
         {
@@ -324,16 +335,15 @@ public class WorldUtils
         return pos;
     }
 
-    // The one in world returns the position above the top solid block... >_>
     @Nonnull
-    public static BlockPos getTopSolidOrLiquidBlock(World world, @Nonnull BlockPos posIn)
+    private static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos posIn)
     {
         Chunk chunk = world.getChunkFromBlockCoords(posIn);
-        BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 16, posIn.getZ());
+        BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 15, posIn.getZ());
 
         while (pos.getY() >= 0)
         {
-            if (isSuitableSpawnBlock(world, chunk, pos))
+            if (isSuitableSpawnBlock(world, pos))
             {
                 return pos;
             }
@@ -344,13 +354,16 @@ public class WorldUtils
         return posIn;
     }
 
-    private static boolean isSuitableSpawnBlock(World world, Chunk chunk, BlockPos pos)
+    private static boolean isSuitableSpawnBlock(World world, BlockPos pos)
     {
-        IBlockState state = chunk.getBlockState(pos);
+        IBlockState state = world.getBlockState(pos);
+        Material materialUp1 = world.getBlockState(pos.up(1)).getMaterial();
+        Material materialUp2 = world.getBlockState(pos.up(2)).getMaterial();
 
         return state.getMaterial().blocksMovement() &&
-               state.getBlock().isLeaves(state, world, pos) == false &&
-               state.getBlock().isFoliage(world, pos) == false;
+               state.getBlock().isLeaves(state, world, pos) == false && state.getBlock().isFoliage(world, pos) == false &&
+               materialUp1.blocksMovement() == false && materialUp1.isLiquid() == false &&
+               materialUp2.blocksMovement() == false && materialUp2.isLiquid() == false;
     }
 
     private static void createBonusChest(World world)
