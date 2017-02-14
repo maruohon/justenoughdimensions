@@ -314,7 +314,7 @@ public class WorldUtils
             }
         }
 
-        pos = getTopSolidOrLiquidBlock(world, new BlockPos(x, 70, z)).up();
+        pos = getSuitableSpawnBlock(world, new BlockPos(x, 70, z)).up();
 
         if (worldSettings.isBonusChestEnabled())
         {
@@ -326,14 +326,14 @@ public class WorldUtils
 
     // The one in world returns the position above the top solid block... >_>
     @Nonnull
-    public static BlockPos getTopSolidOrLiquidBlock(World world, @Nonnull BlockPos posIn)
+    public static BlockPos getSuitableSpawnBlock(World world, @Nonnull BlockPos posIn)
     {
         Chunk chunk = world.getChunkFromBlockCoords(posIn);
         BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 16, posIn.getZ());
 
         while (pos.getY() >= 0)
         {
-            if (isSuitableSpawnBlock(world, chunk, pos))
+            if (isSuitableSpawnBlock(world, pos))
             {
                 return pos;
             }
@@ -344,9 +344,9 @@ public class WorldUtils
         return posIn;
     }
 
-    private static boolean isSuitableSpawnBlock(World world, Chunk chunk, BlockPos pos)
+    private static boolean isSuitableSpawnBlock(World world, BlockPos pos)
     {
-        IBlockState state = chunk.getBlockState(pos);
+        IBlockState state = world.getBlockState(pos);
 
         return state.getMaterial().blocksMovement() &&
                state.getBlock().isLeaves(state, world, pos) == false &&

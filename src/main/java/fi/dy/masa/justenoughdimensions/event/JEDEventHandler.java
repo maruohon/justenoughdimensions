@@ -74,7 +74,7 @@ public class JEDEventHandler
     {
         World world = event.getWorld();
 
-        // The WorldInfoJED check here is necessary (or at least possibly nice) to avoid settings the things twice.
+        // The WorldInfoJED check here is necessary (or at least possibly nice) to avoid setting the things twice.
         // That would happen, when WorldEvent.Load calls WorldInfoUtils.loadAndSetCustomWorldInfo()
         // for custom dimensions, and that WorldInfoUtils.loadAndSetCustomWorldInfo() method then calls
         // WorldUtils.findAndSetWorldSpawn(), which then fires this event.

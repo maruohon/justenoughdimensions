@@ -267,7 +267,6 @@ public class CommandTeleportJED extends CommandBase
             if (worldOld.provider instanceof WorldProviderEnd)
             {
                 teleporter.placeInPortal(player, data.getYaw());
-                worldDst.spawnEntity(player);
                 this.removeDragonBossBarHack(player, (WorldProviderEnd) worldOld.provider);
             }
 
@@ -319,7 +318,6 @@ public class CommandTeleportJED extends CommandBase
         WorldBorder border = worldDst.getWorldBorder();
 
         x = MathHelper.clamp(x, border.minX() + 2, border.maxX() - 2);
-        y = MathHelper.clamp(y, -4096, 4096);
         z = MathHelper.clamp(z, border.minZ() + 2, border.maxZ() - 2);
 
         return new Vec3d(x, y, z);
@@ -496,9 +494,9 @@ public class CommandTeleportJED extends CommandBase
             {
                 IBlockState obsidian = Blocks.OBSIDIAN.getDefaultState();
                 IBlockState air = Blocks.AIR.getDefaultState();
-                int entityX = MathHelper.floor(entityIn.posX);
-                int entityY = MathHelper.floor(entityIn.posY) - 1;
-                int entityZ = MathHelper.floor(entityIn.posZ);
+                int spawnX = spawnCoord.getX();
+                int spawnY = spawnCoord.getY();
+                int spawnZ = spawnCoord.getZ();
 
                 for (int zOff = -2; zOff <= 2; ++zOff)
                 {
@@ -506,12 +504,12 @@ public class CommandTeleportJED extends CommandBase
                     {
                         for (int yOff = -1; yOff < 3; yOff++)
                         {
-                            this.world.setBlockState(new BlockPos(entityX + xOff, entityY + yOff, entityZ + zOff), yOff < 0 ? obsidian : air);
+                            this.world.setBlockState(new BlockPos(spawnX + xOff, spawnY + yOff, spawnZ + zOff), yOff < 0 ? obsidian : air);
                         }
                     }
                 }
 
-                entityIn.setLocationAndAngles((double)entityX, (double)entityY, (double)entityZ, entityIn.rotationYaw, 0.0F);
+                entityIn.setLocationAndAngles((double)spawnX, (double)spawnY, (double)spawnZ, entityIn.rotationYaw, 0.0F);
                 entityIn.motionX = 0.0D;
                 entityIn.motionY = 0.0D;
                 entityIn.motionZ = 0.0D;
