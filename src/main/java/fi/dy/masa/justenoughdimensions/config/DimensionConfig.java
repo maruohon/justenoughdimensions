@@ -74,7 +74,7 @@ public class DimensionConfig
 
     public boolean useCustomWorldInfoFor(int dimension)
     {
-        return this.customWorldInfo.containsKey(dimension);
+        return this.customWorldInfo.containsKey(dimension) || this.onetimeWorldInfo.containsKey(dimension);
     }
 
     @Nullable
