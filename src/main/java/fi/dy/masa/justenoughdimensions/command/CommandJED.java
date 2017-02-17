@@ -60,7 +60,7 @@ public class CommandJED extends CommandBase
         {
             return getListOfStringsMatchingLastWord(args,
                     "debug",
-                    "defaultgametype",
+                    "defaultgamemode",
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
@@ -129,7 +129,7 @@ public class CommandJED extends CommandBase
                     return getListOfStringsMatchingLastWord(args, "day", "daytime", "gametime");
                 }
             }
-            else if (cmd.equals("defaultgametype") && args.length == 1)
+            else if (cmd.equals("defaultgamemode") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
             }
@@ -189,6 +189,7 @@ public class CommandJED extends CommandBase
         }
 
         String cmd = args[0];
+        args = dropFirstStrings(args, 1);
 
         if (cmd.equals("reload"))
         {
@@ -221,22 +222,22 @@ public class CommandJED extends CommandBase
         }
         else if (cmd.equals("unloademptydimensions"))
         {
-            int count = WorldUtils.unloadEmptyDimensions(args.length == 2 && args[1].equals("true"));
+            int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("true"));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
         else if (cmd.equals("dimbuilder"))
         {
-            this.dimBuilder(dropFirstStrings(args, 1), sender);
+            this.dimBuilder(args, sender);
         }
         else if (cmd.equals("register"))
         {
-            this.register(dropFirstStrings(args, 1), sender);
+            this.register(args, sender);
         }
         else if (cmd.equals("unregister"))
         {
-            if (args.length == 2)
+            if (args.length == 1)
             {
-                int dimension = parseInt(args[1]);
+                int dimension = parseInt(args[0]);
                 this.unregister(dimension);
                 notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
             }
@@ -247,9 +248,9 @@ public class CommandJED extends CommandBase
         }
         else if (cmd.equals("unregister-remove"))
         {
-            if (args.length == 2)
+            if (args.length == 1)
             {
-                int dimension = parseInt(args[1]);
+                int dimension = parseInt(args[0]);
                 this.unregister(dimension);
                 DimensionConfig.instance().removeDimensionAndSaveConfig(dimension);
                 notifyCommandListener(sender, this, "jed.commands.unregister.remove", Integer.valueOf(dimension));
@@ -262,8 +263,22 @@ public class CommandJED extends CommandBase
         else if (cmd.equals("debug"))
         {
             World world = null;
-            try { int dim = parseInt(args[1]); world = DimensionManager.getWorld(dim); }
-            catch (Exception e) { Entity ent = sender.getCommandSenderEntity(); if (ent != null) world = ent.getEntityWorld(); }
+
+            if (args.length == 1)
+            {
+                try
+                {
+                    int dim = parseInt(args[0]);
+                    world = DimensionManager.getWorld(dim);
+                }
+                catch (Exception e) { }
+            }
+
+            if (world == null)
+            {
+                Entity ent = sender.getCommandSenderEntity();
+                if (ent != null) { world = ent.getEntityWorld(); }
+            }
 
             if (world != null)
             {
@@ -294,22 +309,26 @@ public class CommandJED extends CommandBase
         else
         {
             Entity entity = sender.getCommandSenderEntity();
+            boolean dimensionKnown = entity != null;
             int dimension = entity != null ? entity.getEntityWorld().provider.getDimension() : 0;
-            int trim = args.length >= 2 ? 2 : 1;
 
-            if (args.length >= 2)
+            if (args.length >= 1)
             {
-                try { dimension = parseInt(args[1]); }
-                catch (NumberInvalidException e)
+                try
                 {
-                    if (entity == null) { throwUsage("generic"); }
-                    trim = 1;
+                    dimension = parseInt(args[0]);
+                    args = dropFirstStrings(args, 1);
+                    dimensionKnown = true;
                 }
+                catch (NumberInvalidException e) { }
             }
 
-            args = dropFirstStrings(args, trim);
+            if (dimensionKnown == false)
+            {
+                throwUsage("generic");
+            }
 
-            if (cmd.equals("defaultgametype"))
+            if (cmd.equals("defaultgamemode"))
             {
                 CommandJEDDefaultGameType.execute(this, dimension, args, server, sender);
             }
