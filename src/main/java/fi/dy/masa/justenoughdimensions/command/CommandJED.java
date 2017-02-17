@@ -42,6 +42,12 @@ public class CommandJED extends CommandBase
     }
 
     @Override
+    public int getRequiredPermissionLevel()
+    {
+        return 2;
+    }
+
+    @Override
     public String getUsage(ICommandSender sender)
     {
         return  "jed.commands.usage.generic";
@@ -54,7 +60,7 @@ public class CommandJED extends CommandBase
         {
             return getListOfStringsMatchingLastWord(args,
                     "debug",
-                    "defaultgametype",
+                    "defaultgamemode",
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
@@ -89,86 +95,84 @@ public class CommandJED extends CommandBase
             }
 
             String cmd = args[0];
-            int trim = 2;
-            int len = args.length;
+            args = dropFirstStrings(args, 1);
 
-            try { parseInt(args[1]); }
+            try
+            {
+                parseInt(args[0]); // dimension
+                args = dropFirstStrings(args, 1);
+            }
             catch (NumberInvalidException e)
             {
                 if (sender.getCommandSenderEntity() == null)
                 {
                     return super.getTabCompletions(server, sender, args, pos);
                 }
-                trim = 1;
             }
-            len -= trim;
 
-            if (cmd.equals("weather"))
+            if (cmd.equals("weather") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "clear", "rain", "thunder");
             }
             else if (cmd.equals("time"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, "add", "set", "query");
                 }
-                else if (len == 2 && args[args.length - 2].equals("set"))
+                else if (args.length == 2 && args[0].equals("set"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "night");
                 }
-                else if (len == 2 && args[args.length - 2].equals("query"))
+                else if (args.length == 2 && args[0].equals("query"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "daytime", "gametime");
                 }
             }
-            else if (cmd.equals("defaultgametype") && len == 1)
+            else if (cmd.equals("defaultgamemode") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
             }
-            else if (cmd.equals("difficulty") && len == 1)
+            else if (cmd.equals("difficulty") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "peaceful", "easy", "normal", "hard");
             }
             else if (cmd.equals("gamerule"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, this.getOverWorldGameRules(server).getRules());
                 }
-                else if (len == 2 && this.getOverWorldGameRules(server).areSameType(args[args.length - 2], GameRules.ValueType.BOOLEAN_VALUE))
+                else if (args.length == 2 && this.getOverWorldGameRules(server).areSameType(args[0], GameRules.ValueType.BOOLEAN_VALUE))
                 {
                     return getListOfStringsMatchingLastWord(args, "true", "false");
                 }
             }
-            else if (cmd.equals("setworldspawn"))
+            else if (cmd.equals("setworldspawn") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "query");
             }
-            else if (cmd.equals("unloademptydimensions"))
+            else if (cmd.equals("unloademptydimensions") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "true");
             }
             else if (cmd.equals("worldborder"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, "set", "center", "damage", "warning", "add", "get");
                 }
-                else if (len >= 2)
+                else if (args[0].equals("damage") && args.length == 2)
                 {
-                    if (args[args.length - 2].equals("damage"))
-                    {
-                        return getListOfStringsMatchingLastWord(args, "buffer", "amount");
-                    }
-                    else if (args[args.length - 2].equals("warning"))
-                    {
-                        return getListOfStringsMatchingLastWord(args, "time", "distance");
-                    }
-                    else if (args[args.length - len].equals("center") && len <= 3)
-                    {
-                        return getTabCompletionCoordinateXZ(args, trim + 1, pos);
-                    }
+                    return getListOfStringsMatchingLastWord(args, "buffer", "amount");
+                }
+                else if (args[0].equals("warning") && args.length == 2)
+                {
+                    return getListOfStringsMatchingLastWord(args, "time", "distance");
+                }
+                else if (args[0].equals("center") && args.length <= 3)
+                {
+                    return getTabCompletionCoordinateXZ(args, 1, pos);
                 }
             }
         }
@@ -185,6 +189,7 @@ public class CommandJED extends CommandBase
         }
 
         String cmd = args[0];
+        args = dropFirstStrings(args, 1);
 
         if (cmd.equals("reload"))
         {
@@ -217,22 +222,22 @@ public class CommandJED extends CommandBase
         }
         else if (cmd.equals("unloademptydimensions"))
         {
-            int count = WorldUtils.unloadEmptyDimensions(args.length == 2 && args[1].equals("true"));
+            int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("true"));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
         else if (cmd.equals("dimbuilder"))
         {
-            this.dimBuilder(dropFirstStrings(args, 1), sender);
+            this.dimBuilder(args, sender);
         }
         else if (cmd.equals("register"))
         {
-            this.register(dropFirstStrings(args, 1), sender);
+            this.register(args, sender);
         }
         else if (cmd.equals("unregister"))
         {
-            if (args.length == 2)
+            if (args.length == 1)
             {
-                int dimension = parseInt(args[1]);
+                int dimension = parseInt(args[0]);
                 this.unregister(dimension);
                 notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
             }
@@ -243,9 +248,9 @@ public class CommandJED extends CommandBase
         }
         else if (cmd.equals("unregister-remove"))
         {
-            if (args.length == 2)
+            if (args.length == 1)
             {
-                int dimension = parseInt(args[1]);
+                int dimension = parseInt(args[0]);
                 this.unregister(dimension);
                 DimensionConfig.instance().removeDimensionAndSaveConfig(dimension);
                 notifyCommandListener(sender, this, "jed.commands.unregister.remove", Integer.valueOf(dimension));
@@ -258,8 +263,22 @@ public class CommandJED extends CommandBase
         else if (cmd.equals("debug"))
         {
             World world = null;
-            try { int dim = parseInt(args[1]); world = DimensionManager.getWorld(dim); }
-            catch (Exception e) { Entity ent = sender.getCommandSenderEntity(); if (ent != null) world = ent.getEntityWorld(); }
+
+            if (args.length == 1)
+            {
+                try
+                {
+                    int dim = parseInt(args[0]);
+                    world = DimensionManager.getWorld(dim);
+                }
+                catch (Exception e) { }
+            }
+
+            if (world == null)
+            {
+                Entity ent = sender.getCommandSenderEntity();
+                if (ent != null) { world = ent.getEntityWorld(); }
+            }
 
             if (world != null)
             {
@@ -290,22 +309,26 @@ public class CommandJED extends CommandBase
         else
         {
             Entity entity = sender.getCommandSenderEntity();
+            boolean dimensionKnown = entity != null;
             int dimension = entity != null ? entity.getEntityWorld().provider.getDimension() : 0;
-            int trim = args.length >= 2 ? 2 : 1;
 
-            if (args.length >= 2)
+            if (args.length >= 1)
             {
-                try { dimension = parseInt(args[1]); }
-                catch (NumberInvalidException e)
+                try
                 {
-                    if (entity == null) { throwUsage("generic"); }
-                    trim = 1;
+                    dimension = parseInt(args[0]);
+                    args = dropFirstStrings(args, 1);
+                    dimensionKnown = true;
                 }
+                catch (NumberInvalidException e) { }
             }
 
-            args = dropFirstStrings(args, trim);
+            if (dimensionKnown == false)
+            {
+                throwUsage("generic");
+            }
 
-            if (cmd.equals("defaultgametype"))
+            if (cmd.equals("defaultgamemode"))
             {
                 CommandJEDDefaultGameType.execute(this, dimension, args, server, sender);
             }
