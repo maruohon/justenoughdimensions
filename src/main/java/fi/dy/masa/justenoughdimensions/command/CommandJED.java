@@ -95,86 +95,84 @@ public class CommandJED extends CommandBase
             }
 
             String cmd = args[0];
-            int trim = 2;
-            int len = args.length;
+            args = dropFirstStrings(args, 1);
 
-            try { parseInt(args[1]); }
+            try
+            {
+                parseInt(args[0]); // dimension
+                args = dropFirstStrings(args, 1);
+            }
             catch (NumberInvalidException e)
             {
                 if (sender.getCommandSenderEntity() == null)
                 {
                     return super.getTabCompletions(server, sender, args, pos);
                 }
-                trim = 1;
             }
-            len -= trim;
 
-            if (cmd.equals("weather"))
+            if (cmd.equals("weather") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "clear", "rain", "thunder");
             }
             else if (cmd.equals("time"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, "add", "set", "query");
                 }
-                else if (len == 2 && args[args.length - 2].equals("set"))
+                else if (args.length == 2 && args[0].equals("set"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "night");
                 }
-                else if (len == 2 && args[args.length - 2].equals("query"))
+                else if (args.length == 2 && args[0].equals("query"))
                 {
                     return getListOfStringsMatchingLastWord(args, "day", "daytime", "gametime");
                 }
             }
-            else if (cmd.equals("defaultgametype") && len == 1)
+            else if (cmd.equals("defaultgametype") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
             }
-            else if (cmd.equals("difficulty") && len == 1)
+            else if (cmd.equals("difficulty") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "peaceful", "easy", "normal", "hard");
             }
             else if (cmd.equals("gamerule"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, this.getOverWorldGameRules(server).getRules());
                 }
-                else if (len == 2 && this.getOverWorldGameRules(server).areSameType(args[args.length - 2], GameRules.ValueType.BOOLEAN_VALUE))
+                else if (args.length == 2 && this.getOverWorldGameRules(server).areSameType(args[0], GameRules.ValueType.BOOLEAN_VALUE))
                 {
                     return getListOfStringsMatchingLastWord(args, "true", "false");
                 }
             }
-            else if (cmd.equals("setworldspawn"))
+            else if (cmd.equals("setworldspawn") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "query");
             }
-            else if (cmd.equals("unloademptydimensions"))
+            else if (cmd.equals("unloademptydimensions") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "true");
             }
             else if (cmd.equals("worldborder"))
             {
-                if (len == 1)
+                if (args.length == 1)
                 {
                     return getListOfStringsMatchingLastWord(args, "set", "center", "damage", "warning", "add", "get");
                 }
-                else if (len >= 2)
+                else if (args[0].equals("damage") && args.length == 2)
                 {
-                    if (args[args.length - 2].equals("damage"))
-                    {
-                        return getListOfStringsMatchingLastWord(args, "buffer", "amount");
-                    }
-                    else if (args[args.length - 2].equals("warning"))
-                    {
-                        return getListOfStringsMatchingLastWord(args, "time", "distance");
-                    }
-                    else if (args[args.length - len].equals("center") && len <= 3)
-                    {
-                        return getTabCompletionCoordinateXZ(args, trim + 1, pos);
-                    }
+                    return getListOfStringsMatchingLastWord(args, "buffer", "amount");
+                }
+                else if (args[0].equals("warning") && args.length == 2)
+                {
+                    return getListOfStringsMatchingLastWord(args, "time", "distance");
+                }
+                else if (args[0].equals("center") && args.length <= 3)
+                {
+                    return getTabCompletionCoordinateXZ(args, 1, pos);
                 }
             }
         }
