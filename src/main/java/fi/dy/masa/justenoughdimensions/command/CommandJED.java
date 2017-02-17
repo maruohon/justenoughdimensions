@@ -42,6 +42,12 @@ public class CommandJED extends CommandBase
     }
 
     @Override
+    public int getRequiredPermissionLevel()
+    {
+        return 2;
+    }
+
+    @Override
     public String getUsage(ICommandSender sender)
     {
         return  "jed.commands.usage.generic";
