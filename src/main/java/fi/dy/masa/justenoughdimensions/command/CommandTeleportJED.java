@@ -261,12 +261,18 @@ public class CommandTeleportJED extends CommandBase
             World worldOld = player.getEntityWorld();
             TeleporterJED teleporter = new TeleporterJED(worldDst, data);
 
+            player.setLocationAndAngles(x, y, z, player.rotationYaw, player.rotationPitch);
             server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), teleporter);
+
+            // See PlayerList#transferEntityToWorld()
+            if (worldOld.provider.getDimension() == 1)
+            {
+                worldDst.spawnEntity(player);
+            }
 
             // Teleporting FROM The End
             if (worldOld.provider instanceof WorldProviderEnd)
             {
-                teleporter.placeInPortal(player, data.getYaw());
                 this.removeDragonBossBarHack(player, (WorldProviderEnd) worldOld.provider);
             }
 
