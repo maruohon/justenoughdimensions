@@ -1,12 +1,13 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.11.2-latest": "1.3.3",
-        "1.11.2-recommended": "1.3.3",
-        "1.10.2-latest": "1.3.3",
-        "1.10.2-recommended": "1.3.3"
+        "1.11.2-latest": "1.3.4",
+        "1.11.2-recommended": "1.3.4",
+        "1.10.2-latest": "1.3.4",
+        "1.10.2-recommended": "1.3.4"
     },
     "1.11.2": {
+        "1.3.4": "Fix hostile mobs being unable to spawn in custom dimensions, if the overworld is set to peaceful",
         "1.3.3": "Fix the /tpj command being broken when teleporting FROM dimension 1 (vanilla End)",
         "1.3.2": "Changed the /jed command's required permission level from 4 to 2, so that it works in command blocks\nSome command and tab completion clean-up",
         "1.3.1": "Accept worldinfo_onetime as well as worldinfo in the config to override the WorldInfo object\nFix the TP command requiring permission level 4 instead of 2",
@@ -15,6 +16,7 @@
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions"
     },
     "1.10.2": {
+        "1.3.4": "Fix hostile mobs being unable to spawn in custom dimensions, if the overworld is set to peaceful",
         "1.3.3": "Fix the /tpj command being broken when teleporting FROM dimension 1 (vanilla End)",
         "1.3.2": "Changed the /jed command's required permission level from 4 to 2, so that it works in command blocks\nSome command and tab completion clean-up",
         "1.3.1": "Accept worldinfo_onetime as well as worldinfo in the config to override the WorldInfo object\nFix the TP command requiring permission level 4 instead of 2",
