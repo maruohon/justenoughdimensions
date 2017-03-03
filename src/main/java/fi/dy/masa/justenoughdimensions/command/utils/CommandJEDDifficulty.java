@@ -4,7 +4,7 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.world.EnumDifficulty;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
@@ -13,7 +13,7 @@ public class CommandJEDDifficulty
 {
     public static void execute(CommandJED cmd, int dimension, String[] args, ICommandSender sender) throws CommandException
     {
-        World world = DimensionManager.getWorld(dimension);
+        WorldServer world = DimensionManager.getWorld(dimension);
 
         if (world != null)
         {
@@ -33,7 +33,14 @@ public class CommandJEDDifficulty
             else
             {
                 world.getWorldInfo().setDifficulty(diff);
+
+                if (world.provider.getDimension() == 0)
+                {
+                    world.getMinecraftServer().setDifficultyForAllWorlds(diff);
+                }
             }
+
+            world.setAllowedSpawnTypes(diff != EnumDifficulty.PEACEFUL, world.getMinecraftServer().getCanSpawnAnimals());
 
             CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.success", Integer.valueOf(dimension), diff);
         }
