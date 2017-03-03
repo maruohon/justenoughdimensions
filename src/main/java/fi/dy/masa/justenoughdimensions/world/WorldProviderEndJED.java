@@ -6,6 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.WorldProviderEnd;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
@@ -60,6 +61,15 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
+    }
+
+    @Override
+    public void setAllowedSpawnTypes(boolean allowHostile, boolean allowPeaceful)
+    {
+        // This fixes the custom dimensions being unable to spawn hostile mobs if the overworld is set to Peaceful
+        // See Minecraft#runTick(), the call to this.world.setAllowedSpawnTypes(),
+        // and also MinecraftServer#setDifficultyForAllWorlds()
+        super.setAllowedSpawnTypes(this.world.getWorldInfo().getDifficulty() != EnumDifficulty.PEACEFUL, allowPeaceful);
     }
 
     @SideOnly(Side.CLIENT)
