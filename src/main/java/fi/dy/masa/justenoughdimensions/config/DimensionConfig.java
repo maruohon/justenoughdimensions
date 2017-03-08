@@ -294,7 +294,7 @@ public class DimensionConfig
     {
         for (int dimension : this.registeredDimensions)
         {
-            if (DimensionManager.isDimensionRegistered(dimension))
+            if (dimension != 0 && DimensionManager.isDimensionRegistered(dimension))
             {
                 JustEnoughDimensions.logInfo("Unregistering dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
