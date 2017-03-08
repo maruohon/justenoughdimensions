@@ -81,11 +81,7 @@ public class WorldInfoUtils
         JustEnoughDimensions.logInfo("Using custom WorldInfo for dimension {}", dimension);
 
         Pair<WorldInfoJED, Boolean> info = createCustomWorldInfoFor(world, dimension);
-
-        if ((world.getWorldInfo() instanceof WorldInfoJED) == false)
-        {
-            setWorldInfo(world, info.getLeft());
-        }
+        setWorldInfo(world, info.getLeft());
 
         return info.getRight();
     }
@@ -100,21 +96,12 @@ public class WorldInfoUtils
     private static Pair<WorldInfoJED, Boolean> createCustomWorldInfoFor(World world, int dimension)
     {
         NBTTagCompound nbt = loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world));
-        NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
+        NBTTagCompound playerNBT = world.getWorldInfo().getPlayerNBTTagCompound();
         boolean isDimensionInit = false;
 
         // No level.dat exists for this dimension yet, inherit the values from the overworld
         if (nbt == null)
         {
-            if (playerNBT == null)
-            {
-                playerNBT = new NBTTagCompound();
-            }
-
-            // This is just to set the dimension field in WorldInfo, so that
-            // the crash report shows the correct dimension ID... maybe
-            playerNBT.setInteger("Dimension", dimension);
-
             // Get the values from the overworld WorldInfo
             nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
 
@@ -137,8 +124,10 @@ public class WorldInfoUtils
 
     public static void saveCustomWorldInfoToFile(World world)
     {
-        if (Configs.enableSeparateWorldInfo && world.isRemote == false &&
-            DimensionConfig.instance().useCustomWorldInfoFor(world.provider.getDimension()))
+        int dimension = world.provider.getDimension();
+
+        if (Configs.enableSeparateWorldInfo && world.isRemote == false && dimension != 0 &&
+            DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
             saveWorldInfoToFile(world, WorldFileUtils.getWorldDirectory(world));
         }
@@ -148,7 +137,7 @@ public class WorldInfoUtils
     {
         if (worldDir == null)
         {
-            JustEnoughDimensions.logger.warn("loadWorldInfo(): No worldDir found");
+            //JustEnoughDimensions.logger.warn("loadWorldInfo(): No worldDir found");
             return null;
         }
 
@@ -238,15 +227,6 @@ public class WorldInfoUtils
 
         NBTTagCompound rootTag = new NBTTagCompound();
         NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
-        if (playerNBT == null)
-        {
-            playerNBT = new NBTTagCompound();
-        }
-
-        // This is just to set the dimension field in WorldInfo, so that
-        // the crash report shows the correct dimension ID... maybe
-        playerNBT.setInteger("Dimension", world.provider.getDimension());
-
         rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
 
         if (world.getSaveHandler() instanceof SaveHandler)
