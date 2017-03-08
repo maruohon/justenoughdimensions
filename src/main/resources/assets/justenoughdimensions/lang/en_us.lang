@@ -18,6 +18,7 @@ jed.commands.error.boolean.invalid=%s is not a valid boolean value, expected tru
 jed.commands.error.dimbuilder.list=Key '%s' was not found
 jed.commands.error.dimbuilder.remove.fail=Failed to remove key '%s' - not found
 jed.commands.error.dimension.already.registered=Dimension %s is already registered!
+jed.commands.error.dimension.cannotunregisteroverworld=Overworld can not be unregistered!
 jed.commands.error.dimension.loaded=Dimension %s is currently loaded!
 jed.commands.error.dimension.notloaded=Dimension %s is not loaded!
 jed.commands.error.dimension.notregistered=Dimension %s is not registered!

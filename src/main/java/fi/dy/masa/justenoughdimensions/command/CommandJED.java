@@ -238,8 +238,15 @@ public class CommandJED extends CommandBase
             if (args.length == 1)
             {
                 int dimension = parseInt(args[0]);
-                this.unregister(dimension);
-                notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
+
+                if (this.unregister(dimension))
+                {
+                    notifyCommandListener(sender, this, "jed.commands.unregister", Integer.valueOf(dimension));
+                }
+                else
+                {
+                    throwCommand("dimension.cannotunregisteroverworld");
+                }
             }
             else
             {
@@ -412,13 +419,17 @@ public class CommandJED extends CommandBase
         }
     }
 
-    private void unregister(int dimension) throws CommandException
+    private boolean unregister(int dimension) throws CommandException
     {
         if (DimensionManager.isDimensionRegistered(dimension))
         {
             if (DimensionManager.getWorld(dimension) == null)
             {
-                DimensionManager.unregisterDimension(dimension);
+                if (dimension != 0)
+                {
+                    DimensionManager.unregisterDimension(dimension);
+                    return true;
+                }
             }
             else
             {
@@ -429,6 +440,8 @@ public class CommandJED extends CommandBase
         {
             throwNumber("dimension.notregistered", Integer.valueOf(dimension));
         }
+
+        return false;
     }
 
     private void dimBuilder(String[] args, ICommandSender sender) throws CommandException
