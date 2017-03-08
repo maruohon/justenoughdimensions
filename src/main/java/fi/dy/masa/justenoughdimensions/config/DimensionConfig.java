@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -45,6 +47,7 @@ public class DimensionConfig
     private static DimensionConfig instance;
     private final File configDirConfigs;
     private final File dimensionFileConfigs;
+    private final Set<Integer> registeredDimensions = new HashSet<Integer>();
     private final Map<Integer, DimensionConfigEntry> dimensions = new HashMap<Integer, DimensionConfigEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
@@ -195,6 +198,7 @@ public class DimensionConfig
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
             DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().registerDimensionType());
+            this.registeredDimensions.add(dimension);
             return true;
         }
         else if (Configs.enableReplacingRegisteredDimensions && entry.getOverride())
@@ -204,6 +208,7 @@ public class DimensionConfig
                 JustEnoughDimensions.logInfo("Overriding dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
                 DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().registerDimensionType());
+                this.registeredDimensions.add(dimension);
                 return true;
             }
             else
@@ -287,17 +292,16 @@ public class DimensionConfig
 
     public void unregisterCustomDimensions()
     {
-        for (DimensionConfigEntry entry : this.dimensions.values())
+        for (int dimension : this.registeredDimensions)
         {
-            if (entry.getUnregister() == false &&
-                entry.getOverride() == false &&
-                entry.hasDimensionTypeEntry() &&
-                DimensionManager.isDimensionRegistered(entry.getId()))
+            if (DimensionManager.isDimensionRegistered(dimension))
             {
-                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
-                DimensionManager.unregisterDimension(entry.getId());
+                JustEnoughDimensions.logInfo("Unregistering dimension {}...", dimension);
+                DimensionManager.unregisterDimension(dimension);
             }
         }
+
+        this.registeredDimensions.clear();
     }
 
     public void removeDimensionAndSaveConfig(int dimension)
