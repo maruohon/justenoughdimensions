@@ -40,6 +40,8 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class WorldUtils
 {
+    private static Field field_WorldProvider_terrainType;
+    private static Field field_WorldProvider_generatorSettings;
     private static Field field_WorldProvider_biomeProvider = null;
     private static Field field_ChunkProviderServer_chunkGenerator = null;
 
@@ -47,6 +49,8 @@ public class WorldUtils
     {
         try
         {
+            field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
+            field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
             field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
@@ -131,6 +135,24 @@ public class WorldUtils
         }
     }
 
+    public static void overrideWorldProviderSettings(World world, WorldProvider provider)
+    {
+        WorldInfo info = world.getWorldInfo();
+
+        if (info instanceof WorldInfoJED)
+        {
+            try
+            {
+                field_WorldProvider_terrainType.set(provider, info.getTerrainType());
+                field_WorldProvider_generatorSettings.set(provider, info.getGeneratorOptions());
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("Failed to override WorldProvider settings for dimension {}", provider.getDimension());
+            }
+        }
+    }
+
     public static void overrideBiomeProvider(World world)
     {
         int dimension = world.provider.getDimension();
@@ -163,10 +185,6 @@ public class WorldUtils
             // This sets the new WorldType to the WorldProvider
             world.provider.setWorld(world);
 
-            // Always override the ChunkProvider when using overridden WorldInfo, otherwise
-            // the ChunkProvider will be using the settings from the overworld, because
-            // WorldEvent.Load (where the WorldInfo gets overridden) obviously only happens after
-            // the world has been constructed and the CunkProvider set.
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
             IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
 

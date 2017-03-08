@@ -58,7 +58,7 @@ public class JEDEventHandler
             // the WorldInfo in this event should be the vanilla one.
             if (Configs.enableSeparateWorldInfo && (world.getWorldInfo() instanceof WorldInfoJED) == false)
             {
-                WorldInfoUtils.loadAndSetCustomWorldInfo(world, true);
+                WorldInfoUtils.loadAndSetCustomWorldInfoAndBiomeProvider(world, true);
             }
 
             if (Configs.enableSeparateWorldBorders)
@@ -80,7 +80,7 @@ public class JEDEventHandler
         // WorldUtils.findAndSetWorldSpawn(), which then fires this event.
         if (Configs.enableSeparateWorldInfo && (world.getWorldInfo() instanceof WorldInfoJED) == false)
         {
-            WorldInfoUtils.loadAndSetCustomWorldInfo(world, false);
+            WorldInfoUtils.loadAndSetCustomWorldInfoAndBiomeProvider(world, false);
         }
 
         // Find a proper spawn point for the overworld that isn't inside ground...

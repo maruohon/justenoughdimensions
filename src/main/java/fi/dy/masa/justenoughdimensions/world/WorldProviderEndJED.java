@@ -13,6 +13,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
@@ -20,6 +21,21 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     private int skyDisableFlags = 0;
     protected Vec3d skyColor = null;
     protected Vec3d fogColor = null;
+
+    @Override
+    public void setDimension(int dim)
+    {
+        super.setDimension(dim);
+
+        // This method gets called the first time from DimensionManager.createProviderFor(),
+        // at which time the world hasn't been set yet. The second call comes from the WorldServer
+        // constructor, and there the world has just been set.
+        if (this.world != null)
+        {
+            WorldInfoUtils.loadAndSetCustomWorldInfoOnly(this.world);
+            //WorldUtils.overrideWorldProviderSettings(this.world, this);
+        }
+    }
 
     @Override
     public DimensionType getDimensionType()
