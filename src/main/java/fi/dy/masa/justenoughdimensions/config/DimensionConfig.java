@@ -167,21 +167,18 @@ public class DimensionConfig
 
     public void registerOverriddenDimensions()
     {
-        if (Configs.enableReplacingRegisteredDimensions)
+        for (DimensionConfigEntry entry : this.dimensions.values())
         {
-            for (DimensionConfigEntry entry : this.dimensions.values())
+            if (DimensionManager.isDimensionRegistered(entry.getId()))
             {
-                if (DimensionManager.isDimensionRegistered(entry.getId()))
+                if (Configs.enableUnregisteringDimensions && entry.getUnregister())
                 {
-                    if (Configs.enableUnregisteringDimensions && entry.getUnregister())
-                    {
-                        JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
-                        DimensionManager.unregisterDimension(entry.getId());
-                    }
-                    else if (entry.getOverride())
-                    {
-                        this.registerDimension(entry.getId(), entry);
-                    }
+                    JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
+                    DimensionManager.unregisterDimension(entry.getId());
+                }
+                else if (Configs.enableReplacingRegisteredDimensions && entry.getOverride())
+                {
+                    this.registerDimension(entry.getId(), entry);
                 }
             }
         }
