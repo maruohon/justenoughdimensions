@@ -50,6 +50,8 @@ public class WorldBorderUtils
 
         if (Configs.enableSeparateWorldBorders && overworld != null)
         {
+            JustEnoughDimensions.logInfo("WorldBorderUtils.removeDefaultBorderListeners()");
+
             try
             {
                 @SuppressWarnings("unchecked")
@@ -78,6 +80,8 @@ public class WorldBorderUtils
 
         if (Configs.enableSeparateWorldBorders && overworld != null && (world instanceof WorldServerMulti))
         {
+            JustEnoughDimensions.logInfo("WorldBorderUtils.removeOverworldBorderListener() in dimension {}", world.provider.getDimension());
+
             try
             {
                 @SuppressWarnings("unchecked")

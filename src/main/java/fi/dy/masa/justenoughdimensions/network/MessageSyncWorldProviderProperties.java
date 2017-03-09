@@ -75,7 +75,8 @@ public class MessageSyncWorldProviderProperties implements IMessage
             {
                 ((IWorldProviderJED) world.provider).setJEDPropertiesFromNBT(message.nbt);
                 
-                JustEnoughDimensions.logInfo("MessageSyncWorldProviderProperties: Synced custom JED WorldProvider properties: {}", message.nbt);
+                JustEnoughDimensions.logInfo("MessageSyncWorldProviderProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
+                        world.provider.getDimension(), message.nbt);
             }
         }
     }
