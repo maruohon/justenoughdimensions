@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.datafix.FixTypes;
@@ -38,62 +37,35 @@ public class WorldInfoUtils
         }
     }
 
-    public static void loadAndSetCustomWorldInfoAndBiomeProvider(World world, boolean tryFindSpawn)
-    {
-        int dimension = world.provider.getDimension();
-
-        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
-        {
-            boolean isDimensionInit = loadAndSetCustomWorldInfo(world, dimension);
-
-            if (Configs.enableOverrideBiomeProvider)
-            {
-                WorldUtils.overrideBiomeProvider(world);
-            }
-
-            if (tryFindSpawn && isDimensionInit)
-            {
-                WorldUtils.findAndSetWorldSpawn(world, true);
-            }
-        }
-    }
-
-    public static void loadAndSetCustomWorldInfoOnly(World world)
-    {
-        int dimension = world.provider.getDimension();
-
-        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
-        {
-            loadAndSetCustomWorldInfo(world, dimension);
-        }
-    }
-
     /**
      * Overrides the current WorldInfo with WorldInfoJED.
-     * <b>NOTE:</b> This does NOT do checks whether this should be done for this dimension!
-     * Those should be done before calling this method!
      * @param world
      * @param dimension
-     * @return true if this was the dimension's initialization (no existing level.dat yet)
      */
-    private static boolean loadAndSetCustomWorldInfo(World world, int dimension)
+    public static void loadAndSetCustomWorldInfo(World world)
     {
-        JustEnoughDimensions.logInfo("Using custom WorldInfo for dimension {}", dimension);
+        int dimension = world.provider.getDimension();
 
-        Pair<WorldInfoJED, Boolean> info = createCustomWorldInfoFor(world, dimension);
-        setWorldInfo(world, info.getLeft());
-
-        return info.getRight();
+        // The WorldInfoJED check is necessary (or at least avoids setting things twice)
+        // for the case where WorldEvent.CreateSpawnPosition has ran before WorldEvent.LOAD
+        // and already set it, OR when using JED WorldProviders, when the
+        // WorldInfo override first happens from WorldProvider#setDimension() and
+        // then again from WorldEvent.Load.
+        if ((world.getWorldInfo() instanceof WorldInfoJED) == false &&
+            DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        {
+            JustEnoughDimensions.logInfo("Overriding the existing WorldInfo with WorldInfoJED for dimension {}", dimension);
+            setWorldInfo(world, createCustomWorldInfoFor(world, dimension));
+        }
     }
 
     /**
      * Creates a new WorldInfoJED object for the given dimension.
      * @param world
      * @param dimension
-     * @return Pair containing the WorldInfoJED object, and a boolean of whether
-     * this was the dimension's initialization (no existing level.dat yet)
+     * @return the created WorldInfoJED instance
      */
-    private static Pair<WorldInfoJED, Boolean> createCustomWorldInfoFor(World world, int dimension)
+    private static WorldInfoJED createCustomWorldInfoFor(World world, int dimension)
     {
         NBTTagCompound nbt = loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world));
         NBTTagCompound playerNBT = world.getWorldInfo().getPlayerNBTTagCompound();
@@ -119,7 +91,7 @@ public class WorldInfoUtils
             DimensionConfig.instance().setWorldInfoValues(dimension, nbt, WorldInfoType.ONE_TIME);
         }
 
-        return Pair.of(new WorldInfoJED(nbt), isDimensionInit);
+        return new WorldInfoJED(nbt);
     }
 
     public static void saveCustomWorldInfoToFile(World world)
@@ -175,11 +147,11 @@ public class WorldInfoUtils
                 if (world.provider instanceof IWorldProviderJED)
                 {
                     ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
-                }
 
-                // This sets the WorldType (the terrainType field) and the generatorSettings field
-                // from the newly overridden WorldInfoJED
-                world.provider.registerWorld(world);
+                    // This sets the WorldType (the terrainType field) and the generatorSettings field
+                    // from the newly overridden WorldInfoJED
+                    world.provider.registerWorld(world);
+                }
 
                 WorldBorderUtils.setWorldBorderValues(world);
 
