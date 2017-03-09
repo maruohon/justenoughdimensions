@@ -22,8 +22,37 @@ public class WorldFileUtils
             {
                 return ((AnvilChunkLoader) chunkLoader).chunkSaveLocation;
             }
+
+            return null;
+        }
+        // If this method gets called before ChunkProviderServer has been set yet,
+        // then we mimic the vanilla code in AnvilSaveHandler#getChunkLoader() to get the directory.
+        else
+        {
+            File mainWorldDir = world.getSaveHandler().getWorldDirectory();
+            String dimensionDir = world.provider.getSaveFolder();
+
+            if (dimensionDir != null)
+            {
+                mainWorldDir = new File(mainWorldDir, dimensionDir);
+                mainWorldDir.mkdirs();
+            }
+
+            return mainWorldDir;
+        }
+    }
+
+    public static boolean levelFileExists(World world)
+    {
+        File worldDir = getWorldDirectory(world);
+
+        if (worldDir == null)
+        {
+            return false;
         }
 
-        return null;
+        File levelFile = new File(worldDir, "level.dat");
+
+        return levelFile.exists();
     }
 }

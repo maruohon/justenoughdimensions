@@ -33,6 +33,7 @@ import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -135,6 +136,26 @@ public class WorldUtils
         }
     }
 
+    public static void overrideBiomeProviderAndFindSpawn(World world, boolean tryFindSpawn)
+    {
+        int dimension = world.provider.getDimension();
+
+        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        {
+            boolean isDimensionInit = WorldFileUtils.levelFileExists(world) == false;
+
+            if (Configs.enableOverrideBiomeProvider)
+            {
+                overrideBiomeProvider(world);
+            }
+
+            if (tryFindSpawn && isDimensionInit)
+            {
+                findAndSetWorldSpawn(world, true);
+            }
+        }
+    }
+
     public static void overrideWorldProviderSettings(World world, WorldProvider provider)
     {
         WorldInfo info = world.getWorldInfo();
@@ -153,7 +174,7 @@ public class WorldUtils
         }
     }
 
-    public static void overrideBiomeProvider(World world)
+    private static void overrideBiomeProvider(World world)
     {
         int dimension = world.provider.getDimension();
         String biomeName = DimensionConfig.instance().getBiomeFor(dimension);

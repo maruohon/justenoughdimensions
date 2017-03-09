@@ -32,7 +32,7 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         // constructor, and there the world has just been set.
         if (this.world != null)
         {
-            WorldInfoUtils.loadAndSetCustomWorldInfoOnly(this.world);
+            WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
         }
     }
