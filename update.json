@@ -1,12 +1,13 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.11.2-latest": "1.3.6",
-        "1.11.2-recommended": "1.3.6",
-        "1.10.2-latest": "1.3.6",
-        "1.10.2-recommended": "1.3.6"
+        "1.11.2-latest": "1.3.7",
+        "1.11.2-recommended": "1.3.7",
+        "1.10.2-latest": "1.3.7",
+        "1.10.2-recommended": "1.3.7"
     },
     "1.11.2": {
+        "1.3.7": "Allow customizing the sky render type on non-JED WorldProviders",
         "1.3.6": "Fix unregistering dimensions that weren't actually registered by JED\nRefactor/fix some WorldInfo override and related things",
         "1.3.5": "Fix forgot to include the spawn fix for WorldProviderEndJED",
         "1.3.4": "Fix hostile mobs being unable to spawn in custom dimensions, if the overworld is set to peaceful",
@@ -18,6 +19,7 @@
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions"
     },
     "1.10.2": {
+        "1.3.7": "Allow customizing the sky render type on non-JED WorldProviders",
         "1.3.6": "Fix unregistering dimensions that weren't actually registered by JED\nRefactor/fix some WorldInfo override and related things",
         "1.3.5": "Fix forgot to include the spawn fix for WorldProviderEndJED",
         "1.3.4": "Fix hostile mobs being unable to spawn in custom dimensions, if the overworld is set to peaceful",
