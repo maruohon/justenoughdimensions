@@ -8,6 +8,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -30,9 +31,11 @@ import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderProperties;
@@ -134,6 +137,23 @@ public class WorldUtils
         {
             PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties((WorldInfoJED) world.getWorldInfo()), (EntityPlayerMP) player);
         }
+    }
+
+    public static boolean setRenderersOnNonJEDWorld(World world, NBTTagCompound tag)
+    {
+        int skyRenderType = 0;
+        int skyDisableFlags = 0;
+
+        if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { skyRenderType = tag.getByte("SkyRenderType"); }
+        if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { skyDisableFlags = tag.getByte("SkyDisableFlags"); }
+
+        if (skyRenderType != 0)
+        {
+            world.provider.setSkyRenderer(new SkyRenderer(skyRenderType, skyDisableFlags));
+            return true;
+        }
+
+        return false;
     }
 
     public static void overrideBiomeProviderAndFindSpawn(World world, boolean tryFindSpawn)
