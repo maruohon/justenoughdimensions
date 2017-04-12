@@ -583,7 +583,7 @@ public class CommandJED extends CommandBase
     {
         sender.sendMessage(new TextComponentString("/jed dimbuilder clear"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder create-as <dim id>"));
-        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <name> <suffix> <keeploaded> <worldprovider>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <DimensionType ID> <name> <suffix> <keeploaded> <worldprovider>"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder <list | list-onetime> [key1] [key2] ..."));
         sender.sendMessage(new TextComponentString("/jed dimbuilder <remove | remove-onetime> <key>"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder read-from <dim id>"));
