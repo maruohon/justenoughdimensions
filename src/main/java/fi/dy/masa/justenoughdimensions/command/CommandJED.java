@@ -292,6 +292,8 @@ public class CommandJED extends CommandBase
                 IChunkProvider cp = world.getChunkProvider();
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
+                JustEnoughDimensions.logger.info("DimensionType ID: {}", world.provider.getDimensionType().getId());
+                JustEnoughDimensions.logger.info("DimensionType name: {}", world.provider.getDimensionType().getName());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
