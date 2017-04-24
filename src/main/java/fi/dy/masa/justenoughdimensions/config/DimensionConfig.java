@@ -759,7 +759,7 @@ public class DimensionConfig
         if (StringUtils.isBlank(name)) { name = "DIM" + dimension; }
 
         String suffix = (dimType.has("suffix") && dimType.get("suffix").isJsonPrimitive()) ?
-                dimType.get("suffix").getAsString() : name.toLowerCase().replace(" ", "_");
+                dimType.get("suffix").getAsString() : "_dim" + dimension;
 
         boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
 
