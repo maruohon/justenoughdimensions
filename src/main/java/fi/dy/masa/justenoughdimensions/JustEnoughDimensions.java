@@ -83,7 +83,7 @@ public class JustEnoughDimensions
 
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
-        DimensionConfig.instance().registerDimensions();
+        DimensionConfig.instance().registerNonOverrideDimensions();
 
         GamemodeTracker.getInstance().readFromDisk();
     }

@@ -165,6 +165,19 @@ public class DimensionConfig
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
     }
 
+    public void registerNonOverrideDimensions()
+    {
+        for (DimensionConfigEntry entry : this.dimensions.values())
+        {
+            if (Configs.enableReplacingRegisteredDimensions == false || entry.getOverride() == false)
+            {
+                this.registerDimension(entry.getId(), entry);
+            }
+        }
+
+        PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
+    }
+
     public void registerOverriddenDimensions()
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
