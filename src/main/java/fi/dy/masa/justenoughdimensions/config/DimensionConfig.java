@@ -289,16 +289,19 @@ public class DimensionConfig
 
     public void unregisterCustomDimensions()
     {
+        Set<Integer> toRemove = new HashSet<Integer>();
+
         for (int dimension : this.registeredDimensions)
         {
-            if (dimension != 0 && DimensionManager.isDimensionRegistered(dimension))
+            if (dimension != 0 && DimensionManager.isDimensionRegistered(dimension) && DimensionManager.getWorld(dimension) == null)
             {
                 JustEnoughDimensions.logInfo("Unregistering dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
+                toRemove.add(dimension);
             }
         }
 
-        this.registeredDimensions.clear();
+        this.registeredDimensions.removeAll(toRemove);
     }
 
     public void removeDimensionAndSaveConfig(int dimension)

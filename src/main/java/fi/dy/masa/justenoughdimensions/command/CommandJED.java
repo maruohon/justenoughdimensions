@@ -193,6 +193,7 @@ public class CommandJED extends CommandBase
 
         if (cmd.equals("reload"))
         {
+            DimensionConfig.instance().unregisterCustomDimensions();
             DimensionConfig.instance().readDimensionConfig();
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
