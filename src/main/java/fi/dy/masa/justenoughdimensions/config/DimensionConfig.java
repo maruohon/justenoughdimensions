@@ -27,13 +27,16 @@ import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByte;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagDouble;
+import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagInt;
 import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.nbt.NBTTagShort;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.WorldProvider;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
@@ -46,18 +49,21 @@ public class DimensionConfig
 {
     private static DimensionConfig instance;
     private final File configDirConfigs;
-    private final File dimensionFileConfigs;
+    private final File dimensionConfigsFile;
     private final Set<Integer> registeredDimensions = new HashSet<Integer>();
     private final Map<Integer, DimensionConfigEntry> dimensions = new HashMap<Integer, DimensionConfigEntry>();
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
+    private final Map<String, Integer> worldInfoKeys = new HashMap<String, Integer>();
+    private final Map<String, Integer> worldInfoKeysJED = new HashMap<String, Integer>();
     private JsonObject dimBuilderData = new JsonObject();
 
     private DimensionConfig(File configDir)
     {
         instance = this;
         this.configDirConfigs = configDir;
-        this.dimensionFileConfigs = new File(configDir, "dimensions.json");
+        this.dimensionConfigsFile = new File(configDir, "dimensions.json");
+        this.initWorldInfoKeys();
     }
 
     public static DimensionConfig create(File configDir)
@@ -73,6 +79,57 @@ public class DimensionConfig
     public List<DimensionConfigEntry> getRegisteredDimensions()
     {
         return ImmutableList.<DimensionConfigEntry>copyOf(this.dimensions.values());
+    }
+
+    private void initWorldInfoKeys()
+    {
+        // These are the keys/values in a vanilla level.dat
+        this.worldInfoKeys.put("RandomSeed",           Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("generatorName",        Constants.NBT.TAG_STRING);
+        this.worldInfoKeys.put("generatorVersion",     Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("generatorOptions",     Constants.NBT.TAG_STRING);
+        this.worldInfoKeys.put("GameType",             Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("MapFeatures",          Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("SpawnX",               Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("SpawnY",               Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("SpawnZ",               Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("Time",                 Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("DayTime",              Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("LastPlayed",           Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("SizeOnDisk",           Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("LevelName",            Constants.NBT.TAG_STRING);
+        this.worldInfoKeys.put("version",              Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("clearWeatherTime",     Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("rainTime",             Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("raining",              Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("thunderTime",          Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("thundering",           Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("hardcore",             Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("initialized",          Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("allowCommands",        Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("Difficulty",           Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("DifficultyLocked",     Constants.NBT.TAG_BYTE);
+        this.worldInfoKeys.put("BorderCenterX",        Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderCenterZ",        Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderSize",           Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderSizeLerpTime",   Constants.NBT.TAG_LONG);
+        this.worldInfoKeys.put("BorderSizeLerpTarget", Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderSafeZone",       Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderDamagePerBlock", Constants.NBT.TAG_DOUBLE);
+        this.worldInfoKeys.put("BorderWarningBlocks",  Constants.NBT.TAG_INT);
+        this.worldInfoKeys.put("BorderWarningTime",    Constants.NBT.TAG_INT);
+
+        // Custom JED properties
+        this.worldInfoKeysJED.put("ForceGameMode",    Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("CustomDayCycle",   Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("DayLength",        Constants.NBT.TAG_INT);
+        this.worldInfoKeysJED.put("NightLength",      Constants.NBT.TAG_INT);
+        this.worldInfoKeysJED.put("CloudHeight",      Constants.NBT.TAG_INT);
+        this.worldInfoKeysJED.put("SkyColor",         Constants.NBT.TAG_STRING);
+        this.worldInfoKeysJED.put("CloudColor",       Constants.NBT.TAG_STRING);
+        this.worldInfoKeysJED.put("FogColor",         Constants.NBT.TAG_STRING);
+        this.worldInfoKeysJED.put("SkyRenderType",    Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("SkyDisableFlags",  Constants.NBT.TAG_BYTE);
     }
 
     public boolean useCustomWorldInfoFor(int dimension)
@@ -109,7 +166,7 @@ public class DimensionConfig
 
         if (file == null || file.exists() == false || file.isFile() == false || file.canRead() == false)
         {
-            file = this.dimensionFileConfigs;
+            file = this.dimensionConfigsFile;
         }
 
         return file;
@@ -476,6 +533,11 @@ public class DimensionConfig
             {
                 obj = this.getOrCreateNestedObject(obj, "JED");
             }
+            // Not a JED property and not a (direct) vanilla level.dat key, so let's assume it's a GameRule then
+            else if (this.worldInfoKeys.get(key) == null)
+            {
+                obj = this.getOrCreateNestedObject(obj, "GameRules");
+            }
 
             obj.add(key, new JsonPrimitive(value));
         }
@@ -506,12 +568,18 @@ public class DimensionConfig
 
             if (obj != null)
             {
-                if (this.isJEDProperty(key))
+                // vanilla level.dat properties
+                if (obj.has(key))
                 {
-                    obj = this.getNestedObject(obj, "JED", false);
+                    return obj.remove(key) != null;
                 }
-
-                return obj != null ? obj.remove(key) != null : false;
+                // JED properties or GameRules
+                else
+                {
+                    String tagName = this.isJEDProperty(key) ? "JED" : "GameRules";
+                    obj = this.getNestedObject(obj, tagName, false);
+                    return obj != null ? obj.remove(key) != null : false;
+                }
             }
 
             return false;
@@ -624,16 +692,21 @@ public class DimensionConfig
         {
             obj = obj.get(type.getKeyName()).getAsJsonObject();
 
-            if (this.isJEDProperty(key) && obj.has("JED") && obj.get("JED").isJsonObject())
-            {
-                obj = obj.get("JED").getAsJsonObject();
-                // The requested key exists inside the JED object
-                return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
-            }
             // The requested key is a value directly inside the worldinfo object
-            else if (obj.has(key) && obj.get(key).isJsonPrimitive())
+            if (obj.has(key) && obj.get(key).isJsonPrimitive())
             {
                 return obj.get(key).getAsJsonPrimitive();
+            }
+            else
+            {
+                String tagName = this.isJEDProperty(key) ? "JED" : "GameRules";
+
+                if (obj.has(tagName) && obj.get(tagName).isJsonObject())
+                {
+                    obj = obj.get(tagName).getAsJsonObject();
+                    // The requested key exists inside the object
+                    return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+                }
             }
         }
 
@@ -661,86 +734,26 @@ public class DimensionConfig
 
     private boolean isJEDProperty(String key)
     {
-        return  key.equals("ForceGameMode") ||
-                key.equals("CustomDayCycle") ||
-                key.equals("DayLength") ||
-                key.equals("NightLength") ||
-                key.equals("CloudHeight") ||
-                key.equals("SkyColor") ||
-                key.equals("CloudColor") ||
-                key.equals("FogColor") ||
-                key.equals("SkyRenderType") ||
-                key.equals("SkyDisableFlags");
+        return this.worldInfoKeysJED.get(key) != null;
     }
 
+    @Nullable
     private NBTBase getTagForValue(String key, JsonElement element)
     {
-        // These are the keys/values in a vanilla level.dat
-        if (key.equals("generatorName"))        { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("generatorVersion"))     { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("generatorOptions"))     { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("GameType"))             { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("MapFeatures"))          { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("SpawnX"))               { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("SpawnY"))               { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("SpawnZ"))               { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("Time"))                 { return new NBTTagLong(    element.getAsLong()     ); }
-        if (key.equals("DayTime"))              { return new NBTTagLong(    element.getAsLong()     ); }
-        if (key.equals("LastPlayed"))           { return new NBTTagLong(    element.getAsLong()     ); }
-        if (key.equals("SizeOnDisk"))           { return new NBTTagLong(    element.getAsLong()     ); }
-        if (key.equals("LevelName"))            { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("version"))              { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("clearWeatherTime"))     { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("rainTime"))             { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("raining"))              { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("thunderTime"))          { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("thundering"))           { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("hardcore"))             { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("initialized"))          { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("allowCommands"))        { return new NBTTagByte(    element.getAsByte()     ); }
-
-        if (key.equals("Difficulty"))           { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("DifficultyLocked"))     { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("BorderCenterX"))        { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderCenterZ"))        { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderSize"))           { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderSizeLerpTime"))   { return new NBTTagLong(    element.getAsLong()     ); }
-        if (key.equals("BorderSizeLerpTarget")) { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderSafeZone"))       { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderDamagePerBlock")) { return new NBTTagDouble(  element.getAsDouble()   ); }
-        if (key.equals("BorderWarningBlocks"))  { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("BorderWarningTime"))    { return new NBTTagInt(     element.getAsInt()      ); }
-
         if (key.equals("RandomSeed"))
         {
             String seedStr = element.getAsString();
             try
             {
                 long seed = Long.parseLong(seedStr);
-                if (seed != 0L)
-                {
-                    return new NBTTagLong(seed);
-                }
+                return new NBTTagLong(seed);
             }
             catch (NumberFormatException e)
             {
                 return new NBTTagLong(seedStr.hashCode());
             }
         }
-
-        // Custom JED properties
-        if (key.equals("ForceGameMode"))    { return new NBTTagByte(    element.getAsBoolean() ? (byte) 1 : 0); }
-        if (key.equals("CustomDayCycle"))   { return new NBTTagByte(    element.getAsBoolean() ? (byte) 1 : 0); }
-        if (key.equals("DayLength"))        { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("NightLength"))      { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("CloudHeight"))      { return new NBTTagInt(     element.getAsInt()      ); }
-        if (key.equals("SkyColor"))         { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("CloudColor"))       { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("FogColor"))         { return new NBTTagString(  element.getAsString()   ); }
-        if (key.equals("SkyRenderType"))    { return new NBTTagByte(    element.getAsByte()     ); }
-        if (key.equals("SkyDisableFlags"))  { return new NBTTagByte(    element.getAsByte()     ); }
-
-        if (element.isJsonObject())
+        else if (element.isJsonObject())
         {
             NBTTagCompound tag = new NBTTagCompound();
             JsonObject obj = element.getAsJsonObject();
@@ -764,7 +777,66 @@ public class DimensionConfig
             return tag;
         }
 
+        Integer type = this.worldInfoKeys.get(key);
+
+        // Keys from the vanilla level.dat
+        if (type != null)
+        {
+            return this.getTagForType(type, element);
+        }
+
+        // Custom JED properties
+        // These two are booleans, the rest of type "byte" are actual byte values
+        //if (key.equals("ForceGameMode"))    { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
+        //if (key.equals("CustomDayCycle"))   { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
+
+        type = this.worldInfoKeysJED.get(key);
+
+        if (type != null)
+        {
+            return this.getTagForType(type, element);
+        }
+
         JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element.getAsString());
+        return null;
+    }
+
+    @Nullable
+    private NBTBase getTagForType(int type, JsonElement element)
+    {
+        switch (type)
+        {
+            case Constants.NBT.TAG_BYTE:
+                try
+                {
+                    String str = element.getAsString();
+                    if (str != null && (str.equals("true") || str.equals("false")))
+                    {
+                        return new NBTTagByte(element.getAsBoolean() ? (byte) 1 : 0);
+                    }
+                }
+                catch (Exception e) {}
+                return new NBTTagByte(element.getAsByte());
+
+            case Constants.NBT.TAG_SHORT:
+                return new NBTTagShort(element.getAsShort());
+
+            case Constants.NBT.TAG_INT:
+                return new NBTTagInt(element.getAsInt());
+
+            case Constants.NBT.TAG_LONG:
+                return new NBTTagLong(element.getAsLong());
+
+            case Constants.NBT.TAG_FLOAT:
+                return new NBTTagFloat(element.getAsFloat());
+
+            case Constants.NBT.TAG_DOUBLE:
+                return new NBTTagDouble(element.getAsDouble());
+
+            case Constants.NBT.TAG_STRING:
+                return new NBTTagString(element.getAsString());
+        }
+
         return null;
     }
 
