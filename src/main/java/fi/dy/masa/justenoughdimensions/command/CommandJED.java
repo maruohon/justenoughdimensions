@@ -193,6 +193,7 @@ public class CommandJED extends CommandBase
 
         if (cmd.equals("reload"))
         {
+            DimensionConfig.instance().unregisterCustomDimensions();
             DimensionConfig.instance().readDimensionConfig();
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
@@ -292,6 +293,8 @@ public class CommandJED extends CommandBase
                 IChunkProvider cp = world.getChunkProvider();
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
+                JustEnoughDimensions.logger.info("DimensionType ID: {}", world.provider.getDimensionType().getId());
+                JustEnoughDimensions.logger.info("DimensionType name: {}", world.provider.getDimensionType().getName());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
@@ -583,7 +586,7 @@ public class CommandJED extends CommandBase
     {
         sender.sendMessage(new TextComponentString("/jed dimbuilder clear"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder create-as <dim id>"));
-        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <name> <suffix> <keeploaded> <worldprovider>"));
+        sender.sendMessage(new TextComponentString("/jed dimbuilder dimtype <DimensionType ID> <name> <suffix> <keeploaded> <worldprovider>"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder <list | list-onetime> [key1] [key2] ..."));
         sender.sendMessage(new TextComponentString("/jed dimbuilder <remove | remove-onetime> <key>"));
         sender.sendMessage(new TextComponentString("/jed dimbuilder read-from <dim id>"));

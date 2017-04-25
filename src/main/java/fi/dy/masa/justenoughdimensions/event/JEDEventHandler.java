@@ -54,11 +54,7 @@ public class JEDEventHandler
         {
             JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
 
-            if (Configs.enableSeparateWorldInfo)
-            {
-                WorldInfoUtils.loadAndSetCustomWorldInfo(world);
-                WorldUtils.overrideBiomeProviderAndFindSpawn(world, true);
-            }
+            overrideWorldInfoAndBiomeProviderAndFindSpawn(world, true);
 
             if (Configs.enableSeparateWorldBorders)
             {
@@ -74,11 +70,7 @@ public class JEDEventHandler
         World world = event.getWorld();
         JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - DIM: {}", world.provider.getDimension());
 
-        if (Configs.enableSeparateWorldInfo)
-        {
-            WorldInfoUtils.loadAndSetCustomWorldInfo(world);
-            WorldUtils.overrideBiomeProviderAndFindSpawn(world, false);
-        }
+        overrideWorldInfoAndBiomeProviderAndFindSpawn(world, false);
 
         // Find a proper spawn point for the overworld that isn't inside ground...
         // For other dimensions than the regular overworld, this is done after
@@ -88,6 +80,24 @@ public class JEDEventHandler
         {
             WorldUtils.findAndSetWorldSpawn(world, false);
             event.setCanceled(true);
+        }
+    }
+
+    private static void overrideWorldInfoAndBiomeProviderAndFindSpawn(World world, boolean tryFindSpawn)
+    {
+        if (Configs.enableSeparateWorldInfo)
+        {
+            WorldInfoUtils.loadAndSetCustomWorldInfo(world);
+        }
+
+        if (Configs.enableOverrideBiomeProvider)
+        {
+            WorldUtils.overrideBiomeProvider(world);
+        }
+
+        if (Configs.enableSeparateWorldInfo && tryFindSpawn)
+        {
+            WorldUtils.findAndSetWorldSpawn(world);
         }
     }
 
