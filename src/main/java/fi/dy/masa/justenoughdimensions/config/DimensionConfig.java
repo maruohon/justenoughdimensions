@@ -464,6 +464,10 @@ public class DimensionConfig
         {
             this.getOrCreateNestedObject(obj, "dimensiontype").add(key, new JsonPrimitive(value));
         }
+        else if (key.equals("worldinfo") || key.equals("worldinfo_onetime"))
+        {
+            this.getOrCreateNestedObject(obj, type.getKeyName());
+        }
         else
         {
             obj = this.getOrCreateNestedObject(obj, type.getKeyName());
@@ -490,6 +494,11 @@ public class DimensionConfig
         {
             obj = this.getNestedObject(obj, "dimensiontype", false);
             return obj != null ? obj.remove(key) != null : false;
+        }
+        else if (key.equals("worldinfo") || key.equals("worldinfo_onetime"))
+        {
+            obj.remove(type.getKeyName());
+            return true;
         }
         else
         {
