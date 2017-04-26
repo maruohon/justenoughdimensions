@@ -13,6 +13,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
@@ -58,8 +59,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     {
         if (tag != null)
         {
-            if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
-            if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = WorldInfoJED.hexStringToColor(tag.getString("FogColor")); }
+            if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = JEDStringUtils.hexStringToColor(tag.getString("SkyColor")); }
+            if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = JEDStringUtils.hexStringToColor(tag.getString("FogColor")); }
             if (tag.hasKey("SkyRenderType",   Constants.NBT.TAG_BYTE)) { this.skyRenderType   = tag.getByte("SkyRenderType");   }
             if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 

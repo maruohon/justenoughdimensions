@@ -131,10 +131,12 @@ public class WorldUtils
     public static void syncWorldProviderProperties(EntityPlayer player)
     {
         World world = player.getEntityWorld();
+        WorldInfo info = world.getWorldInfo();
 
-        if (world.getWorldInfo() instanceof WorldInfoJED && player instanceof EntityPlayerMP)
+        if (info instanceof WorldInfoJED && player instanceof EntityPlayerMP)
         {
-            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties((WorldInfoJED) world.getWorldInfo()), (EntityPlayerMP) player);
+            int dimension = world.provider.getDimension();
+            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties(dimension, (WorldInfoJED) info), (EntityPlayerMP) player);
         }
     }
 

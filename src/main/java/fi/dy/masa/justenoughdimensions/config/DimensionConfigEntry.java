@@ -1,11 +1,8 @@
 package fi.dy.masa.justenoughdimensions.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
@@ -117,6 +114,22 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return entry;
     }
 
+    @Nullable
+    public JsonObject getColorData()
+    {
+        if (this.worldInfoJson != null && this.worldInfoJson.has("JED") && this.worldInfoJson.get("JED").isJsonObject())
+        {
+            JsonObject obj = this.worldInfoJson.get("JED").getAsJsonObject();
+
+            if (obj.has("colors") && obj.get("colors").isJsonObject())
+            {
+                return obj.getAsJsonObject("colors");
+            }
+        }
+
+        return null;
+    }
+
     public JsonObject toJson()
     {
         JsonObject jsonEntry = new JsonObject();
@@ -142,37 +155,10 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
-        this.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
-        this.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
 
         return jsonEntry;
-    }
-
-    private void copyJsonObject(JsonObject wrapper, String key, JsonObject obj)
-    {
-        if (obj != null)
-        {
-            try
-            {
-                // Serialize and deserialize as a way to make a copy
-                Gson gson = new GsonBuilder().create();
-                JsonParser parser = new JsonParser();
-                JsonElement root = parser.parse(gson.toJson(obj));
-
-                if (root != null && root.isJsonObject())
-                {
-                    wrapper.add(key, root.getAsJsonObject());
-                }
-                else
-                {
-                    JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject");
-                }
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject", e);
-            }
-        }
     }
 
     public String getDescription()
