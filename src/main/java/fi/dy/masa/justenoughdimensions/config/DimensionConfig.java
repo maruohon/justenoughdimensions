@@ -29,6 +29,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagDouble;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagInt;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.nbt.NBTTagShort;
 import net.minecraft.nbt.NBTTagString;
@@ -59,6 +60,7 @@ public class DimensionConfig
     private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<String, Integer> worldInfoKeys = new HashMap<String, Integer>();
     private final Map<String, Integer> worldInfoKeysJED = new HashMap<String, Integer>();
+    private final Map<String, Integer> worldInfoKeysListTypes = new HashMap<String, Integer>();
     private JsonObject dimBuilderData = new JsonObject();
 
     private DimensionConfig(File configDir)
@@ -139,6 +141,9 @@ public class DimensionConfig
         this.worldInfoKeysJED.put("FogColor",         Constants.NBT.TAG_STRING);
         this.worldInfoKeysJED.put("SkyRenderType",    Constants.NBT.TAG_BYTE);
         this.worldInfoKeysJED.put("SkyDisableFlags",  Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("LightBrightness",  Constants.NBT.TAG_LIST);
+
+        this.worldInfoKeysListTypes.put("LightBrightness", Constants.NBT.TAG_FLOAT);
     }
 
     public boolean useCustomWorldInfoFor(int dimension)
@@ -792,7 +797,7 @@ public class DimensionConfig
         // Keys from the vanilla level.dat
         if (type != null)
         {
-            return this.getTagForType(type, element);
+            return this.getTagForType(key, type, element);
         }
 
         // Custom JED properties
@@ -804,7 +809,7 @@ public class DimensionConfig
 
         if (type != null)
         {
-            return this.getTagForType(type, element);
+            return this.getTagForType(key, type, element);
         }
 
         JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element.getAsString());
@@ -812,7 +817,7 @@ public class DimensionConfig
     }
 
     @Nullable
-    private NBTBase getTagForType(int type, JsonElement element)
+    private NBTBase getTagForType(String key, int type, JsonElement element)
     {
         switch (type)
         {
@@ -845,6 +850,21 @@ public class DimensionConfig
 
             case Constants.NBT.TAG_STRING:
                 return new NBTTagString(element.getAsString());
+
+            case Constants.NBT.TAG_LIST:
+                if (element.isJsonArray() && this.worldInfoKeysListTypes.containsKey(key))
+                {
+                    JsonArray arr = element.getAsJsonArray();
+                    NBTTagList list = new NBTTagList();
+                    int listType = this.worldInfoKeysListTypes.get(key);
+
+                    for (JsonElement el : arr)
+                    {
+                        list.appendTag(this.getTagForType("", listType, el));
+                    }
+
+                    return list;
+                }
         }
 
         return null;
