@@ -11,6 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -37,6 +39,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -725,10 +728,18 @@ public class DimensionConfig
                 {
                     JsonObject o = el.getAsJsonObject();
 
-                    if (o.has("biome") && o.has("color"))
+                    if (o.has("color"))
                     {
-                        colors.put(new ResourceLocation(o.get("biome").getAsString()),
-                                    JEDStringUtils.hexStringToInt(o.get("color").getAsString()));
+                        String strColor = o.get("color").getAsString();
+
+                        if (o.has("biome"))
+                        {
+                            colors.put(new ResourceLocation(o.get("biome").getAsString()), JEDStringUtils.hexStringToInt(strColor));
+                        }
+                        else if (o.has("biome_regex"))
+                        {
+                            addColorForBiomeRegex(o.get("biome_regex").getAsString(), JEDStringUtils.hexStringToInt(strColor), colors);
+                        }
                     }
                 }
             }
@@ -737,6 +748,27 @@ public class DimensionConfig
         }
 
         return null;
+    }
+
+    private static void addColorForBiomeRegex(String regex, int color, Map<ResourceLocation, Integer> colors)
+    {
+        try
+        {
+            Pattern pattern = Pattern.compile(regex);
+
+            // ForgeRegistries.BIOMES.getKeys() will fail in a built mod in 1.10.2, due to Forge bug #3427
+            for (ResourceLocation rl : Biome.REGISTRY.getKeys())
+            {
+                if (pattern.matcher(rl.toString()).matches())
+                {
+                    colors.put(rl, color);
+                }
+            }
+        }
+        catch (PatternSyntaxException e)
+        {
+            JustEnoughDimensions.logger.warn("DimensionConfig.addColorForBiomeRegex(): Invalid regular expression", e);
+        }
     }
 
     private NBTTagCompound parseAndGetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
