@@ -386,7 +386,7 @@ public class CommandJED extends CommandBase
             throwNumber("dimension.notloaded", Integer.valueOf(dimension));
         }
 
-        sender.sendMessage(new TextComponentString("DIM: " + dimension + " - Seed: " + world.getWorldInfo().getSeed()));
+        sender.sendMessage(new TextComponentTranslation("jed.commands.seed.success", Long.valueOf(dimension), world.getWorldInfo().getSeed()));
     }
 
     private GameRules getOverWorldGameRules(MinecraftServer server)

@@ -40,6 +40,7 @@ jed.commands.register.create.simple=Dimension %s has been registered with defaul
 jed.commands.register.custom=Dimension %s has been registered with a customized DimensionType %s
 jed.commands.register.from.config=Dimension %s has been registered from the config with parameters %s
 jed.commands.reloaded=Dimension config reloaded
+jed.commands.seed.success=DIM: %d - Seed: %d
 jed.commands.setworldspawn.query=DIM %s: The current world spawn is at x: %s, y: %s, z: %s
 jed.commands.setworldspawn.success=DIM %s: Set the world spawnpoint to x: %s, y: %s, z: %s
 jed.commands.teleport.success.coordinates=Teleported entity %s to [%s, %s, %s] in dimension %s
