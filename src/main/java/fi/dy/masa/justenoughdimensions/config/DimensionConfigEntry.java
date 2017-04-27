@@ -11,6 +11,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean override;
     private boolean unregister;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
+    private JsonObject colorJson;
     private JsonObject worldInfoJson;
     private JsonObject oneTimeWorldInfoJson;
     private DimensionTypeEntry dimensionTypeEntry;
@@ -71,6 +72,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         this.dimensionTypeEntry = entry;
     }
 
+    public DimensionConfigEntry setColorJson(JsonObject obj)
+    {
+        this.colorJson = obj;
+        return this;
+    }
+
     public DimensionConfigEntry setWorldInfoJson(JsonObject obj)
     {
         this.worldInfoJson = obj;
@@ -117,14 +124,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     @Nullable
     public JsonObject getColorData()
     {
-        if (this.worldInfoJson != null && this.worldInfoJson.has("JED") && this.worldInfoJson.get("JED").isJsonObject())
+        if (this.colorJson != null && this.colorJson.isJsonObject())
         {
-            JsonObject obj = this.worldInfoJson.get("JED").getAsJsonObject();
-
-            if (obj.has("colors") && obj.get("colors").isJsonObject())
-            {
-                return obj.getAsJsonObject("colors");
-            }
+            return this.colorJson;
         }
 
         return null;
@@ -155,6 +157,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
+        JEDJsonUtils.copyJsonObject(jsonEntry, "colors",            this.colorJson);
         JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
         JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
 

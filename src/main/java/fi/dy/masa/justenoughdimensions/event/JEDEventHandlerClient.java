@@ -2,20 +2,24 @@ package fi.dy.masa.justenoughdimensions.event;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.client.Minecraft;
+import javax.annotation.Nullable;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.event.terraingen.BiomeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig.ColorType;
 
 @Mod.EventBusSubscriber(Side.CLIENT)
 public class JEDEventHandlerClient
 {
-    private static final Map<Integer, Map<ResourceLocation, Integer>> FOLIAGE_COLORS = new HashMap<Integer, Map<ResourceLocation, Integer>>();
-    private static final Map<Integer, Map<ResourceLocation, Integer>> GRASS_COLORS = new HashMap<Integer, Map<ResourceLocation, Integer>>();
-    private static final Map<Integer, Map<ResourceLocation, Integer>> WATER_COLORS = new HashMap<Integer, Map<ResourceLocation, Integer>>();
+    private static final Map<ResourceLocation, Integer> FOLIAGE_COLORS = new HashMap<ResourceLocation, Integer>();
+    private static final Map<ResourceLocation, Integer> GRASS_COLORS = new HashMap<ResourceLocation, Integer>();
+    private static final Map<ResourceLocation, Integer> WATER_COLORS = new HashMap<ResourceLocation, Integer>();
+    private static boolean hasFoliageColors;
+    private static boolean hasGrassColors;
+    private static boolean hasWaterColors;
 
     @SubscribeEvent
     public static void onGetFoliageColor(BiomeEvent.GetFoliageColor event)
@@ -35,51 +39,60 @@ public class JEDEventHandlerClient
         event.setNewColor(getColor(ColorType.WATER, event.getBiome(), event.getOriginalColor()));
     }
 
-    public static void setColors(int dimension, ColorType type, Map<ResourceLocation, Integer> colorsIn)
+    public static void setColors(ColorType type, @Nullable Map<ResourceLocation, Integer> colorsIn)
     {
-        Map<Integer, Map<ResourceLocation, Integer>> map = getColorMap(type);
-        Map<ResourceLocation, Integer> colors = map.get(dimension);
+        Map<ResourceLocation, Integer> colors = getColorMap(type);
+        colors.clear();
 
-        if (colors == null)
+        if (colorsIn != null)
         {
-            colors = new HashMap<ResourceLocation, Integer>();
-            map.put(dimension, colors);
+            colors.putAll(colorsIn);
         }
 
-        colors.clear();
-        colors.putAll(colorsIn);
+        setFlag(type, colors.isEmpty() == false);
     }
 
     private static int getColor(ColorType type, Biome biome, int defaultColor)
     {
-        int dimension = Minecraft.getMinecraft().world.provider.getDimension();
-        Map<Integer, Map<ResourceLocation, Integer>> map = getColorMap(type);
-        Map<ResourceLocation, Integer> colors = map.get(dimension);
-
-        if (colors == null || colors.isEmpty())
+        if (getFlag(type))
         {
-            return defaultColor;
+            Integer color = getColorMap(type).get(biome.getRegistryName());
+            return color != null ? color.intValue() : defaultColor;
         }
 
-        Integer color = colors.get(biome.getRegistryName());
-        return color != null ? color.intValue() : defaultColor;
+        return defaultColor;
     }
 
-    private static Map<Integer, Map<ResourceLocation, Integer>> getColorMap(ColorType type)
+    private static Map<ResourceLocation, Integer> getColorMap(ColorType type)
     {
         switch (type)
         {
-            case FOLIAGE: return FOLIAGE_COLORS;
-            case GRASS:   return GRASS_COLORS;
-            case WATER:   return WATER_COLORS;
-            default:      return FOLIAGE_COLORS;
+            case FOLIAGE:   return FOLIAGE_COLORS;
+            case GRASS:     return GRASS_COLORS;
+            case WATER:     return WATER_COLORS;
+            default:        return FOLIAGE_COLORS;
         }
     }
 
-    public enum ColorType
+    private static boolean getFlag(ColorType type)
     {
-        FOLIAGE,
-        GRASS,
-        WATER;
+        switch (type)
+        {
+            case FOLIAGE:   return hasFoliageColors;
+            case GRASS:     return hasGrassColors;
+            case WATER:     return hasWaterColors;
+            default:        return false;
+        }
+    }
+
+    private static void setFlag(ColorType type, boolean value)
+    {
+        switch (type)
+        {
+            case FOLIAGE:   hasFoliageColors = value; break;
+            case GRASS:     hasGrassColors = value; break;
+            case WATER:     hasWaterColors = value; break;
+            default:
+        }
     }
 }

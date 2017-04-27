@@ -479,6 +479,11 @@ public class DimensionConfig
         configEntry.setUnregister(unregister);
         configEntry.setBiome(biome);
 
+        if (object.has("colors") && object.get("colors").isJsonObject())
+        {
+            configEntry.setColorJson(object.getAsJsonObject("colors"));
+        }
+
         if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
         {
             JsonObject obj = object.get("worldinfo").getAsJsonObject();
@@ -504,7 +509,9 @@ public class DimensionConfig
 
     private DimensionTypeEntry createDefaultDimensionTypeEntry(int dimension)
     {
-        return new DimensionTypeEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
+        DimensionTypeEntry dte = new DimensionTypeEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
+        JustEnoughDimensions.logInfo("Created a default DimensionTypeEntry for dimension {}: {}", dimension, dte.getDescription());
+        return dte;
     }
 
     public void dimbuilderClear()
@@ -561,7 +568,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("colors"))
         {
             return obj.remove(key) != null;
         }
@@ -702,13 +709,15 @@ public class DimensionConfig
         return null;
     }
 
-    public static Map<ResourceLocation, Integer> getColorMap(JsonObject obj, String type)
+    @Nullable
+    public static Map<ResourceLocation, Integer> getColorMap(@Nullable JsonObject obj, ColorType type)
     {
-        Map<ResourceLocation, Integer> colors = new HashMap<ResourceLocation, Integer>();
+        String key = type.getKeyName();
 
-        if (obj.has(type) && obj.get(type).isJsonArray())
+        if (obj != null && obj.has(key) && obj.get(key).isJsonArray())
         {
-            JsonArray arr = obj.getAsJsonArray(type);
+            Map<ResourceLocation, Integer> colors = new HashMap<ResourceLocation, Integer>();
+            JsonArray arr = obj.getAsJsonArray(key);
 
             for (JsonElement el : arr)
             {
@@ -723,9 +732,11 @@ public class DimensionConfig
                     }
                 }
             }
+
+            return colors;
         }
 
-        return colors;
+        return null;
     }
 
     private NBTTagCompound parseAndGetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
@@ -938,6 +949,25 @@ public class DimensionConfig
         private final String keyName;
 
         private WorldInfoType(String keyName)
+        {
+            this.keyName = keyName;
+        }
+
+        public String getKeyName()
+        {
+            return this.keyName;
+        }
+    }
+
+    public enum ColorType
+    {
+        FOLIAGE ("FoliageColors"),
+        GRASS   ("GrassColors"),
+        WATER   ("WaterColors");
+
+        private final String keyName;
+
+        private ColorType(String keyName)
         {
             this.keyName = keyName;
         }

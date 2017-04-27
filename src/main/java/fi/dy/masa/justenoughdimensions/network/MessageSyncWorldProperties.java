@@ -12,6 +12,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -20,9 +21,9 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig.ColorType;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.event.JEDEventHandlerClient;
-import fi.dy.masa.justenoughdimensions.event.JEDEventHandlerClient.ColorType;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
@@ -31,22 +32,27 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 
-public class MessageSyncWorldProviderProperties implements IMessage
+public class MessageSyncWorldProperties implements IMessage
 {
-    private int dimension;
     private NBTTagCompound nbt;
     private JsonObject colorData;
+    private boolean hasJEDTag;
 
-    public MessageSyncWorldProviderProperties()
+    public MessageSyncWorldProperties()
     {
     }
 
-    public MessageSyncWorldProviderProperties(int dimension, WorldInfoJED info)
+    public MessageSyncWorldProperties(World world)
     {
-        this.dimension = dimension;
-        this.nbt = info.getJEDTag();
-
+        int dimension = world.provider.getDimension();
+        WorldInfo info = world.getWorldInfo();
         DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
+
+        if (info instanceof WorldInfoJED)
+        {
+            this.hasJEDTag = true;
+            this.nbt = ((WorldInfoJED) info).getJEDTag();
+        }
 
         if (entry != null)
         {
@@ -57,36 +63,48 @@ public class MessageSyncWorldProviderProperties implements IMessage
     @Override
     public void toBytes(ByteBuf buf)
     {
-        buf.writeInt(this.dimension);
-        ByteBufUtils.writeTag(buf, this.nbt);
+        // Has the JED NBT tag
+        buf.writeBoolean(this.hasJEDTag);
+
+        if (this.hasJEDTag)
+        {
+            ByteBufUtils.writeTag(buf, this.nbt);
+        }
 
         if (this.colorData != null)
         {
+            // Has color data
+            buf.writeBoolean(true);
+
             try
             {
-                buf.writeByte(1);
                 DataOutputStream data = new DataOutputStream(new BufferedOutputStream(new DeflaterOutputStream(new ByteBufOutputStream(buf))));
                 data.writeUTF(JEDJsonUtils.serialize(this.colorData));
                 data.close();
             }
             catch (IOException e)
             {
-                JustEnoughDimensions.logger.error("MessageSyncWorldProviderProperties.toBytes(): Failed to write the color object to ByteBuf", e);
+                JustEnoughDimensions.logger.error("MessageSyncWorldProperties.toBytes(): Failed to write the color object to ByteBuf", e);
             }
         }
         else
         {
-            buf.writeByte(0);
+            // No color data
+            buf.writeBoolean(false);
         }
     }
 
     @Override
     public void fromBytes(ByteBuf buf)
     {
-        this.dimension = buf.readInt();
-        this.nbt = ByteBufUtils.readTag(buf);
+        // Has the JED NBT tag
+        if (buf.readBoolean())
+        {
+            this.nbt = ByteBufUtils.readTag(buf);
+        }
 
-        if (buf.readByte() != 0)
+        // Has color data
+        if (buf.readBoolean())
         {
             try
             {
@@ -101,19 +119,19 @@ public class MessageSyncWorldProviderProperties implements IMessage
             }
             catch (IOException e)
             {
-                JustEnoughDimensions.logger.error("MessageSyncWorldProviderProperties.fromBytes(): Failed to read from ByteBuf", e);
+                JustEnoughDimensions.logger.error("MessageSyncWorldProperties.fromBytes(): Failed to read from ByteBuf", e);
             }
         }
     }
 
-    public static class Handler implements IMessageHandler<MessageSyncWorldProviderProperties, IMessage>
+    public static class Handler implements IMessageHandler<MessageSyncWorldProperties, IMessage>
     {
         @Override
-        public IMessage onMessage(final MessageSyncWorldProviderProperties message, MessageContext ctx)
+        public IMessage onMessage(final MessageSyncWorldProperties message, MessageContext ctx)
         {
             if (ctx.side != Side.CLIENT)
             {
-                JustEnoughDimensions.logger.error("Wrong side in MessageSyncWorldProviderProperties: " + ctx.side);
+                JustEnoughDimensions.logger.error("Wrong side in MessageSyncWorldProperties: " + ctx.side);
                 return null;
             }
 
@@ -121,7 +139,7 @@ public class MessageSyncWorldProviderProperties implements IMessage
 
             if (mc == null)
             {
-                JustEnoughDimensions.logger.error("Minecraft was null in MessageSyncWorldProviderProperties");
+                JustEnoughDimensions.logger.error("Minecraft was null in MessageSyncWorldProperties");
                 return null;
             }
 
@@ -136,30 +154,30 @@ public class MessageSyncWorldProviderProperties implements IMessage
             return null;
         }
 
-        protected void processMessage(final MessageSyncWorldProviderProperties message, final World world)
+        protected void processMessage(final MessageSyncWorldProperties message, final World world)
         {
             if (world.provider instanceof IWorldProviderJED)
             {
                 ((IWorldProviderJED) world.provider).setJEDPropertiesFromNBT(message.nbt);
                 
-                JustEnoughDimensions.logInfo("MessageSyncWorldProviderProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
+                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
                         world.provider.getDimension(), message.nbt);
             }
             else
             {
                 if (WorldUtils.setRenderersOnNonJEDWorld(world, message.nbt))
                 {
-                    JustEnoughDimensions.logInfo("MessageSyncWorldProviderProperties - DIM: {}: Set a customized sky render type for a non-JED world",
+                    JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky render type for a non-JED world",
                             world.provider.getDimension());
                 }
             }
 
-            if (message.colorData != null)
-            {
-                JEDEventHandlerClient.setColors(message.dimension, ColorType.FOLIAGE, DimensionConfig.getColorMap(message.colorData, "FoliageColors"));
-                JEDEventHandlerClient.setColors(message.dimension, ColorType.GRASS,   DimensionConfig.getColorMap(message.colorData, "GrassColors"));
-                JEDEventHandlerClient.setColors(message.dimension, ColorType.WATER,   DimensionConfig.getColorMap(message.colorData, "WaterColors"));
-            }
+            JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced color data: '{}'",
+                    world.provider.getDimension(), message.colorData != null ? JEDJsonUtils.serialize(message.colorData) : "null");
+
+            JEDEventHandlerClient.setColors(ColorType.FOLIAGE, DimensionConfig.getColorMap(message.colorData, ColorType.FOLIAGE));
+            JEDEventHandlerClient.setColors(ColorType.GRASS,   DimensionConfig.getColorMap(message.colorData, ColorType.GRASS));
+            JEDEventHandlerClient.setColors(ColorType.WATER,   DimensionConfig.getColorMap(message.colorData, ColorType.WATER));
         }
     }
 }
