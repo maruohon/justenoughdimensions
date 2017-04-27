@@ -1,12 +1,13 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.11.2-latest": "1.3.8",
-        "1.11.2-recommended": "1.3.8",
-        "1.10.2-latest": "1.3.8",
-        "1.10.2-recommended": "1.3.8"
+        "1.11.2-latest": "1.4.0",
+        "1.11.2-recommended": "1.4.0",
+        "1.10.2-latest": "1.4.0",
+        "1.10.2-recommended": "1.4.0"
     },
     "1.11.2": {
+        "1.4.0": "Add support for setting the foliage/grass/water colors per-dimension and per-biome\nAdd support for overriding the light brightness table per-dimension",
         "1.3.8": "Don't require WorldInfo override for the single biome feature\nCleaned up a couple of dimension registration related things\nFixes/improvements to some command output strings\nImprovements to the dimbuilder - it can now add/remove empty worldinfo objects, and it can now add/remove GameRules",
         "1.3.7": "Allow customizing the sky render type on non-JED WorldProviders",
         "1.3.6": "Fix unregistering dimensions that weren't actually registered by JED\nRefactor/fix some WorldInfo override and related things",
@@ -20,6 +21,7 @@
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions"
     },
     "1.10.2": {
+        "1.4.0": "Add support for setting the foliage/grass/water colors per-dimension and per-biome\nAdd support for overriding the light brightness table per-dimension",
         "1.3.8": "Don't require WorldInfo override for the single biome feature\nCleaned up a couple of dimension registration related things\nFixes/improvements to some command output strings\nImprovements to the dimbuilder - it can now add/remove empty worldinfo objects, and it can now add/remove GameRules",
         "1.3.7": "Allow customizing the sky render type on non-JED WorldProviders",
         "1.3.6": "Fix unregistering dimensions that weren't actually registered by JED\nRefactor/fix some WorldInfo override and related things",
