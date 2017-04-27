@@ -1,11 +1,8 @@
 package fi.dy.masa.justenoughdimensions.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
@@ -14,6 +11,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean override;
     private boolean unregister;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
+    private JsonObject colorJson;
     private JsonObject worldInfoJson;
     private JsonObject oneTimeWorldInfoJson;
     private DimensionTypeEntry dimensionTypeEntry;
@@ -74,6 +72,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         this.dimensionTypeEntry = entry;
     }
 
+    public DimensionConfigEntry setColorJson(JsonObject obj)
+    {
+        this.colorJson = obj;
+        return this;
+    }
+
     public DimensionConfigEntry setWorldInfoJson(JsonObject obj)
     {
         this.worldInfoJson = obj;
@@ -117,6 +121,17 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return entry;
     }
 
+    @Nullable
+    public JsonObject getColorData()
+    {
+        if (this.colorJson != null && this.colorJson.isJsonObject())
+        {
+            return this.colorJson;
+        }
+
+        return null;
+    }
+
     public JsonObject toJson()
     {
         JsonObject jsonEntry = new JsonObject();
@@ -142,37 +157,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
-        this.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
-        this.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "colors",            this.colorJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
 
         return jsonEntry;
-    }
-
-    private void copyJsonObject(JsonObject wrapper, String key, JsonObject obj)
-    {
-        if (obj != null)
-        {
-            try
-            {
-                // Serialize and deserialize as a way to make a copy
-                Gson gson = new GsonBuilder().create();
-                JsonParser parser = new JsonParser();
-                JsonElement root = parser.parse(gson.toJson(obj));
-
-                if (root != null && root.isJsonObject())
-                {
-                    wrapper.add(key, root.getAsJsonObject());
-                }
-                else
-                {
-                    JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject");
-                }
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.error("Failed to convert a DimensionEntry into a JsonObject", e);
-            }
-        }
     }
 
     public String getDescription()

@@ -37,7 +37,7 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldExcep
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
-import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProviderProperties;
+import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
@@ -130,11 +130,9 @@ public class WorldUtils
 
     public static void syncWorldProviderProperties(EntityPlayer player)
     {
-        World world = player.getEntityWorld();
-
-        if (world.getWorldInfo() instanceof WorldInfoJED && player instanceof EntityPlayerMP)
+        if (player instanceof EntityPlayerMP)
         {
-            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProviderProperties((WorldInfoJED) world.getWorldInfo()), (EntityPlayerMP) player);
+            PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProperties(player.getEntityWorld()), (EntityPlayerMP) player);
         }
     }
 

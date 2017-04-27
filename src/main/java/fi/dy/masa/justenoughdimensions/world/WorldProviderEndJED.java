@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions.world;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -13,6 +14,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
@@ -21,6 +23,7 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     private int skyDisableFlags = 0;
     protected Vec3d skyColor = null;
     protected Vec3d fogColor = null;
+    protected float[] customLightBrightnessTable;
 
     @Override
     public void setDimension(int dim)
@@ -58,8 +61,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     {
         if (tag != null)
         {
-            if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = WorldInfoJED.hexStringToColor(tag.getString("SkyColor")); }
-            if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = WorldInfoJED.hexStringToColor(tag.getString("FogColor")); }
+            if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = JEDStringUtils.hexStringToColor(tag.getString("SkyColor")); }
+            if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = JEDStringUtils.hexStringToColor(tag.getString("FogColor")); }
             if (tag.hasKey("SkyRenderType",   Constants.NBT.TAG_BYTE)) { this.skyRenderType   = tag.getByte("SkyRenderType");   }
             if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
@@ -71,12 +74,38 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             {
                 this.setSkyRenderer(null);
             }
+
+            if (tag.hasKey("LightBrightness", Constants.NBT.TAG_LIST))
+            {
+                NBTTagList list = tag.getTagList("LightBrightness", Constants.NBT.TAG_FLOAT);
+
+                if (list.tagCount() == 16)
+                {
+                    this.customLightBrightnessTable = new float[16];
+
+                    for (int i = 0; i < 16; i++)
+                    {
+                        this.customLightBrightnessTable[i] = list.getFloatAt(i);
+                    }
+                }
+            }
         }
     }
 
     @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
+    }
+
+    @Override
+    public float[] getLightBrightnessTable()
+    {
+        if (this.customLightBrightnessTable != null)
+        {
+            return this.customLightBrightnessTable;
+        }
+
+        return super.getLightBrightnessTable();
     }
 
     @Override
