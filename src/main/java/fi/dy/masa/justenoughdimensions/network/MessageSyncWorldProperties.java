@@ -163,13 +163,10 @@ public class MessageSyncWorldProperties implements IMessage
                 JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
                         world.provider.getDimension(), message.nbt);
             }
-            else
+            else if (message.nbt != null && WorldUtils.setRenderersOnNonJEDWorld(world, message.nbt))
             {
-                if (WorldUtils.setRenderersOnNonJEDWorld(world, message.nbt))
-                {
-                    JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky render type for a non-JED world",
-                            world.provider.getDimension());
-                }
+                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky render type for a non-JED world",
+                        world.provider.getDimension());
             }
 
             JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced color data: '{}'",
