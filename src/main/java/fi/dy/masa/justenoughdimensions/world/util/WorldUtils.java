@@ -78,9 +78,13 @@ public class WorldUtils
         int count = 0;
         Integer[] dims = DimensionManager.getIDs();
 
+        JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Trying to unload empty dimensions, tryUnloadChunks = {}", tryUnloadChunks);
+
         for (int dim : dims)
         {
+            JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Trying to unload dimension {}", dim);
             WorldServer world = DimensionManager.getWorld(dim);
+
             if (world == null)
             {
                 continue;
@@ -90,6 +94,7 @@ public class WorldUtils
 
             if (tryUnloadChunks && chunkProviderServer.getLoadedChunkCount() > 0)
             {
+                JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Trying to unload chunks for dimension {}", dim);
                 boolean disable = world.disableLevelSaving;
                 world.disableLevelSaving = false;
 
@@ -100,7 +105,8 @@ public class WorldUtils
                 }
                 catch (MinecraftException e)
                 {
-                    JustEnoughDimensions.logger.warn("Exception while trying to save chunks for dimension {}", world.provider.getDimension(), e);
+                    JustEnoughDimensions.logger.warn("WorldUtils.unloadEmptyDimensions(): Exception while "+
+                                                     "trying to save chunks for dimension {}", world.provider.getDimension(), e);
                 }
 
                 // This would flush the chunks to disk from the AnvilChunkLoader. Probably not what we want to do.
@@ -176,12 +182,15 @@ public class WorldUtils
         {
             try
             {
+                JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProviderSettings(): Trying to override the "+
+                                             "WorldType and generatorSettings for dimension {}", provider.getDimension());
                 field_WorldProvider_terrainType.set(provider, info.getTerrainType());
                 field_WorldProvider_generatorSettings.set(provider, info.getGeneratorOptions());
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Failed to override WorldProvider settings for dimension {}", provider.getDimension());
+                JustEnoughDimensions.logger.error("WorldUtils.overrideWorldProviderSettings(): Failed to override " +
+                                                  "WorldProvider settings for dimension {}", provider.getDimension());
             }
         }
     }

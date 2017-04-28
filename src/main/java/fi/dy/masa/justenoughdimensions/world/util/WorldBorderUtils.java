@@ -39,6 +39,7 @@ public class WorldBorderUtils
     {
         if (Configs.enableSeparateWorldBorders && player.getEntityWorld().isRemote == false && (player instanceof EntityPlayerMP))
         {
+            JustEnoughDimensions.logInfo("WorldBorderUtils.sendWorldBorder(): Sending the border to player '{}'", player.getName());
             ((EntityPlayerMP) player).connection.sendPacket(
                     new SPacketWorldBorder(player.getEntityWorld().getWorldBorder(), SPacketWorldBorder.Action.INITIALIZE));
         }

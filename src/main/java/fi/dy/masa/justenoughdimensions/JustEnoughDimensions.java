@@ -102,5 +102,9 @@ public class JustEnoughDimensions
         {
             logger.info(message, params);
         }
+        else
+        {
+            logger.trace(message, params);
+        }
     }
 }

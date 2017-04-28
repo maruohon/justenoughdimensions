@@ -54,7 +54,8 @@ public class WorldInfoUtils
         if ((world.getWorldInfo() instanceof WorldInfoJED) == false &&
             DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
-            JustEnoughDimensions.logInfo("Overriding the existing WorldInfo with WorldInfoJED for dimension {}", dimension);
+            JustEnoughDimensions.logInfo("WorldInfoUtils.loadAndSetCustomWorldInfo(): Overriding the existing " +
+                                         "WorldInfo with WorldInfoJED for dimension {}", dimension);
             setWorldInfo(world, createCustomWorldInfoFor(world, dimension));
         }
     }
@@ -109,7 +110,7 @@ public class WorldInfoUtils
     {
         if (worldDir == null)
         {
-            //JustEnoughDimensions.logger.warn("loadWorldInfo(): No worldDir found");
+            JustEnoughDimensions.logInfo("WorldInfoUtils.loadWorldInfoFromFile(): null worldDir");
             return null;
         }
 
@@ -122,17 +123,19 @@ public class WorldInfoUtils
                 NBTTagCompound nbt = CompressedStreamTools.readCompressed(new FileInputStream(levelFile));
                 nbt = world.getMinecraftServer().getDataFixer().process(FixTypes.LEVEL, nbt.getCompoundTag("Data"));
                 //FMLCommonHandler.instance().handleWorldDataLoad((SaveHandler) world.getSaveHandler(), info, nbt);
+                JustEnoughDimensions.logInfo("WorldInfoUtils.loadWorldInfoFromFile(): Read world info from file '{}'", levelFile.getPath());
                 return nbt;
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Exception reading " + levelFile.getName(), (Throwable) e);
+                JustEnoughDimensions.logger.warn("Exception reading " + levelFile.getPath(), e);
                 return null;
             }
 
             //return SaveFormatOld.loadAndFix(fileLevel, world.getMinecraftServer().getDataFixer(), (SaveHandler) world.getSaveHandler());
         }
 
+        JustEnoughDimensions.logInfo("WorldInfoUtils.loadWorldInfoFromFile(): level.dat didn't exist for dimension {}", world.provider.getDimension());
         return null;
     }
 
@@ -173,7 +176,8 @@ public class WorldInfoUtils
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("JEDEventHandler: Failed to override WorldInfo for dimension {}", world.provider.getDimension());
+                JustEnoughDimensions.logger.error("WorldInfoUtils.setWorldInfo(): Failed to override WorldInfo for dimension {}",
+                        world.provider.getDimension());
             }
         }
     }
@@ -182,7 +186,7 @@ public class WorldInfoUtils
     {
         if (worldDir == null)
         {
-            JustEnoughDimensions.logger.error("saveWorldInfo(): No worldDir found");
+            JustEnoughDimensions.logger.warn("WorldInfoUtils.saveWorldInfoToFile(): No worldDir found");
             return;
         }
 
@@ -222,7 +226,7 @@ public class WorldInfoUtils
 
             if (fileCurrent.exists())
             {
-                JustEnoughDimensions.logger.error("Failed to rename {} to {}", fileCurrent.getName(), fileOld.getName());
+                JustEnoughDimensions.logger.error("Failed to rename {} to {}", fileCurrent.getPath(), fileOld.getPath());
                 return;
             }
 
@@ -230,13 +234,14 @@ public class WorldInfoUtils
 
             if (fileNew.exists())
             {
-                JustEnoughDimensions.logger.error("Failed to rename {} to {}", fileNew.getName(), fileCurrent.getName());
+                JustEnoughDimensions.logger.error("Failed to rename {} to {}", fileNew.getPath(), fileCurrent.getPath());
                 return;
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            JustEnoughDimensions.logger.error("WorldInfoUtils.saveWorldInfoToFile(): Failed to save world "+
+                                              "info to file for dimension {}", world.provider.getDimension(), e);
         }
     }
 }
