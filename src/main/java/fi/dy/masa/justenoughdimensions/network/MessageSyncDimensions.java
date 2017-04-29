@@ -84,19 +84,8 @@ public class MessageSyncDimensions implements IMessage
 
         protected void processMessage(final MessageSyncDimensions message)
         {
-            List<String> ids = new ArrayList<String>();
-
-            for (DimensionConfigEntry entry : message.dimensions)
-            {
-                DimensionSyncPacket.registerDimension(entry.getId(), entry);
-
-                if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
-                {
-                    ids.add(String.valueOf(entry.getId()));
-                }
-            }
-
-            JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
+            String str = DimensionSyncPacket.registerDimensions(message.dimensions);
+            JustEnoughDimensions.logInfo("MessageSyncDimensions: Registered dimensions: '" + str + "'");
         }
     }
 }

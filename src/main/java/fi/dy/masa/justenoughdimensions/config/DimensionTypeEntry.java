@@ -60,8 +60,8 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             DimensionType type = null;
             try
             {
-                type = DimensionType.valueOf(this.dimensionTypeName);
                 JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dim {}", type, this.id);
+                type = DimensionType.valueOf(this.dimensionTypeName);
             }
             catch (Exception e) { }
 

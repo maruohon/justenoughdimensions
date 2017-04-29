@@ -2,8 +2,10 @@ package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.DimensionType;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import io.netty.buffer.ByteBuf;
@@ -47,9 +49,39 @@ public class DimensionSyncPacket
 
     public void execute()
     {
+        Minecraft mc = FMLClientHandler.instance().getClient();
+
+        if (mc == null)
+        {
+            JustEnoughDimensions.logger.error("Minecraft was null in DimensionSyncPacket");
+            return;
+        }
+
+        mc.addScheduledTask(new Runnable()
+        {
+            public void run()
+            {
+                processMessage();
+            }
+        });
+    }
+
+    protected void processMessage()
+    {
+        String str = registerDimensions(this.dimensions);
+        JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + str + "'");
+    }
+
+    /**
+     * Registers all the dimensions on the provided list.
+     * @param dimensions
+     * @return a string for logging purposes of all the registered dimensions
+     */
+    public static String registerDimensions(List<DimensionConfigEntry> dimensions)
+    {
         List<String> ids = new ArrayList<String>();
 
-        for (DimensionConfigEntry entry : this.dimensions)
+        for (DimensionConfigEntry entry : dimensions)
         {
             registerDimension(entry.getId(), entry);
 
@@ -59,10 +91,10 @@ public class DimensionSyncPacket
             }
         }
 
-        JustEnoughDimensions.logInfo("DimensionSyncPacket: Registered dimensions: '" + String.join(", ", ids) + "'");
+        return String.join(", ", ids);
     }
 
-    public static void registerDimension(int id, DimensionConfigEntry entry)
+    private static void registerDimension(int id, DimensionConfigEntry entry)
     {
         if (entry.getUnregister() || entry.hasDimensionTypeEntry() == false)
         {

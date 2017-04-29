@@ -60,7 +60,10 @@ public class Configs
         enableLoggingInfo = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableOverrideBiomeProvider", false).setRequiresMcRestart(false);
-        prop.setComment("If enabled, then a 'biome: name' key-value pair in the dimension config will override the BiomeProvider of that dimension with BiomeProviderSingle, using the biome given as the value.");
+        prop.setComment("If enabled, then a '\"biome\": \"registrynameofbiome\"' value in the dimensions.json config will override the\n" +
+                        "BiomeProvider of that dimension with BiomeProviderSingle, using the biome given as the value.\n" +
+                        "This means that the entire dimension will use only that one biome set in the config.\n" +
+                        "To get the registry names of biomes, you can use the TellMe mod (the command '/tellme dump biomes').");
         enableOverrideBiomeProvider = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", false).setRequiresMcRestart(false);
@@ -76,7 +79,9 @@ public class Configs
         enableSeparateWorldBorders = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableSeparateWorldInfo", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
-        prop.setComment("If enabled, all dimensions that exist in dimensions.json and have the \"worldinfo\" key present (an empty object is enough - works even if the dimension isn't registered by this mod because it already exist!), will use separate WorldInfo instances (separate time, weather, world border, gamerules etc.)");
+        prop.setComment("If enabled, all dimensions that exist in dimensions.json and have either a \"worldinfo\" or a \"worldinfo_onetime\" value present\n" +
+                        "(an empty object is enough), will use separate WorldInfo instances (separate time, weather, world border, gamerules etc.).\n" +
+                        "This works even if the dimension in question isn't registered by this mod (so vanilla, or other mod dimensions can have it too).");
         enableSeparateWorldInfo = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "initialSpawnDimensionId", 0).setRequiresWorldRestart(true).setRequiresMcRestart(false);
