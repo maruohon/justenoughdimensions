@@ -10,6 +10,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private final int id;
     private boolean override;
     private boolean unregister;
+    private boolean disableTeleporting;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
     private JsonObject colorJson;
     private JsonObject worldInfoJson;
@@ -36,6 +37,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.unregister;
     }
 
+    public boolean getDisableTeleporting()
+    {
+        return this.disableTeleporting;
+    }
+
     public String getBiome()
     {
         return this.biome;
@@ -50,6 +56,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     {
         // Don't allow unregistering the overworld, or bad things will happen!
         this.unregister = unregister && this.id != 0;
+    }
+
+    public void setDisableTeleporting(boolean disable)
+    {
+        this.disableTeleporting = disable;
     }
 
     public void setBiome(String biome)
@@ -147,6 +158,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("unregister", true);
         }
 
+        if (this.disableTeleporting)
+        {
+            jsonEntry.addProperty("disableteleporting", true);
+        }
+
         if (this.biome != null)
         {
             jsonEntry.addProperty("biome", this.biome);
@@ -166,8 +182,8 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
     public String getDescription()
     {
-        return String.format("{id: %d, override: %s, unregister: %s, biome: '%s', DimensionTypeEntry: [%s]}",
-                this.id, this.override, this.unregister, this.biome,
+        return String.format("{id: %d, override: %s, unregister: %s, disableteleporting: %s, biome: '%s', DimensionTypeEntry: [%s]}",
+                this.id, this.override, this.unregister, this.disableTeleporting, this.biome,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
 

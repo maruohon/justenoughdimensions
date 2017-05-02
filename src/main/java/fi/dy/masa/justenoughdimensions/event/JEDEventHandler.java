@@ -20,6 +20,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
@@ -144,6 +145,13 @@ public class JEDEventHandler
     public void onEntityTravelToDimensionEvent(EntityTravelToDimensionEvent event)
     {
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
+        {
+            event.setCanceled(true);
+        }
+
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
+
+        if (entry != null && entry.getDisableTeleporting())
         {
             event.setCanceled(true);
         }
