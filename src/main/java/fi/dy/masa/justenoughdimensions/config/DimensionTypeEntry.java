@@ -23,9 +23,9 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     private final Class<? extends WorldProvider> providerClass;
     private final String dimensionTypeName;
 
-    public DimensionTypeEntry(int id, String vanillaDimensionTypeName)
+    public DimensionTypeEntry(int dimTypeId, String vanillaDimensionTypeName)
     {
-        this.id = id;
+        this.id = dimTypeId;
         this.dimensionTypeName = vanillaDimensionTypeName;
         this.name = null;
         this.suffix = null;
@@ -60,8 +60,8 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             DimensionType type = null;
             try
             {
-                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dim {}", type, this.id);
                 type = DimensionType.valueOf(this.dimensionTypeName);
+                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dim {}", type, this.id);
             }
             catch (Exception e) { }
 

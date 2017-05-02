@@ -475,11 +475,14 @@ public class DimensionConfig
                 object.get("override").getAsBoolean();
         boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
                 object.get("unregister").getAsBoolean();
+        boolean disableTeleporting = object.has("disableteleporting") && object.get("disableteleporting").isJsonPrimitive() &&
+                object.get("disableteleporting").getAsBoolean();
         String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
                 object.get("biome").getAsString() : null;
 
         configEntry.setOverride(override);
         configEntry.setUnregister(unregister);
+        configEntry.setDisableTeleporting(disableTeleporting);
         configEntry.setBiome(biome);
 
         if (object.has("colors") && object.get("colors").isJsonObject())
@@ -536,7 +539,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome"))
         {
             obj.add(key, new JsonPrimitive(value));
         }
@@ -571,7 +574,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("colors"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome") || key.equals("colors"))
         {
             return obj.remove(key) != null;
         }
@@ -667,7 +670,7 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister") || key.equals("biome")) &&
+        if ((key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome")) &&
                 obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
