@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions.event;
 import java.io.File;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
@@ -20,6 +21,7 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
@@ -160,7 +162,27 @@ public class JEDEventHandler
                 // Set the player's initial spawn dimension, and move them to the world spawn
                 EntityPlayer player = event.getEntityPlayer();
                 player.dimension = Configs.initialSpawnDimensionId;
-                player.moveToBlockPosAndAngles(world.getSpawnPoint(), 0f, 0f);
+                BlockPos pos;
+
+                if (world.getWorldInfo() instanceof WorldInfoJED)
+                {
+                    pos = world.getSpawnPoint();
+                }
+                // When not using custom WorldInfo, try to find a suitable spawn location
+                else
+                {
+                    pos = WorldUtils.findSuitableSpawnpoint(world);
+                }
+
+                JustEnoughDimensions.logInfo("Player {} joined for the first time, moving them to dimension {}, at {}",
+                        event.getEntity().getName(), Configs.initialSpawnDimensionId, pos);
+
+                player.moveToBlockPosAndAngles(pos, 0f, 0f);
+            }
+            else
+            {
+                JustEnoughDimensions.logger.warn("Player {} joined for the first time, but the currently set" +
+                        " initial spawn dimension {} didn't exist", Configs.initialSpawnDimensionId);
             }
         }
     }

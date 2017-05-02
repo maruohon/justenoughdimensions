@@ -254,10 +254,8 @@ public class WorldUtils
 
     public static void findAndSetWorldSpawn(World world, boolean fireEvent)
     {
-        WorldInfo info = world.getWorldInfo();
-        WorldSettings worldSettings = new WorldSettings(info);
+        WorldSettings worldSettings = new WorldSettings(world.getWorldInfo());
         WorldProvider provider = world.provider;
-        BlockPos pos = null;
 
         JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", provider.getDimension());
 
@@ -267,34 +265,8 @@ public class WorldUtils
             return;
         }
 
-        if (provider.canRespawnHere() == false)
-        {
-            if (provider.getDimensionType() == DimensionType.THE_END || provider instanceof WorldProviderEnd)
-            {
-                pos = provider.getSpawnCoordinate();
-
-                if (pos == null)
-                {
-                    pos = BlockPos.ORIGIN.up(provider.getAverageGroundLevel());
-                }
-            }
-            // Most likely nether type dimensions
-            else
-            {
-                pos = findNetherSpawnpoint(world);
-            }
-        }
-        else if (info.getTerrainType() == WorldType.DEBUG_WORLD)
-        {
-            pos = BlockPos.ORIGIN.up(64);
-        }
-        // Mostly overworld type dimensions
-        else
-        {
-            pos = findOverworldSpawnpoint(world, worldSettings);
-        }
-
-        info.setSpawn(pos);
+        BlockPos pos = findSuitableSpawnpoint(world);
+        world.getWorldInfo().setSpawn(pos);
         JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
 
         WorldBorder border = world.getWorldBorder();
@@ -307,29 +279,65 @@ public class WorldUtils
     }
 
     @Nonnull
+    public static BlockPos findSuitableSpawnpoint(World world)
+    {
+        WorldProvider provider = world.provider;
+        BlockPos pos;
+
+        if (provider.canRespawnHere() == false)
+        {
+            if (provider.getDimensionType() == DimensionType.THE_END || provider instanceof WorldProviderEnd)
+            {
+                pos = provider.getSpawnCoordinate();
+
+                if (pos == null)
+                {
+                    pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
+                }
+            }
+            // Most likely nether type dimensions
+            else
+            {
+                pos = findNetherSpawnpoint(world);
+            }
+        }
+        else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_WORLD)
+        {
+            pos = BlockPos.ORIGIN.up(64);
+        }
+        // Mostly overworld type dimensions
+        else
+        {
+            pos = findOverworldSpawnpoint(world, new WorldSettings(world.getWorldInfo()));
+        }
+
+        return pos;
+    }
+
+    @Nonnull
     private static BlockPos findNetherSpawnpoint(World world)
     {
         Random random = new Random(world.getSeed());
         int x = 0;
         int z = 0;
         int iterations = 0;
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, 110, z);
+        BlockPos pos = new BlockPos(x, 120, z);
 
         while (iterations < 100)
         {
-            while (pos.getY() >= 10)
+            while (pos.getY() >= 30)
             {
                 if (world.isAirBlock(pos) && world.isAirBlock(pos.down(1)) && world.getBlockState(pos.down(2)).getMaterial().blocksMovement())
                 {
                     return pos.down();
                 }
 
-                pos.setY(pos.getY() - 1);
+                pos = pos.down();
             }
 
             x += random.nextInt(32) - random.nextInt(32);
             z += random.nextInt(32) - random.nextInt(32);
-            pos.setPos(x, 110, z);
+            pos = new BlockPos(x, 120, z);
             iterations++;
         }
 
