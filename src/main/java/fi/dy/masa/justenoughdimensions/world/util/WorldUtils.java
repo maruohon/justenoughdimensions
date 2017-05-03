@@ -17,6 +17,7 @@ import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
+import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
@@ -27,7 +28,6 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -40,6 +40,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
 public class WorldUtils
 {
@@ -284,22 +285,23 @@ public class WorldUtils
         WorldProvider provider = world.provider;
         BlockPos pos;
 
-        if (provider.canRespawnHere() == false)
+        // Likely end type dimensions
+        if (provider.getDimensionType() == DimensionType.THE_END ||
+            provider instanceof WorldProviderEnd)
         {
-            if (provider.getDimensionType() == DimensionType.THE_END || provider instanceof WorldProviderEnd)
-            {
-                pos = provider.getSpawnCoordinate();
+            pos = provider.getSpawnCoordinate();
 
-                if (pos == null)
-                {
-                    pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
-                }
-            }
-            // Most likely nether type dimensions
-            else
+            if (pos == null)
             {
-                pos = findNetherSpawnpoint(world);
+                pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
             }
+        }
+        // Likely nether type dimensions
+        else if (provider.getDimensionType() == DimensionType.NETHER ||
+                 provider instanceof WorldProviderHell ||
+                 provider instanceof WorldProviderHellJED)
+        {
+            pos = findNetherSpawnpoint(world);
         }
         else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_WORLD)
         {
@@ -308,7 +310,7 @@ public class WorldUtils
         // Mostly overworld type dimensions
         else
         {
-            pos = findOverworldSpawnpoint(world, new WorldSettings(world.getWorldInfo()));
+            pos = findOverworldSpawnpoint(world);
         }
 
         return pos;
@@ -347,7 +349,7 @@ public class WorldUtils
     }
 
     @Nonnull
-    private static BlockPos findOverworldSpawnpoint(World world, WorldSettings worldSettings)
+    private static BlockPos findOverworldSpawnpoint(World world)
     {
         WorldProvider provider = world.provider;
         BiomeProvider biomeProvider = provider.getBiomeProvider();
@@ -393,14 +395,7 @@ public class WorldUtils
             iterations++;
         }
 
-        pos = getSuitableSpawnBlockInColumn(world, new BlockPos(x, 70, z)).up();
-
-        if (worldSettings.isBonusChestEnabled())
-        {
-            createBonusChest(world);
-        }
-
-        return pos;
+        return getSuitableSpawnBlockInColumn(world, new BlockPos(x, 70, z)).up();
     }
 
     @Nonnull
@@ -434,6 +429,7 @@ public class WorldUtils
                materialUp2.blocksMovement() == false && materialUp2.isLiquid() == false;
     }
 
+    /*
     private static void createBonusChest(World world)
     {
         WorldInfo info = world.getWorldInfo();
@@ -451,4 +447,5 @@ public class WorldUtils
             }
         }
     }
+    */
 }

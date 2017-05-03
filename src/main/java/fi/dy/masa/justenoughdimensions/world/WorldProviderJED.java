@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +30,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected Vec3d cloudColor = null;
     protected Vec3d fogColor = null;
     protected float[] customLightBrightnessTable;
+    protected Boolean canRespawnHere = null;
+    protected Integer respawnDimension = null;
 
     @Override
     public void setDimension(int dim)
@@ -59,6 +62,25 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
 
         return type != null ? type : DimensionType.OVERWORLD;
+    }
+
+    @Override
+    public boolean canRespawnHere()
+    {
+        return this.canRespawnHere != null ? this.canRespawnHere : true;
+    }
+
+    @Override
+    public int getRespawnDimension(EntityPlayerMP player)
+    {
+        if (this.respawnDimension != null)
+        {
+            return this.respawnDimension;
+        }
+        else
+        {
+            return this.canRespawnHere() ? this.getDimension() : 0;
+        }
     }
 
     @Override
@@ -135,6 +157,9 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         this.useCustomDayCycle = worldInfo.getUseCustomDayCycle();
         this.dayLength = worldInfo.getDayLength();
         this.nightLength = worldInfo.getNightLength();
+        this.customLightBrightnessTable = worldInfo.getCustomLightBrightnessTable();
+        this.canRespawnHere = worldInfo.canRespawnHere();
+        this.respawnDimension = worldInfo.getRespawnDimension();
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }

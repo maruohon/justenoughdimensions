@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
@@ -13,6 +14,7 @@ import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 
 public class WorldInfoJED extends WorldInfo
 {
+    private NBTTagCompound fullJEDTag;
     private boolean forceGameMode;
     private boolean useCustomDayCycle;
     private int dayLength = 12000;
@@ -24,6 +26,8 @@ public class WorldInfoJED extends WorldInfo
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
     private float[] customLightBrightnessTable = null;
+    protected Boolean canRespawnHere = null;
+    protected Integer respawnDimension = null;
 
     public WorldInfoJED(NBTTagCompound nbt)
     {
@@ -32,6 +36,7 @@ public class WorldInfoJED extends WorldInfo
         if (nbt.hasKey("JED", Constants.NBT.TAG_COMPOUND))
         {
             NBTTagCompound tag = nbt.getCompoundTag("JED");
+            this.fullJEDTag = tag;
             if (tag.hasKey("ForceGameMode", Constants.NBT.TAG_BYTE))   { this.forceGameMode = tag.getBoolean("ForceGameMode"); }
             if (tag.hasKey("CustomDayCycle", Constants.NBT.TAG_BYTE))  { this.useCustomDayCycle = tag.getBoolean("CustomDayCycle"); }
             if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
@@ -58,6 +63,9 @@ public class WorldInfoJED extends WorldInfo
                     }
                 }
             }
+
+            if (tag.hasKey("CanRespawnHere", Constants.NBT.TAG_BYTE))   { this.canRespawnHere = tag.getBoolean("CanRespawnHere"); }
+            if (tag.hasKey("RespawnDimension", Constants.NBT.TAG_INT))  { this.respawnDimension = tag.getInteger("RespawnDimension"); }
         }
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
@@ -77,7 +85,7 @@ public class WorldInfoJED extends WorldInfo
         return nbt;
     }*/
 
-    public NBTTagCompound getJEDTag()
+    public NBTTagCompound getJEDTagForClientSync()
     {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setInteger("DayLength", this.dayLength);
@@ -86,7 +94,6 @@ public class WorldInfoJED extends WorldInfo
         tag.setByte("SkyRenderType", (byte) this.skyRenderType);
         tag.setByte("SkyDisableFlags", (byte) this.skyDisableFlags);
 
-        if (this.forceGameMode)      { tag.setBoolean("ForceGameMode", this.forceGameMode); }
         if (this.useCustomDayCycle)  { tag.setBoolean("CustomDayCycle", this.useCustomDayCycle); }
         if (this.skyColor != null)   { tag.setString("SkyColor",   JEDStringUtils.colorToHexString(this.skyColor)); }
         if (this.cloudColor != null) { tag.setString("CloudColor", JEDStringUtils.colorToHexString(this.cloudColor)); }
@@ -94,6 +101,11 @@ public class WorldInfoJED extends WorldInfo
         if (this.customLightBrightnessTable != null) { tag.setTag("LightBrightness", writeFloats(this.customLightBrightnessTable)); }
 
         return tag;
+    }
+
+    public NBTTagCompound getFullJEDTag()
+    {
+        return this.fullJEDTag;
     }
 
     @Nonnull
@@ -149,5 +161,22 @@ public class WorldInfoJED extends WorldInfo
     public int getNightLength()
     {
         return this.nightLength;
+    }
+
+    public float[] getCustomLightBrightnessTable()
+    {
+        return this.customLightBrightnessTable;
+    }
+
+    @Nullable
+    public Boolean canRespawnHere()
+    {
+        return this.canRespawnHere;
+    }
+
+    @Nullable
+    public Integer getRespawnDimension()
+    {
+        return this.respawnDimension;
     }
 }

@@ -145,6 +145,8 @@ public class DimensionConfig
         this.worldInfoKeysJED.put("SkyRenderType",    Constants.NBT.TAG_BYTE);
         this.worldInfoKeysJED.put("SkyDisableFlags",  Constants.NBT.TAG_BYTE);
         this.worldInfoKeysJED.put("LightBrightness",  Constants.NBT.TAG_LIST);
+        this.worldInfoKeysJED.put("CanRespawnHere",   Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("RespawnDimension", Constants.NBT.TAG_INT);
 
         this.worldInfoKeysListTypes.put("LightBrightness", Constants.NBT.TAG_FLOAT);
     }
@@ -475,14 +477,17 @@ public class DimensionConfig
                 object.get("override").getAsBoolean();
         boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
                 object.get("unregister").getAsBoolean();
-        boolean disableTeleporting = object.has("disableteleporting") && object.get("disableteleporting").isJsonPrimitive() &&
-                object.get("disableteleporting").getAsBoolean();
+        boolean disableTeleportingFrom = object.has("disableteleportingfrom") && object.get("disableteleportingfrom").isJsonPrimitive() &&
+                object.get("disableteleportingfrom").getAsBoolean();
+        boolean disableTeleportingTo = object.has("disableteleportingto") && object.get("disableteleportingto").isJsonPrimitive() &&
+                object.get("disableteleportingto").getAsBoolean();
         String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
                 object.get("biome").getAsString() : null;
 
         configEntry.setOverride(override);
         configEntry.setUnregister(unregister);
-        configEntry.setDisableTeleporting(disableTeleporting);
+        configEntry.setDisableTeleportingFrom(disableTeleportingFrom);
+        configEntry.setDisableTeleportingTo(disableTeleportingTo);
         configEntry.setBiome(biome);
 
         if (object.has("colors") && object.get("colors").isJsonObject())
@@ -539,7 +544,8 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome") ||
+            key.equals("disableteleportingfrom") || key.equals("disableteleportingto"))
         {
             obj.add(key, new JsonPrimitive(value));
         }
@@ -574,7 +580,8 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome") || key.equals("colors"))
+        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("colors") ||
+            key.equals("disableteleportingfrom") || key.equals("disableteleportingto"))
         {
             return obj.remove(key) != null;
         }
@@ -670,7 +677,8 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister") || key.equals("disableteleporting") || key.equals("biome")) &&
+        if ((key.equals("override") || key.equals("unregister") || key.equals("biome") ||
+             key.equals("disableteleportingfrom") || key.equals("disableteleportingto")) &&
                 obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
@@ -847,10 +855,6 @@ public class DimensionConfig
         }
 
         // Custom JED properties
-        // These two are booleans, the rest of type "byte" are actual byte values
-        //if (key.equals("ForceGameMode"))    { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
-        //if (key.equals("CustomDayCycle"))   { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
-
         type = this.worldInfoKeysJED.get(key);
 
         if (type != null)

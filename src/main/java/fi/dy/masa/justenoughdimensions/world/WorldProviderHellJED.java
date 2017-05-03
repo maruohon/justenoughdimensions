@@ -80,6 +80,6 @@ public class WorldProviderHellJED extends WorldProviderJED
     @Override
     public boolean canRespawnHere()
     {
-        return false;
+        return this.canRespawnHere != null ? this.canRespawnHere : false;
     }
 }

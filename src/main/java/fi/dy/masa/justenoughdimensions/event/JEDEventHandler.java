@@ -147,13 +147,23 @@ public class JEDEventHandler
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
             event.setCanceled(true);
+            return;
         }
 
-        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
+        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
 
-        if (entry != null && entry.getDisableTeleporting())
+        if (entryFrom != null && entryFrom.getDisableTeleportingFrom())
         {
             event.setCanceled(true);
+            return;
+        }
+
+        DimensionConfigEntry entryTo = DimensionConfig.instance().getDimensionConfigFor(event.getDimension());
+
+        if (entryTo != null && entryTo.getDisableTeleportingTo())
+        {
+            event.setCanceled(true);
+            return;
         }
     }
 
@@ -183,14 +193,14 @@ public class JEDEventHandler
                 }
 
                 JustEnoughDimensions.logInfo("Player {} joined for the first time, moving them to dimension {}, at {}",
-                        event.getEntity().getName(), Configs.initialSpawnDimensionId, pos);
+                        player.getName(), Configs.initialSpawnDimensionId, pos);
 
                 player.moveToBlockPosAndAngles(pos, 0f, 0f);
             }
             else
             {
                 JustEnoughDimensions.logger.warn("Player {} joined for the first time, but the currently set" +
-                        " initial spawn dimension {} didn't exist", Configs.initialSpawnDimensionId);
+                        " initial spawn dimension {} didn't exist", event.getEntityPlayer().getName(), Configs.initialSpawnDimensionId);
             }
         }
     }
