@@ -51,7 +51,7 @@ public class MessageSyncWorldProperties implements IMessage
         if (info instanceof WorldInfoJED)
         {
             this.hasJEDTag = true;
-            this.nbt = ((WorldInfoJED) info).getJEDTag();
+            this.nbt = ((WorldInfoJED) info).getJEDTagForClientSync();
         }
 
         if (entry != null)
@@ -169,12 +169,15 @@ public class MessageSyncWorldProperties implements IMessage
                         world.provider.getDimension());
             }
 
-            JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced color data: '{}'",
-                    world.provider.getDimension(), message.colorData != null ? JEDJsonUtils.serialize(message.colorData) : "null");
-
             JEDEventHandlerClient.setColors(ColorType.FOLIAGE, DimensionConfig.getColorMap(message.colorData, ColorType.FOLIAGE));
             JEDEventHandlerClient.setColors(ColorType.GRASS,   DimensionConfig.getColorMap(message.colorData, ColorType.GRASS));
             JEDEventHandlerClient.setColors(ColorType.WATER,   DimensionConfig.getColorMap(message.colorData, ColorType.WATER));
+
+            if (message.colorData != null)
+            {
+                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced color data: '{}'",
+                        world.provider.getDimension(), JEDJsonUtils.serialize(message.colorData));
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
+import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
@@ -39,6 +40,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
 public class WorldUtils
 {
@@ -283,22 +285,23 @@ public class WorldUtils
         WorldProvider provider = world.provider;
         BlockPos pos;
 
-        if (provider.canRespawnHere() == false)
+        // Likely end type dimensions
+        if (provider.getDimensionType() == DimensionType.THE_END ||
+            provider instanceof WorldProviderEnd)
         {
-            if (provider.getDimensionType() == DimensionType.THE_END || provider instanceof WorldProviderEnd)
-            {
-                pos = provider.getSpawnCoordinate();
+            pos = provider.getSpawnCoordinate();
 
-                if (pos == null)
-                {
-                    pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
-                }
-            }
-            // Most likely nether type dimensions
-            else
+            if (pos == null)
             {
-                pos = findNetherSpawnpoint(world);
+                pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
             }
+        }
+        // Likely nether type dimensions
+        else if (provider.getDimensionType() == DimensionType.NETHER ||
+                 provider instanceof WorldProviderHell ||
+                 provider instanceof WorldProviderHellJED)
+        {
+            pos = findNetherSpawnpoint(world);
         }
         else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_WORLD)
         {

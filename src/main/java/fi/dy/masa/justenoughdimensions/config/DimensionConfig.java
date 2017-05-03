@@ -145,6 +145,8 @@ public class DimensionConfig
         this.worldInfoKeysJED.put("SkyRenderType",    Constants.NBT.TAG_BYTE);
         this.worldInfoKeysJED.put("SkyDisableFlags",  Constants.NBT.TAG_BYTE);
         this.worldInfoKeysJED.put("LightBrightness",  Constants.NBT.TAG_LIST);
+        this.worldInfoKeysJED.put("CanRespawnHere",   Constants.NBT.TAG_BYTE);
+        this.worldInfoKeysJED.put("RespawnDimension", Constants.NBT.TAG_INT);
 
         this.worldInfoKeysListTypes.put("LightBrightness", Constants.NBT.TAG_FLOAT);
     }
@@ -847,10 +849,6 @@ public class DimensionConfig
         }
 
         // Custom JED properties
-        // These two are booleans, the rest of type "byte" are actual byte values
-        //if (key.equals("ForceGameMode"))    { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
-        //if (key.equals("CustomDayCycle"))   { return new NBTTagByte( element.getAsBoolean() ? (byte) 1 : 0); }
-
         type = this.worldInfoKeysJED.get(key);
 
         if (type != null)

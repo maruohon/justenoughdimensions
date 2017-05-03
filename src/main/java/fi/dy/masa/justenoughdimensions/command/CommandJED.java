@@ -306,7 +306,7 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
                 if (world.getWorldInfo() instanceof WorldInfoJED)
                 {
-                    JustEnoughDimensions.logger.info("JED NBT tag: {}", ((WorldInfoJED) world.getWorldInfo()).getJEDTag().toString());
+                    JustEnoughDimensions.logger.info("JED NBT tag: {}", ((WorldInfoJED) world.getWorldInfo()).getFullJEDTag().toString());
                 }
                 NBTTagCompound tag = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
                 tag.removeTag("JED");

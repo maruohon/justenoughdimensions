@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
@@ -23,6 +24,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     private int skyDisableFlags = 0;
     protected Vec3d skyColor = null;
     protected Vec3d fogColor = null;
+    protected Boolean canRespawnHere = null;
+    protected Integer respawnDimension = null;
     protected float[] customLightBrightnessTable;
 
     @Override
@@ -95,6 +98,28 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
     {
+        this.customLightBrightnessTable = worldInfo.getCustomLightBrightnessTable();
+        this.canRespawnHere = worldInfo.canRespawnHere();
+        this.respawnDimension = worldInfo.getRespawnDimension();
+    }
+
+    @Override
+    public boolean canRespawnHere()
+    {
+        return this.canRespawnHere != null ? this.canRespawnHere : false;
+    }
+
+    @Override
+    public int getRespawnDimension(EntityPlayerMP player)
+    {
+        if (this.respawnDimension != null)
+        {
+            return this.respawnDimension;
+        }
+        else
+        {
+            return this.canRespawnHere() ? this.getDimension() : 0;
+        }
     }
 
     @Override
