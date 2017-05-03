@@ -147,13 +147,23 @@ public class JEDEventHandler
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
             event.setCanceled(true);
+            return;
         }
 
-        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
+        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
 
-        if (entry != null && entry.getDisableTeleporting())
+        if (entryFrom != null && entryFrom.getDisableTeleportingFrom())
         {
             event.setCanceled(true);
+            return;
+        }
+
+        DimensionConfigEntry entryTo = DimensionConfig.instance().getDimensionConfigFor(event.getDimension());
+
+        if (entryTo != null && entryTo.getDisableTeleportingTo())
+        {
+            event.setCanceled(true);
+            return;
         }
     }
 

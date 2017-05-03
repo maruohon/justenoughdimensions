@@ -10,7 +10,8 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private final int id;
     private boolean override;
     private boolean unregister;
-    private boolean disableTeleporting;
+    private boolean disableTeleportingFrom;
+    private boolean disableTeleportingTo;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
     private JsonObject colorJson;
     private JsonObject worldInfoJson;
@@ -37,9 +38,14 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.unregister;
     }
 
-    public boolean getDisableTeleporting()
+    public boolean getDisableTeleportingFrom()
     {
-        return this.disableTeleporting;
+        return this.disableTeleportingFrom;
+    }
+
+    public boolean getDisableTeleportingTo()
+    {
+        return this.disableTeleportingTo;
     }
 
     public String getBiome()
@@ -58,9 +64,14 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         this.unregister = unregister && this.id != 0;
     }
 
-    public void setDisableTeleporting(boolean disable)
+    public void setDisableTeleportingFrom(boolean disable)
     {
-        this.disableTeleporting = disable;
+        this.disableTeleportingFrom = disable;
+    }
+
+    public void setDisableTeleportingTo(boolean disable)
+    {
+        this.disableTeleportingTo = disable;
     }
 
     public void setBiome(String biome)
@@ -158,9 +169,14 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("unregister", true);
         }
 
-        if (this.disableTeleporting)
+        if (this.disableTeleportingFrom)
         {
-            jsonEntry.addProperty("disableteleporting", true);
+            jsonEntry.addProperty("disableteleportingfrom", true);
+        }
+
+        if (this.disableTeleportingTo)
+        {
+            jsonEntry.addProperty("disableteleportingto", true);
         }
 
         if (this.biome != null)
@@ -182,8 +198,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
     public String getDescription()
     {
-        return String.format("{id: %d, override: %s, unregister: %s, disableteleporting: %s, biome: '%s', DimensionTypeEntry: [%s]}",
-                this.id, this.override, this.unregister, this.disableTeleporting, this.biome,
+        return String.format("{id: %d, override: %s, unregister: %s, biome: '%s'," +
+                             " disableteleportingfrom: %s, disableteleportingto: %s, DimensionTypeEntry: [%s]}",
+                this.id, this.override, this.unregister, this.biome, this.disableTeleportingFrom, this.disableTeleportingTo,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
 
