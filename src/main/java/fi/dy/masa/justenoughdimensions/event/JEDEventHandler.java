@@ -183,14 +183,14 @@ public class JEDEventHandler
                 }
 
                 JustEnoughDimensions.logInfo("Player {} joined for the first time, moving them to dimension {}, at {}",
-                        event.getEntity().getName(), Configs.initialSpawnDimensionId, pos);
+                        player.getName(), Configs.initialSpawnDimensionId, pos);
 
                 player.moveToBlockPosAndAngles(pos, 0f, 0f);
             }
             else
             {
                 JustEnoughDimensions.logger.warn("Player {} joined for the first time, but the currently set" +
-                        " initial spawn dimension {} didn't exist", Configs.initialSpawnDimensionId);
+                        " initial spawn dimension {} didn't exist", event.getEntityPlayer().getName(), Configs.initialSpawnDimensionId);
             }
         }
     }
