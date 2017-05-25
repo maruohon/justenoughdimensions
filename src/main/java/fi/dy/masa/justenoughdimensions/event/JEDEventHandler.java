@@ -118,22 +118,28 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
     {
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerLoggedInEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         WorldBorderUtils.sendWorldBorder(event.player);
         WorldUtils.syncWorldProviderProperties(event.player);
+        WorldUtils.setupRespawnDimension(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         WorldBorderUtils.sendWorldBorder(event.player);
         WorldUtils.syncWorldProviderProperties(event.player);
+        WorldUtils.setupRespawnDimension(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event)
     {
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerChangedDimensionEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         WorldBorderUtils.sendWorldBorder(event.player);
         WorldUtils.syncWorldProviderProperties(event.player);
+        WorldUtils.setupRespawnDimension(event.player);
 
         if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
         {

@@ -44,6 +44,7 @@ import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
 public class WorldUtils
 {
+    private static final String JED_RESPAWN_DIM_TAG = "justenoughdimensions:respawndimension";
     private static Field field_WorldProvider_terrainType;
     private static Field field_WorldProvider_generatorSettings;
     private static Field field_WorldProvider_biomeProvider = null;
@@ -448,4 +449,34 @@ public class WorldUtils
         }
     }
     */
+
+    /**
+     * This will set the spawnDimension field on the player, if the WorldInfo on the current
+     * world is WorldInfoJED, and it says that respawning there should be allowed, but the
+     * WorldProvider says it's not. This should support respawning even without a JED WorldProvider.
+     * @param player
+     */
+    public static void setupRespawnDimension(EntityPlayer player)
+    {
+        World world = player.getEntityWorld();
+
+        if (world.getWorldInfo() instanceof WorldInfoJED)
+        {
+            WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
+            Boolean canRespawnHere = info.canRespawnHere();
+
+            if (canRespawnHere != null && canRespawnHere && world.provider.canRespawnHere() == false)
+            {
+                player.setSpawnDimension(world.provider.getDimension());
+                player.addTag(JED_RESPAWN_DIM_TAG);
+                return;
+            }
+        }
+
+        if (player.getTags().contains(JED_RESPAWN_DIM_TAG))
+        {
+            player.setSpawnDimension(null);
+            player.removeTag(JED_RESPAWN_DIM_TAG);
+        }
+    }
 }
