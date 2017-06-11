@@ -1,10 +1,15 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
+        "1.12-latest": "1.5.0",
+        "1.12-recommended": "1.5.0",
         "1.11.2-latest": "1.5.0",
         "1.11.2-recommended": "1.5.0",
         "1.10.2-latest": "1.5.0",
         "1.10.2-recommended": "1.5.0"
+    },
+    "1.12": {
+        "1.5.0": "Update to Minecraft 1.12"
     },
     "1.11.2": {
         "1.5.0": "Added CanRespawnHere and RespawnDimension JED options\nAdded a separate disableteleportingto option and renamed the old diableteleporting option to disableteleportingfrom",
