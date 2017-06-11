@@ -26,8 +26,8 @@ import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -230,9 +230,9 @@ public class WorldUtils
             world.provider.setWorld(world);
 
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
-            IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
+            IChunkGenerator newChunkGenerator = world.provider.createChunkGenerator();
 
-            if (newChunkProvider == null)
+            if (newChunkGenerator == null)
             {
                 JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider");
                 return;
@@ -240,16 +240,16 @@ public class WorldUtils
 
             int dimension = world.provider.getDimension();
             JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
-                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
+                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
 
             try
             {
-                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkProvider);
+                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkGenerator);
             }
             catch (Exception e)
             {
                 JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkProvider.getClass().getName(), e);
+                        dimension, newChunkGenerator.getClass().getName(), e);
             }
         }
     }
@@ -304,7 +304,7 @@ public class WorldUtils
         {
             pos = findNetherSpawnpoint(world);
         }
-        else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_WORLD)
+        else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
         {
             pos = BlockPos.ORIGIN.up(64);
         }

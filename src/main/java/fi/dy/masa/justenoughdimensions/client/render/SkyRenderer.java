@@ -3,12 +3,12 @@ package fi.dy.masa.justenoughdimensions.client.render;
 import java.util.Random;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.VertexBuffer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.renderer.vertex.VertexFormatElement;
@@ -72,7 +72,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         GlStateManager.depthMask(false);
         mc.getTextureManager().bindTexture(END_SKY_TEXTURES);
         Tessellator tessellator = Tessellator.getInstance();
-        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
 
         for (int i = 0; i < 6; ++i)
         {
@@ -103,11 +103,11 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
                 GlStateManager.rotate(-90.0F, 0.0F, 0.0F, 1.0F);
             }
 
-            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-            vertexbuffer.pos(-100.0D, -100.0D, -100.0D).tex(0.0D, 0.0D).color(40, 40, 40, 255).endVertex();
-            vertexbuffer.pos(-100.0D, -100.0D, 100.0D).tex(0.0D, 16.0D).color(40, 40, 40, 255).endVertex();
-            vertexbuffer.pos(100.0D, -100.0D, 100.0D).tex(16.0D, 16.0D).color(40, 40, 40, 255).endVertex();
-            vertexbuffer.pos(100.0D, -100.0D, -100.0D).tex(16.0D, 0.0D).color(40, 40, 40, 255).endVertex();
+            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferBuilder.pos(-100.0D, -100.0D, -100.0D).tex(0.0D, 0.0D).color(40, 40, 40, 255).endVertex();
+            bufferBuilder.pos(-100.0D, -100.0D, 100.0D).tex(0.0D, 16.0D).color(40, 40, 40, 255).endVertex();
+            bufferBuilder.pos(100.0D, -100.0D, 100.0D).tex(16.0D, 16.0D).color(40, 40, 40, 255).endVertex();
+            bufferBuilder.pos(100.0D, -100.0D, -100.0D).tex(16.0D, 0.0D).color(40, 40, 40, 255).endVertex();
             tessellator.draw();
             GlStateManager.popMatrix();
         }
@@ -121,9 +121,9 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     {
         GlStateManager.disableTexture2D();
         Vec3d skyColor = world.getSkyColor(mc.getRenderViewEntity(), partialTicks);
-        float r = (float)skyColor.xCoord;
-        float g = (float)skyColor.yCoord;
-        float b = (float)skyColor.zCoord;
+        float r = (float)skyColor.x;
+        float g = (float)skyColor.y;
+        float b = (float)skyColor.z;
         int pass = 2;
 
         if (pass != 2)
@@ -138,7 +138,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
 
         GlStateManager.color(r, g, b);
         Tessellator tessellator = Tessellator.getInstance();
-        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
         GlStateManager.depthMask(false);
         GlStateManager.enableFog();
         GlStateManager.color(r, g, b);
@@ -186,15 +186,15 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
                 bsr = f11;
             }
 
-            vertexbuffer.begin(6, DefaultVertexFormats.POSITION_COLOR);
-            vertexbuffer.pos(0.0D, 100.0D, 0.0D).color(rsr, gsr, bsr, afloat[3]).endVertex();
+            bufferBuilder.begin(6, DefaultVertexFormats.POSITION_COLOR);
+            bufferBuilder.pos(0.0D, 100.0D, 0.0D).color(rsr, gsr, bsr, afloat[3]).endVertex();
 
             for (int l = 0; l <= 16; ++l)
             {
                 float f21 = (float)l * ((float)Math.PI * 2F) / 16.0F;
                 float f12 = MathHelper.sin(f21);
                 float f13 = MathHelper.cos(f21);
-                vertexbuffer.pos((double)(f12 * 120.0F), (double)(f13 * 120.0F), (double)(-f13 * 40.0F * afloat[3])).color(afloat[0], afloat[1], afloat[2], 0.0F).endVertex();
+                bufferBuilder.pos((double)(f12 * 120.0F), (double)(f13 * 120.0F), (double)(-f13 * 40.0F * afloat[3])).color(afloat[0], afloat[1], afloat[2], 0.0F).endVertex();
             }
 
             tessellator.draw();
@@ -215,11 +215,11 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         if (this.disableSun == false)
         {
             mc.getTextureManager().bindTexture(SUN_TEXTURES);
-            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
-            vertexbuffer.pos(-d17, 100.0D, -d17).tex(0.0D, 0.0D).endVertex();
-            vertexbuffer.pos( d17, 100.0D, -d17).tex(1.0D, 0.0D).endVertex();
-            vertexbuffer.pos( d17, 100.0D,  d17).tex(1.0D, 1.0D).endVertex();
-            vertexbuffer.pos(-d17, 100.0D,  d17).tex(0.0D, 1.0D).endVertex();
+            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+            bufferBuilder.pos(-d17, 100.0D, -d17).tex(0.0D, 0.0D).endVertex();
+            bufferBuilder.pos( d17, 100.0D, -d17).tex(1.0D, 0.0D).endVertex();
+            bufferBuilder.pos( d17, 100.0D,  d17).tex(1.0D, 1.0D).endVertex();
+            bufferBuilder.pos(-d17, 100.0D,  d17).tex(0.0D, 1.0D).endVertex();
             tessellator.draw();
         }
 
@@ -234,11 +234,11 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             double f23 = (double)(j + 0) / 2.0D;
             double f24 = (double)(k + 1) / 4.0D;
             double f14 = (double)(j + 1) / 2.0D;
-            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_TEX);
-            vertexbuffer.pos(-d17, -100.0D,  d17).tex(f24, f14).endVertex();
-            vertexbuffer.pos( d17, -100.0D,  d17).tex(f22, f14).endVertex();
-            vertexbuffer.pos( d17, -100.0D, -d17).tex(f22, f23).endVertex();
-            vertexbuffer.pos(-d17, -100.0D, -d17).tex(f24, f23).endVertex();
+            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+            bufferBuilder.pos(-d17, -100.0D,  d17).tex(f24, f14).endVertex();
+            bufferBuilder.pos( d17, -100.0D,  d17).tex(f22, f14).endVertex();
+            bufferBuilder.pos( d17, -100.0D, -d17).tex(f22, f23).endVertex();
+            bufferBuilder.pos(-d17, -100.0D, -d17).tex(f24, f23).endVertex();
             tessellator.draw();
         }
 
@@ -274,7 +274,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         GlStateManager.popMatrix();
         GlStateManager.disableTexture2D();
         GlStateManager.color(0.0F, 0.0F, 0.0F);
-        double d0 = mc.player.getPositionEyes(partialTicks).yCoord - world.getHorizon();
+        double d0 = mc.player.getPositionEyes(partialTicks).y - world.getHorizon();
 
         if (d0 < 0.0D)
         {
@@ -297,27 +297,27 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
 
             GlStateManager.popMatrix();
             double d19 = -(d0 + 65.0D);
-            vertexbuffer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-            vertexbuffer.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
-            vertexbuffer.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
+            bufferBuilder.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D,   d19, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D,   d19,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos(-1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D,  1.0D).color(0, 0, 0, 255).endVertex();
+            bufferBuilder.pos( 1.0D, -1.0D, -1.0D).color(0, 0, 0, 255).endVertex();
             tessellator.draw();
         }
 
@@ -341,7 +341,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private void generateSky2()
     {
         Tessellator tessellator = Tessellator.getInstance();
-        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
 
         if (this.sky2VBO != null)
         {
@@ -357,16 +357,16 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         if (this.vboEnabled)
         {
             this.sky2VBO = new net.minecraft.client.renderer.vertex.VertexBuffer(this.vertexBufferFormat);
-            this.renderSky(vertexbuffer, -16.0F, true);
-            vertexbuffer.finishDrawing();
-            vertexbuffer.reset();
-            this.sky2VBO.bufferData(vertexbuffer.getByteBuffer());
+            this.renderSky(bufferBuilder, -16.0F, true);
+            bufferBuilder.finishDrawing();
+            bufferBuilder.reset();
+            this.sky2VBO.bufferData(bufferBuilder.getByteBuffer());
         }
         else
         {
             this.glSkyList2 = GLAllocation.generateDisplayLists(1);
             GlStateManager.glNewList(this.glSkyList2, 4864);
-            this.renderSky(vertexbuffer, -16.0F, true);
+            this.renderSky(bufferBuilder, -16.0F, true);
             tessellator.draw();
             GlStateManager.glEndList();
         }
@@ -375,7 +375,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private void generateSky()
     {
         Tessellator tessellator = Tessellator.getInstance();
-        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
 
         if (this.skyVBO != null)
         {
@@ -391,24 +391,24 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         if (this.vboEnabled)
         {
             this.skyVBO = new net.minecraft.client.renderer.vertex.VertexBuffer(this.vertexBufferFormat);
-            this.renderSky(vertexbuffer, 16.0F, false);
-            vertexbuffer.finishDrawing();
-            vertexbuffer.reset();
-            this.skyVBO.bufferData(vertexbuffer.getByteBuffer());
+            this.renderSky(bufferBuilder, 16.0F, false);
+            bufferBuilder.finishDrawing();
+            bufferBuilder.reset();
+            this.skyVBO.bufferData(bufferBuilder.getByteBuffer());
         }
         else
         {
             this.glSkyList = GLAllocation.generateDisplayLists(1);
             GlStateManager.glNewList(this.glSkyList, 4864);
-            this.renderSky(vertexbuffer, 16.0F, false);
+            this.renderSky(bufferBuilder, 16.0F, false);
             tessellator.draw();
             GlStateManager.glEndList();
         }
     }
 
-    private void renderSky(VertexBuffer worldRendererIn, float posY, boolean reverseX)
+    private void renderSky(BufferBuilder bufferBuilder, float posY, boolean reverseX)
     {
-        worldRendererIn.begin(7, DefaultVertexFormats.POSITION);
+        bufferBuilder.begin(7, DefaultVertexFormats.POSITION);
 
         for (int k = -384; k <= 384; k += 64)
         {
@@ -423,10 +423,10 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
                     f = (float)(k + 64);
                 }
 
-                worldRendererIn.pos((double)f, (double)posY, (double)l).endVertex();
-                worldRendererIn.pos((double)f1, (double)posY, (double)l).endVertex();
-                worldRendererIn.pos((double)f1, (double)posY, (double)(l + 64)).endVertex();
-                worldRendererIn.pos((double)f, (double)posY, (double)(l + 64)).endVertex();
+                bufferBuilder.pos((double)f, (double)posY, (double)l).endVertex();
+                bufferBuilder.pos((double)f1, (double)posY, (double)l).endVertex();
+                bufferBuilder.pos((double)f1, (double)posY, (double)(l + 64)).endVertex();
+                bufferBuilder.pos((double)f, (double)posY, (double)(l + 64)).endVertex();
             }
         }
     }
@@ -434,7 +434,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private void generateStars()
     {
         Tessellator tessellator = Tessellator.getInstance();
-        VertexBuffer vertexbuffer = tessellator.getBuffer();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
 
         if (this.starVBO != null)
         {
@@ -450,27 +450,27 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         if (this.vboEnabled)
         {
             this.starVBO = new net.minecraft.client.renderer.vertex.VertexBuffer(this.vertexBufferFormat);
-            this.renderStars(vertexbuffer);
-            vertexbuffer.finishDrawing();
-            vertexbuffer.reset();
-            this.starVBO.bufferData(vertexbuffer.getByteBuffer());
+            this.renderStars(bufferBuilder);
+            bufferBuilder.finishDrawing();
+            bufferBuilder.reset();
+            this.starVBO.bufferData(bufferBuilder.getByteBuffer());
         }
         else
         {
             this.starGLCallList = GLAllocation.generateDisplayLists(1);
             GlStateManager.pushMatrix();
             GlStateManager.glNewList(this.starGLCallList, 4864);
-            this.renderStars(vertexbuffer);
+            this.renderStars(bufferBuilder);
             tessellator.draw();
             GlStateManager.glEndList();
             GlStateManager.popMatrix();
         }
     }
 
-    private void renderStars(VertexBuffer worldRendererIn)
+    private void renderStars(BufferBuilder bufferBuilder)
     {
         Random random = new Random(10842L);
-        worldRendererIn.begin(7, DefaultVertexFormats.POSITION);
+        bufferBuilder.begin(7, DefaultVertexFormats.POSITION);
 
         for (int i = 0; i < 1500; ++i)
         {
@@ -509,7 +509,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
                     double d24 = 0.0D * d12 - d21 * d13;
                     double d25 = d24 * d9 - d22 * d10;
                     double d26 = d22 * d9 + d24 * d10;
-                    worldRendererIn.pos(d5 + d25, d6 + d23, d7 + d26).endVertex();
+                    bufferBuilder.pos(d5 + d25, d6 + d23, d7 + d26).endVertex();
                 }
             }
         }

@@ -28,7 +28,7 @@ import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION,
     guiFactory = "fi.dy.masa.justenoughdimensions.config.JustEnoughDimensionsGuiFactory",
     updateJSON = "https://raw.githubusercontent.com/maruohon/justenoughdimensions/master/update.json",
-    acceptedMinecraftVersions = "[1.11,1.11.2]")
+    acceptedMinecraftVersions = "1.12")
 public class JustEnoughDimensions
 {
     @Mod.Instance(Reference.MOD_ID)

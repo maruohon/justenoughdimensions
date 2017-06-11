@@ -3,8 +3,8 @@ package fi.dy.masa.justenoughdimensions.world;
 import net.minecraft.init.Biomes;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.biome.BiomeProviderSingle;
-import net.minecraft.world.chunk.IChunkGenerator;
-import net.minecraft.world.gen.ChunkProviderHell;
+import net.minecraft.world.gen.ChunkGeneratorHell;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -21,7 +21,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     {
         this.biomeProvider = new BiomeProviderSingle(Biomes.HELL);
         this.doesWaterVaporize = true;
-        this.hasNoSky = true;
+        this.nether = true;
     }
 
     @Override
@@ -62,7 +62,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     @Override
     public IChunkGenerator createChunkGenerator()
     {
-        return new ChunkProviderHell(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed());
+        return new ChunkGeneratorHell(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed());
     }
 
     @Override

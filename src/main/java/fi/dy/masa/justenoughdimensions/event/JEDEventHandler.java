@@ -179,7 +179,7 @@ public class JEDEventHandler
         // No player file yet, so this is the player's first time joining this server/world
         if (Configs.enableInitialSpawnDimensionOverride && new File(event.getPlayerDirectory(), event.getPlayerUUID() + ".dat").exists() == false)
         {
-            World world = FMLCommonHandler.instance().getMinecraftServerInstance().worldServerForDimension(Configs.initialSpawnDimensionId);
+            World world = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(Configs.initialSpawnDimensionId);
 
             if (world != null)
             {
