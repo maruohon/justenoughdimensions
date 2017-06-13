@@ -221,11 +221,22 @@ public class WorldUtils
         }
     }
 
-    public static void setChunkProvider(World world)
+    public static void reCreateChunkProvider(World world)
     {
         if (world instanceof WorldServer && world.getChunkProvider() instanceof ChunkProviderServer)
         {
-            // This sets the new WorldType to the WorldProvider
+            int dimension = world.provider.getDimension();
+            WorldInfo info = world.getWorldInfo();
+            WorldInfo infoOverWorld = world.getMinecraftServer().worldServerForDimension(0).getWorldInfo();
+
+            if (infoOverWorld.getTerrainType() == info.getTerrainType() &&
+                infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()))
+            {
+                JustEnoughDimensions.logInfo("No need to re-create the ChunkProvider in dimension {}", dimension);
+                return;
+            }
+
+            // This sets the new WorldType and generatorOptions to the WorldProvider
             world.provider.registerWorld(world);
 
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
@@ -233,12 +244,11 @@ public class WorldUtils
 
             if (newChunkProvider == null)
             {
-                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider");
+                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {}", dimension);
                 return;
             }
 
-            int dimension = world.provider.getDimension();
-            JustEnoughDimensions.logInfo("Attempting to override the ChunkProvider (of type {}) in dimension {} with {}",
+            JustEnoughDimensions.logInfo("Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
                     chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
 
             try
@@ -247,7 +257,7 @@ public class WorldUtils
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.warn("Failed to override the ChunkProvider for dimension {} with {}",
+                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {} with {}",
                         dimension, newChunkProvider.getClass().getName(), e);
             }
         }

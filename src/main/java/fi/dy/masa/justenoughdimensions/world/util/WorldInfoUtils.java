@@ -149,6 +149,8 @@ public class WorldInfoUtils
 
                 if (world.provider instanceof IWorldProviderJED)
                 {
+                    JustEnoughDimensions.logInfo("Setting JED properties in the WorldProvider for dimension {}", world.provider.getDimension());
+
                     ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
 
                     // This sets the WorldType (the terrainType field) and the generatorSettings field
@@ -158,7 +160,7 @@ public class WorldInfoUtils
 
                 WorldBorderUtils.setWorldBorderValues(world);
 
-                // Override the ChunkProvider when using overridden WorldInfo,
+                // Override/re-create the ChunkProvider when using overridden WorldInfo,
                 // and NOT using one of the JED WorldProviders.
                 // Otherwise the ChunkProvider would be using the settings from the overworld, because
                 // WorldEvent.Load (where the WorldInfo gets overridden) only happens after
@@ -171,7 +173,7 @@ public class WorldInfoUtils
                 // already has the correct settings available to it when it gets created in the first place.
                 if ((world.provider instanceof IWorldProviderJED) == false)
                 {
-                    WorldUtils.setChunkProvider(world);
+                    WorldUtils.reCreateChunkProvider(world);
                 }
             }
             catch (Exception e)
