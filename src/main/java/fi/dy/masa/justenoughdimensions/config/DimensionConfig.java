@@ -839,7 +839,12 @@ public class DimensionConfig
                 for (Map.Entry<String, JsonElement> entry : obj.entrySet())
                 {
                     // Calls this method recursively to get the JED-specific values listed above
-                    tag.setTag(entry.getKey(), this.getTagForValue(entry.getKey(), entry.getValue()));
+                    NBTBase tagTmp = this.getTagForValue(entry.getKey(), entry.getValue());
+
+                    if (tagTmp != null)
+                    {
+                        tag.setTag(entry.getKey(), tagTmp);
+                    }
                 }
             }
 
@@ -910,7 +915,12 @@ public class DimensionConfig
 
                     for (JsonElement el : arr)
                     {
-                        list.appendTag(this.getTagForType("", listType, el));
+                        NBTBase tag = this.getTagForType("", listType, el);
+
+                        if (tag != null)
+                        {
+                            list.appendTag(tag);
+                        }
                     }
 
                     return list;
