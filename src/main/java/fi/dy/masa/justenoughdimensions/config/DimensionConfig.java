@@ -258,17 +258,17 @@ public class DimensionConfig
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
-            if (DimensionManager.isDimensionRegistered(entry.getId()))
+            if (Configs.enableUnregisteringDimensions && entry.getUnregister() &&
+                DimensionManager.isDimensionRegistered(entry.getId()))
             {
-                if (Configs.enableUnregisteringDimensions && entry.getUnregister())
-                {
-                    JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
-                    DimensionManager.unregisterDimension(entry.getId());
-                }
-                else if (Configs.enableReplacingRegisteredDimensions && entry.getOverride())
-                {
-                    this.registerDimension(entry.getId(), entry);
-                }
+                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
+                DimensionManager.unregisterDimension(entry.getId());
+            }
+            else if (entry.getOverride() &&
+                        (Configs.enableReplacingRegisteredDimensions ||
+                         DimensionManager.isDimensionRegistered(entry.getId()) == false))
+            {
+                this.registerDimension(entry.getId(), entry);
             }
         }
     }
