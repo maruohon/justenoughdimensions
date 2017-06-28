@@ -39,7 +39,7 @@ public class WorldProviderHellJED extends WorldProviderJED
             return new Vec3d(0.2, 0.03, 0.03);
         }
 
-        return super.getFogColor(celestialAngle, partialTicks);
+        return super.getFogColor(1f, partialTicks);
     }
 
     @SideOnly(Side.CLIENT)
