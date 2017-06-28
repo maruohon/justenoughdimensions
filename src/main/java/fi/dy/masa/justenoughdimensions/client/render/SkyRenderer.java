@@ -121,9 +121,9 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     {
         GlStateManager.disableTexture2D();
         Vec3d skyColor = world.getSkyColor(mc.getRenderViewEntity(), partialTicks);
-        float r = (float)skyColor.xCoord;
-        float g = (float)skyColor.yCoord;
-        float b = (float)skyColor.zCoord;
+        float r = (float)skyColor.x;
+        float g = (float)skyColor.y;
+        float b = (float)skyColor.z;
         int pass = 2;
 
         if (pass != 2)
@@ -274,7 +274,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         GlStateManager.popMatrix();
         GlStateManager.disableTexture2D();
         GlStateManager.color(0.0F, 0.0F, 0.0F);
-        double d0 = mc.player.getPositionEyes(partialTicks).yCoord - world.getHorizon();
+        double d0 = mc.player.getPositionEyes(partialTicks).y - world.getHorizon();
 
         if (d0 < 0.0D)
         {

@@ -9,9 +9,9 @@ public class JEDStringUtils
     {
         int c = 0;
 
-        c |= (int) ((MathHelper.clamp(color.zCoord, 0, 1) * 0xFF));
-        c |= (int) ((MathHelper.clamp(color.yCoord, 0, 1) * 0xFF)) << 8;
-        c |= (int) ((MathHelper.clamp(color.xCoord, 0, 1) * 0xFF)) << 16;
+        c |= (int) ((MathHelper.clamp(color.z, 0, 1) * 0xFF));
+        c |= (int) ((MathHelper.clamp(color.y, 0, 1) * 0xFF)) << 8;
+        c |= (int) ((MathHelper.clamp(color.x, 0, 1) * 0xFF)) << 16;
 
         return String.format("%06X", c);
     }

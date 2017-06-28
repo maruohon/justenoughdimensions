@@ -21,7 +21,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     {
         this.biomeProvider = new BiomeProviderSingle(Biomes.HELL);
         this.doesWaterVaporize = true;
-        this.hasNoSky = true;
+        this.nether = true;
     }
 
     @Override

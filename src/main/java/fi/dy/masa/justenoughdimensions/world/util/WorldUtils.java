@@ -228,7 +228,7 @@ public class WorldUtils
         {
             int dimension = world.provider.getDimension();
             WorldInfo info = world.getWorldInfo();
-            WorldInfo infoOverWorld = world.getMinecraftServer().worldServerForDimension(0).getWorldInfo();
+            WorldInfo infoOverWorld = world.getMinecraftServer().getWorld(0).getWorldInfo();
 
             if (infoOverWorld.getTerrainType() == info.getTerrainType() &&
                 infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()))
@@ -314,7 +314,7 @@ public class WorldUtils
         {
             pos = findNetherSpawnpoint(world);
         }
-        else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_WORLD)
+        else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
         {
             pos = BlockPos.ORIGIN.up(64);
         }

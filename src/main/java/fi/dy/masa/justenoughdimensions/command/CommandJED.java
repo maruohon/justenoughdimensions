@@ -392,7 +392,7 @@ public class CommandJED extends CommandBase
 
     private GameRules getOverWorldGameRules(MinecraftServer server)
     {
-        return server.worldServerForDimension(0).getGameRules();
+        return server.getWorld(0).getGameRules();
     }
 
     private void register(String[] args, ICommandSender sender) throws CommandException

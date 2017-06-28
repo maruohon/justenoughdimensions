@@ -179,9 +179,9 @@ public class CommandTeleportJED extends CommandBase
         if (args.length >= (argIndex + 3))
         {
             Vec3d pos = target.getPositionVector();
-            double x = parseCoordinate(pos.xCoord, args[argIndex++], true).getResult();
-            double y = parseCoordinate(pos.yCoord, args[argIndex++], false).getResult();
-            double z = parseCoordinate(pos.zCoord, args[argIndex++], true).getResult();
+            double x = parseCoordinate(pos.x, args[argIndex++], true).getResult();
+            double y = parseCoordinate(pos.y, args[argIndex++], false).getResult();
+            double z = parseCoordinate(pos.z, args[argIndex++], true).getResult();
             float yaw = target.rotationYaw;
             float pitch = target.rotationPitch;
 
@@ -231,16 +231,16 @@ public class CommandTeleportJED extends CommandBase
         Vec3d pos = data.getPosition(entity.getEntityWorld());
 
         // Load the chunk first
-        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.xCoord / 16D), (int) Math.floor(pos.zCoord / 16D));
+        entity.getEntityWorld().getChunkFromChunkCoords((int) Math.floor(pos.x / 16D), (int) Math.floor(pos.z / 16D));
 
-        entity.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, data.getYaw(), data.getPitch());
-        entity.setPositionAndUpdate(pos.xCoord, pos.yCoord, pos.zCoord);
+        entity.setLocationAndAngles(pos.x, pos.y, pos.z, data.getYaw(), data.getPitch());
+        entity.setPositionAndUpdate(pos.x, pos.y, pos.z);
         return entity;
     }
 
     private Entity teleportEntityToDimension(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
     {
-        WorldServer worldDst = server.worldServerForDimension(data.getDimension());
+        WorldServer worldDst = server.getWorld(data.getDimension());
 
         if (worldDst == null)
         {
@@ -248,9 +248,9 @@ public class CommandTeleportJED extends CommandBase
         }
 
         Vec3d pos = data.getPosition(worldDst);
-        double x = pos.xCoord;
-        double y = pos.yCoord;
-        double z = pos.zCoord;
+        double x = pos.x;
+        double y = pos.y;
+        double z = pos.z;
 
         // Load the chunk first
         worldDst.getChunkFromChunkCoords((int) Math.floor(x / 16D), (int) Math.floor(z / 16D));
@@ -316,7 +316,7 @@ public class CommandTeleportJED extends CommandBase
 
     public static Vec3d getClampedDestinationPosition(Vec3d posIn, World worldDst)
     {
-        return getClampedDestinationPosition(posIn.xCoord, posIn.yCoord, posIn.zCoord, worldDst);
+        return getClampedDestinationPosition(posIn.x, posIn.y, posIn.z, worldDst);
     }
 
     public static Vec3d getClampedDestinationPosition(double x, double y, double z, World worldDst)
@@ -385,7 +385,7 @@ public class CommandTeleportJED extends CommandBase
 
             if (useSpawn)
             {
-                WorldServer world = server.worldServerForDimension(dimension);
+                WorldServer world = server.getWorld(dimension);
 
                 if (world != null)
                 {
@@ -478,7 +478,7 @@ public class CommandTeleportJED extends CommandBase
         public boolean placeInExistingPortal(Entity entityIn, float rotationYaw)
         {
             Vec3d pos = this.data.getPosition(entityIn.getEntityWorld());
-            entityIn.setLocationAndAngles(pos.xCoord, pos.yCoord, pos.zCoord, this.data.getYaw(), this.data.getPitch());
+            entityIn.setLocationAndAngles(pos.x, pos.y, pos.z, this.data.getYaw(), this.data.getPitch());
             return true;
         }
 

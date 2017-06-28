@@ -166,9 +166,9 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         int z = MathHelper.floor(entity.posZ);
         BlockPos blockpos = new BlockPos(x, y, z);
         int blendColour = net.minecraftforge.client.ForgeHooksClient.getSkyBlendColour(this.world, blockpos);
-        float r = (float)((blendColour >> 16 & 255) / 255.0F * skyColor.xCoord);
-        float g = (float)((blendColour >>  8 & 255) / 255.0F * skyColor.yCoord);
-        float b = (float)((blendColour       & 255) / 255.0F * skyColor.zCoord);
+        float r = (float)((blendColour >> 16 & 255) / 255.0F * skyColor.x);
+        float g = (float)((blendColour >>  8 & 255) / 255.0F * skyColor.y);
+        float b = (float)((blendColour       & 255) / 255.0F * skyColor.z);
         r = r * f1;
         g = g * f1;
         b = b * f1;
@@ -188,9 +188,9 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
 
         float f = MathHelper.cos(celestialAngle * ((float)Math.PI * 2F)) * 2.0F + 0.5F;
         f = MathHelper.clamp(f, 0.0F, 1.0F);
-        float r = (float) fogColor.xCoord;
-        float g = (float) fogColor.yCoord;
-        float b = (float) fogColor.zCoord;
+        float r = (float) fogColor.x;
+        float g = (float) fogColor.y;
+        float b = (float) fogColor.z;
         r = r * (f * 0.94F + 0.06F);
         g = g * (f * 0.94F + 0.06F);
         b = b * (f * 0.91F + 0.09F);
