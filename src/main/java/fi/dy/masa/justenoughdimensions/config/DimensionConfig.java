@@ -25,16 +25,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByte;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagDouble;
-import net.minecraft.nbt.NBTTagFloat;
-import net.minecraft.nbt.NBTTagInt;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagLong;
-import net.minecraft.nbt.NBTTagShort;
-import net.minecraft.nbt.NBTTagString;
+import net.minecraft.nbt.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -201,6 +192,10 @@ public class DimensionConfig
 
     public void readDimensionConfig(File worldDir)
     {
+        this.customWorldInfo.clear();
+        this.onetimeWorldInfo.clear();
+        this.dimensions.clear();
+
         File file = this.getConfigFile(worldDir);
 
         if (file.exists() && file.isFile() && file.canRead())
@@ -221,8 +216,7 @@ public class DimensionConfig
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Failed to parse the config file '{}'", file.getName());
-                e.printStackTrace();
+                JustEnoughDimensions.logger.error("Failed to parse the config file '{}'", file.getName(), e);
             }
         }
         else if (this.configDirConfigs.isDirectory() == false)
@@ -451,9 +445,6 @@ public class DimensionConfig
         JsonArray array = rootElement.getAsJsonObject().get("dimensions").getAsJsonArray();
         JsonObject object;
         int count = 0;
-        this.customWorldInfo.clear();
-        this.onetimeWorldInfo.clear();
-        this.dimensions.clear();
 
         for (JsonElement el : array)
         {
