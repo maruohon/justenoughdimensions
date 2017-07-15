@@ -29,6 +29,7 @@ import net.minecraft.nbt.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.DimensionManager;
@@ -222,6 +223,34 @@ public class DimensionConfig
         else if (this.configDirConfigs.isDirectory() == false)
         {
             this.configDirConfigs.mkdirs();
+        }
+
+        this.restoreMissingVanillaDimensions();
+    }
+
+    private void restoreMissingVanillaDimensions()
+    {
+        for (int dim = -1; dim < 2; dim++)
+        {
+            // Not currently in the JED configs, and not registered,
+            // assume they have been unregistered by JED in a per-world config for another world (in single player)
+            if (this.dimensions.containsKey(dim) == false &&
+                DimensionManager.isDimensionRegistered(dim) == false)
+            {
+                JustEnoughDimensions.logInfo("Dimension {} was not registered, and not found in the current JED config. " +
+                                             "Registering the normal vanilla dimension for it.", dim);
+                DimensionManager.registerDimension(dim, this.getVanillaDimensionType(dim));
+            }
+        }
+    }
+
+    private DimensionType getVanillaDimensionType(int dim)
+    {
+        switch (dim)
+        {
+            case  1: return DimensionType.THE_END;
+            case -1: return DimensionType.NETHER;
+            default: return DimensionType.OVERWORLD;
         }
     }
 
