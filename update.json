@@ -1,19 +1,21 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.12-latest": "1.5.2",
-        "1.12-recommended": "1.5.2",
-        "1.11.2-latest": "1.5.3",
-        "1.11.2-recommended": "1.5.3",
-        "1.10.2-latest": "1.5.3",
-        "1.10.2-recommended": "1.5.3"
+        "1.12-latest": "1.5.3",
+        "1.12-recommended": "1.5.3",
+        "1.11.2-latest": "1.5.4",
+        "1.11.2-recommended": "1.5.4",
+        "1.10.2-latest": "1.5.4",
+        "1.10.2-recommended": "1.5.4"
     },
     "1.12": {
+        "1.5.3": "Fix values not getting cleared on world load without a dimension config file\nRestore/register missing vanilla dimensions on world load",
         "1.5.2": "Fixed overridden dimensions not getting registered properly\nFixed the FogColor option not working properly with WorldProviderHellJED",
         "1.5.1": "Don't re-create the ChunkProvider unnecessarily (improves compatibility)",
         "1.5.0": "Update to Minecraft 1.12"
     },
     "1.11.2": {
+        "1.5.4": "Fix values not getting cleared on world load without a dimension config file\nRestore/register missing vanilla dimensions on world load",
         "1.5.3": "Fixed overridden dimensions not getting registered properly\nFixed the FogColor option not working properly with WorldProviderHellJED",
         "1.5.2": "Don't re-create the ChunkProvider unnecessarily (improves compatibility)",
         "1.5.1": "Fix unrecognized/typo'd JED options causing a crash\n Add support for the CanRespawnHere functionality using non-JED WorldProviders",
@@ -34,6 +36,7 @@
         "1.1.0": "Added day and night cycle length customization\nAdded sky/cloud/fog color customization and cloud height customization\nAdded a \"ForceGamemode\" option for dimensions and a GamemodeTracker to automatically change players' gamemode when they enter/leave dimensions"
     },
     "1.10.2": {
+        "1.5.4": "Fix values not getting cleared on world load without a dimension config file\nRestore/register missing vanilla dimensions on world load",
         "1.5.3": "Fixed overridden dimensions not getting registered properly\nFixed the FogColor option not working properly with WorldProviderHellJED",
         "1.5.1": "Fix unrecognized/typo'd JED options causing a crash\n Add support for the CanRespawnHere functionality using non-JED WorldProviders\nDon't re-create the ChunkProvider unnecessarily (improves compatibility)",
         "1.5.0": "Added CanRespawnHere and RespawnDimension JED options\nAdded a separate disableteleportingto option and renamed the old diableteleporting option to disableteleportingfrom",
