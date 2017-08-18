@@ -209,7 +209,7 @@ public class WorldUtils
             BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
             JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with {}" +
-                " using the biome '{}' ('{}')", dimension, biomeProvider.getClass().getName(), biomeName, biome.getBiomeName());
+                " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
 
             try
             {
