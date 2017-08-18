@@ -47,6 +47,10 @@ minecraft {
 
     replaceIn "reference/Reference.java"
     replace "@MOD_VERSION@", mod_version
+
+    if (project.hasProperty("signJarKeyStore")) {
+        replace "@FINGERPRINT@", signJarFingerprint
+    }
 }
 
 dependencies {
@@ -89,4 +93,18 @@ processResources
 
     // Move access transformers to META-INF
     //rename '(.+_at.cfg)', 'META-INF/$1'
+}
+
+if (project.hasProperty("signJarKeyStore")) {
+    task signJar(type: SignJar, dependsOn: reobfJar) {
+        inputFile = jar.archivePath
+        outputFile = jar.archivePath
+
+        keyStore = signJarKeyStore
+        alias = signJarAlias
+        storePass = signJarStorePass
+        keyPass = signJarKeyPass
+    }
+
+    build.dependsOn signJar
 }
