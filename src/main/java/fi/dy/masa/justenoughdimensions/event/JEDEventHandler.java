@@ -82,6 +82,13 @@ public class JEDEventHandler
         if (world.provider.getDimension() == 0)
         {
             WorldUtils.findAndSetWorldSpawn(world, false);
+
+            if (event.getSettings().isBonusChestEnabled())
+            {
+                JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Generating a bonus chest");
+                WorldUtils.createBonusChest(world);
+            }
+
             event.setCanceled(true);
         }
     }
