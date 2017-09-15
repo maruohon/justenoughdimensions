@@ -1,19 +1,21 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/just-enough-dimensions",
     "promos": {
-        "1.12.1-latest":        "1.5.4",
-        "1.12.1-recommended":   "1.5.4",
-        "1.12-latest":          "1.5.4",
-        "1.12-recommended":     "1.5.4",
+        "1.12.1-latest":        "1.5.5",
+        "1.12.1-recommended":   "1.5.5",
+        "1.12-latest":          "1.5.5",
+        "1.12-recommended":     "1.5.5",
         "1.11.2-latest":        "1.5.4",
         "1.11.2-recommended":   "1.5.4",
         "1.10.2-latest":        "1.5.4",
         "1.10.2-recommended":   "1.5.4"
     },
     "1.12.1": {
+        "1.5.5": "Fix the bonus chest not generating",
         "1.5.4": "Fix a crash on a dedicated server (in 1.12+ only) with the single biome feature"
     },
     "1.12": {
+        "1.5.5": "Fix the bonus chest not generating",
         "1.5.4": "Fix a crash on a dedicated server (in 1.12+ only) with the single biome feature",
         "1.5.3": "Fix values not getting cleared on world load without a dimension config file\nRestore/register missing vanilla dimensions on world load",
         "1.5.2": "Fixed overridden dimensions not getting registered properly\nFixed the FogColor option not working properly with WorldProviderHellJED",

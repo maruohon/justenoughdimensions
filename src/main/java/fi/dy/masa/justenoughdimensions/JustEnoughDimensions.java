@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions;
 
 import java.io.File;
 import java.util.EnumMap;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.minecraft.world.chunk.storage.AnvilSaveConverter;
 import net.minecraftforge.fml.common.Mod;
@@ -29,7 +30,7 @@ import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION, certificateFingerprint = Reference.FINGERPRINT,
     guiFactory = "fi.dy.masa.justenoughdimensions.config.JustEnoughDimensionsGuiFactory",
     updateJSON = "https://raw.githubusercontent.com/maruohon/justenoughdimensions/master/update.json",
-    acceptedMinecraftVersions = "[1.12,1.12.1]")
+    acceptedMinecraftVersions = "[1.12,1.12.2]")
 public class JustEnoughDimensions
 {
     @Mod.Instance(Reference.MOD_ID)
@@ -38,14 +39,13 @@ public class JustEnoughDimensions
     @SidedProxy(clientSide = Reference.PROXY_CLIENT, serverSide = Reference.PROXY_SERVER)
     public static IProxy proxy;
 
-    public static Logger logger;
+    public static final Logger logger = LogManager.getLogger(Reference.MOD_ID);
     public static EnumMap<Side, FMLEmbeddedChannel> channels;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
         instance = this;
-        logger = event.getModLog();
 
         Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
         PacketHandler.init();
