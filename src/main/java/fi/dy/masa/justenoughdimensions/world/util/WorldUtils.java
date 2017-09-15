@@ -28,6 +28,7 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -439,8 +440,7 @@ public class WorldUtils
                materialUp2.blocksMovement() == false && materialUp2.isLiquid() == false;
     }
 
-    /*
-    private static void createBonusChest(World world)
+    public static void createBonusChest(World world)
     {
         WorldInfo info = world.getWorldInfo();
         WorldGeneratorBonusChest gen = new WorldGeneratorBonusChest();
@@ -457,5 +457,4 @@ public class WorldUtils
             }
         }
     }
-    */
 }
