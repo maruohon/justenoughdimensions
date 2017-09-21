@@ -26,6 +26,6 @@ public class JustEnoughDimensionsConfigGui extends GuiConfig
 
     private static String getTitle(GuiScreen parent)
     {
-        return GuiConfig.getAbridgedConfigPath(Configs.configurationFile.toString());
+        return GuiConfig.getAbridgedConfigPath(Configs.configurationFileName);
     }
 }
