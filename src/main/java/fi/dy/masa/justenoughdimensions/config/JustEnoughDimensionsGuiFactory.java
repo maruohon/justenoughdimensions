@@ -33,6 +33,6 @@ public class JustEnoughDimensionsGuiFactory extends DefaultGuiFactory
 
     private static String getTitle()
     {
-        return GuiConfig.getAbridgedConfigPath(Configs.configurationFile.toString());
+        return GuiConfig.getAbridgedConfigPath(Configs.configurationFileName);
     }
 }

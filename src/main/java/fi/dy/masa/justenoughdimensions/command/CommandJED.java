@@ -26,6 +26,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDSetWorldSpawn;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDTime;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWeather;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
@@ -68,6 +69,7 @@ public class CommandJED extends CommandBase
                     "listregistereddimensions",
                     "register",
                     "reload",
+                    "reloadmainconfig",
                     "seed",
                     "setworldspawn",
                     "time",
@@ -197,6 +199,17 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().readDimensionConfig();
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
+        }
+        else if (cmd.equals("reloadmainconfig"))
+        {
+            if (Configs.reloadConfigsFromFile())
+            {
+                sender.sendMessage(new TextComponentTranslation("jed.commands.info.reload_main_config.success"));
+            }
+            else
+            {
+                throwCommand("reload_main_config.failure");
+            }
         }
         else if (cmd.equals("listregistereddimensions"))
         {

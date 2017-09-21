@@ -5,11 +5,12 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 
 public class Configs
 {
-    public static File configurationFile;
+    public static String configurationFileName;
     public static Configuration config;
     
     public static final String CATEGORY_GENERIC = "Generic";
@@ -36,11 +37,24 @@ public class Configs
 
     public static void loadConfigsFromFile(File configFile)
     {
-        configurationFile = configFile;
+        configurationFileName = configFile.toString();
         config = new Configuration(configFile, null, false);
-        config.load();
 
-        loadConfigs(config);
+        reloadConfigsFromFile();
+    }
+
+    public static boolean reloadConfigsFromFile()
+    {
+        if (config != null)
+        {
+            config.load();
+            loadConfigs(config);
+
+            JustEnoughDimensions.logger.info("Reloaded configs from file");
+            return true;
+        }
+
+        return false;
     }
 
     public static void loadConfigs(Configuration conf)
