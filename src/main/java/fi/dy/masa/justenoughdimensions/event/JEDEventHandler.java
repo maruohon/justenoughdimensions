@@ -64,6 +64,11 @@ public class JEDEventHandler
                 WorldBorderUtils.removeOverworldBorderListener(world);
                 world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
             }
+
+            if (Configs.enableDebugServerChunkProvider)
+            {
+                WorldUtils.useDebugChunkProvider(world);
+            }
         }
     }
 

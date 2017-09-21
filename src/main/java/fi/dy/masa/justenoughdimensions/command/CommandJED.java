@@ -29,6 +29,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.world.ChunkProviderServerDebug;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
@@ -369,29 +370,27 @@ public class CommandJED extends CommandBase
 
             if (world != null)
             {
-                if (world.getWorldInfo() instanceof WorldInfoJED)
+                if (world.getChunkProvider() instanceof ChunkProviderServerDebug)
                 {
                     if (mask != 0)
                     {
                         sender.sendMessage(new TextComponentString("Enabling TileEntity debugging for dimension " + world.provider.getDimension()));
-                        WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
-                        info.setDebugEnabled(world, mask);
                     }
                     else
                     {
                         sender.sendMessage(new TextComponentString("Disabling TileEntity debugging for dimension " + world.provider.getDimension()));
-                        WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
-                        info.setDebugEnabled(null, 0);
                     }
+
+                    ((ChunkProviderServerDebug) world.getChunkProvider()).setDebugMask(mask);
                 }
                 else
                 {
-                    throw new WrongUsageException("The target dimension %d is not using WorldInfo override", Integer.valueOf(world.provider.getDimension()));
+                    throw new CommandException("The target dimension %s does not use ChunkProviderServerDebug", String.valueOf(world.provider.getDimension()));
                 }
             }
             else
             {
-                throw new WrongUsageException("The target dimension was invalid or not loaded");
+                throw new CommandException("The target dimension was invalid or not loaded");
             }
         }
         else

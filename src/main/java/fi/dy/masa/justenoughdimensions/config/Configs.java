@@ -15,6 +15,7 @@ public class Configs
     
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableDebugServerChunkProvider;
     public static boolean enableForcedGamemodes;
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
@@ -60,6 +61,10 @@ public class Configs
     public static void loadConfigs(Configuration conf)
     {
         Property prop;
+
+        prop = conf.get(CATEGORY_GENERIC, "enableDebugServerChunkProvider", false).setRequiresMcRestart(false);
+        prop.setComment("Enables a debug ChunkProviderServer for tracking down TileEntity changes during chunk saving");
+        enableDebugServerChunkProvider = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableForcedGamemodes", false).setRequiresMcRestart(false);
         prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");

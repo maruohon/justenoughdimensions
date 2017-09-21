@@ -40,6 +40,7 @@ import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.world.ChunkProviderServerDebug;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
@@ -50,6 +51,7 @@ public class WorldUtils
     private static Field field_WorldProvider_generatorSettings;
     private static Field field_WorldProvider_biomeProvider = null;
     private static Field field_ChunkProviderServer_chunkGenerator = null;
+    private static Field field_World_chunkProvider = null;
 
     static
     {
@@ -59,6 +61,7 @@ public class WorldUtils
             field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
             field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
+            field_World_chunkProvider = ReflectionHelper.findField(World.class, "field_73020_y", "chunkProvider");
         }
         catch (UnableToFindFieldException e)
         {
@@ -173,6 +176,25 @@ public class WorldUtils
             if (isDimensionInit)
             {
                 findAndSetWorldSpawn(world, true);
+            }
+        }
+    }
+
+    public static void useDebugChunkProvider(World world)
+    {
+        if (world instanceof WorldServer && (world.getChunkProvider() instanceof ChunkProviderServerDebug) == false)
+        {
+            JustEnoughDimensions.logInfo("WorldUtils.useDebugChunkProvider(): Trying to override the " +
+                    "ChunkProviderServer of dimension {} with ChunkProviderServerDebug", world.provider.getDimension());
+            try
+            {
+                ChunkProviderServerDebug newProvider = new ChunkProviderServerDebug((ChunkProviderServer) world.getChunkProvider());
+                field_World_chunkProvider.set(world, newProvider);
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("WorldUtils.useDebugChunkProvider(): Failed to override the " +
+                        "ChunkProviderServer of dimension {} with ChunkProviderServerDebug", world.provider.getDimension(), e);
             }
         }
     }
