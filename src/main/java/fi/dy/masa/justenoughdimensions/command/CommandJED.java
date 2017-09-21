@@ -61,6 +61,7 @@ public class CommandJED extends CommandBase
         {
             return getListOfStringsMatchingLastWord(args,
                     "debug",
+                    "debug-tileentities",
                     "defaultgamemode",
                     "difficulty",
                     "dimbuilder",
@@ -328,6 +329,69 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 
                 sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
+            }
+        }
+        else if (cmd.equals("debug-tileentities"))
+        {
+            if (args.length < 1)
+            {
+                throw new WrongUsageException("Usage: /jed debug-tileentities <mask> [dimension]");
+            }
+
+            int mask = 0;
+
+            try
+            {
+                mask = parseInt(args[0]);
+            }
+            catch (Exception e)
+            {
+                throw new WrongUsageException("Usage: /jed debug-tileentities <mask> [dimension]");
+            }
+
+            World world = null;
+
+            if (args.length == 2)
+            {
+                try
+                {
+                    int dim = parseInt(args[1]);
+                    world = DimensionManager.getWorld(dim);
+                }
+                catch (Exception e) { }
+            }
+
+            if (world == null)
+            {
+                Entity ent = sender.getCommandSenderEntity();
+                if (ent != null) { world = ent.getEntityWorld(); }
+            }
+
+            if (world != null)
+            {
+                if (world.getWorldInfo() instanceof WorldInfoJED)
+                {
+                    if (mask != 0)
+                    {
+                        sender.sendMessage(new TextComponentString("Enabling TileEntity debugging for dimension " + world.provider.getDimension()));
+                        WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
+                        info.setDebugEnabled(world, mask);
+                    }
+                    else
+                    {
+                        sender.sendMessage(new TextComponentString("Disabling TileEntity debugging for dimension " + world.provider.getDimension()));
+                        WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
+                        info.setDebugEnabled(null, 0);
+                    }
+                }
+                else
+                {
+                    throw new WrongUsageException("The target dimension %d is not using WorldInfo override", Integer.valueOf(world.provider.getDimension()));
+                }
+            }
+            else
+            {
+                throw new WrongUsageException("The target dimension was invalid or not loaded");
             }
         }
         else

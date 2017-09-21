@@ -1,15 +1,28 @@
 package fi.dy.masa.justenoughdimensions.world;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.profiler.Profiler;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.GameType;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 
 public class WorldInfoJED extends WorldInfo
@@ -28,6 +41,125 @@ public class WorldInfoJED extends WorldInfo
     private float[] customLightBrightnessTable = null;
     protected Boolean canRespawnHere = null;
     protected Integer respawnDimension = null;
+
+    private int debugTiles;
+    private World world;
+    private Map<BlockPos, TileEntity> tiles = new HashMap<>();
+    private Set<ChunkPos> chunkPos = new HashSet<>();
+    private long lastTick;
+
+    public void setDebugEnabled(@Nullable World world, int mask)
+    {
+        this.world = world;
+        this.debugTiles = mask;
+    }
+
+    @Override
+    public long getWorldTotalTime()
+    {
+        long tick = super.getWorldTotalTime();
+
+        if (this.debugTiles != 0 && this.world instanceof WorldServer && this.lastTick != tick)
+        {
+            WorldServer world = (WorldServer) this.world;
+            String prof = ReflectionHelper.getPrivateValue(Profiler.class, this.world.profiler, "field_76323_d", "profilingSection");
+
+            // Should be in WorldServer#tick() before this.chunkProvider.tick(), which is one of the problematic places
+            if (prof.endsWith("mobSpawner"))
+            {
+                //JustEnoughDimensions.logger.warn("============== JED DEBUG START MARKER FOR TICK {} ==========", super.getWorldTotalTime());
+
+                for (Chunk chunk : world.getChunkProvider().getLoadedChunks())
+                {
+                    this.chunkPos.add(chunk.getPos());
+
+                    for (Map.Entry<BlockPos, TileEntity> entry : chunk.getTileEntityMap().entrySet())
+                    {
+                        BlockPos pos = entry.getKey();
+
+                        if (this.tiles.containsKey(pos))
+                        {
+                            JustEnoughDimensions.logger.warn("{} - Duplicate TileEntity @ {}; old: {}, current: {}",
+                                    tick, pos, this.tiles.get(pos).getClass().getName(), entry.getValue().getClass().getName());
+                        }
+
+                        this.tiles.put(pos, entry.getValue());
+                    }
+                }
+
+                this.lastTick = super.getWorldTotalTime();
+            }
+        }
+
+        return super.getWorldTotalTime();
+    }
+
+    @Override
+    public void setWorldTotalTime(long time)
+    {
+        super.setWorldTotalTime(time);
+
+        if (this.debugTiles != 0 && this.world instanceof WorldServer && this.chunkPos.isEmpty() == false)
+        {
+            long tick = super.getWorldTotalTime();
+            WorldServer world = (WorldServer) this.world;
+            Set<ChunkPos> chunks = new HashSet<>();
+
+            for (Chunk chunk : world.getChunkProvider().getLoadedChunks())
+            {
+                chunks.add(chunk.getPos());
+
+                if (this.chunkPos.contains(chunk.getPos()) == false)
+                {
+                    JustEnoughDimensions.logger.warn("{} - New chunk loaded @ {}", tick, chunk.getPos());
+                }
+
+                for (Map.Entry<BlockPos, TileEntity> entry : chunk.getTileEntityMap().entrySet())
+                {
+                    BlockPos pos = entry.getKey();
+
+                    if (this.tiles.containsKey(pos) == false)
+                    {
+                        JustEnoughDimensions.logger.warn("{} - Added TileEntity @ {} - {}",
+                                tick, pos, entry.getValue().getClass().getName());
+                    }
+                    // Compare by reference
+                    else if (this.tiles.get(pos) != entry.getValue())
+                    {
+                        JustEnoughDimensions.logger.warn("{} - Changed TileEntity @ {}; old: {}, current: {}",
+                                tick, pos, this.tiles.get(pos).getClass().getName(), entry.getValue().getClass().getName());
+                    }
+
+                    this.tiles.remove(pos);
+                }
+
+                this.chunkPos.remove(chunk.getPos());
+            }
+
+            for (Map.Entry<BlockPos, TileEntity> entry : this.tiles.entrySet())
+            {
+                BlockPos pos = entry.getKey();
+
+                // This chunk is still loaded, but the TileEntity is gone from the world
+                if (chunks.contains(new ChunkPos(pos.getX() >> 4, pos.getZ() >> 4)))
+                {
+                    JustEnoughDimensions.logger.warn("{} - Removed TileEntity @ {} - {}",
+                            tick, pos, entry.getValue().getClass().getName());
+                }
+            }
+
+            if ((this.debugTiles & 0x2) != 0)
+            {
+                for (ChunkPos pos : this.chunkPos)
+                {
+                    JustEnoughDimensions.logger.info("{} - Unloaded chunk @ {}", tick, pos);
+                }
+            }
+
+            this.chunkPos.clear();
+            this.tiles.clear();
+        }
+    }
 
     public WorldInfoJED(NBTTagCompound nbt)
     {
