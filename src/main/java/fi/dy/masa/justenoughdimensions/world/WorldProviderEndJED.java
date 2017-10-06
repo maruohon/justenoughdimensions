@@ -96,11 +96,11 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
-    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
+    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties)
     {
-        this.customLightBrightnessTable = worldInfo.getCustomLightBrightnessTable();
-        this.canRespawnHere = worldInfo.canRespawnHere();
-        this.respawnDimension = worldInfo.getRespawnDimension();
+        this.customLightBrightnessTable = properties.getCustomLightBrightnessTable();
+        this.canRespawnHere = properties.canRespawnHere();
+        this.respawnDimension = properties.getRespawnDimension();
     }
 
     @Override

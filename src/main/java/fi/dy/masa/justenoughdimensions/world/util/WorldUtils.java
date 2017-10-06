@@ -41,6 +41,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
 public class WorldUtils
@@ -470,13 +471,13 @@ public class WorldUtils
     public static void setupRespawnDimension(EntityPlayer player)
     {
         World world = player.getEntityWorld();
+        JEDWorldProperties props = JEDWorldProperties.getProperties(world);
 
-        if (world.getWorldInfo() instanceof WorldInfoJED)
+        if (props != null)
         {
-            WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
-            Boolean canRespawnHere = info.canRespawnHere();
+            Boolean canRespawnHere = props.canRespawnHere();
 
-            if (canRespawnHere != null && canRespawnHere && world.provider.canRespawnHere() == false)
+            if (canRespawnHere != null && canRespawnHere.booleanValue() && world.provider.canRespawnHere() == false)
             {
                 final int dim = world.provider.getDimension();
                 JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Setting the respawn dimension of player '{}' to: {}", player.getName(), dim);
