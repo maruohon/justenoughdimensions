@@ -39,6 +39,7 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onConnectionCreated(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
+        JustEnoughDimensions.logInfo("FMLNetworkEvent.ServerConnectionFromClientEvent: Syncing dimension data to client");
         DimensionSyncPacket packet = new DimensionSyncPacket();
         packet.addDimensionData(DimensionConfig.instance().getRegisteredDimensions());
 
@@ -156,14 +157,18 @@ public class JEDEventHandler
     {
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Dimension {} is not registered, canceling the TP", event.getDimension());
             event.setCanceled(true);
             return;
         }
 
-        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
+        final int dimFrom = event.getEntity().getEntityWorld().provider.getDimension();
+        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(dimFrom);
 
         if (entryFrom != null && entryFrom.getDisableTeleportingFrom())
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Teleporting from DIM {} has been disabled " +
+                                         "in the dimension config, canceling the TP", dimFrom);
             event.setCanceled(true);
             return;
         }
@@ -172,6 +177,8 @@ public class JEDEventHandler
 
         if (entryTo != null && entryTo.getDisableTeleportingTo())
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Teleporting to DIM {} has been disabled " +
+                                         "in the dimension config, canceling the TP", event.getDimension());
             event.setCanceled(true);
             return;
         }

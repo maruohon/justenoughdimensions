@@ -140,6 +140,8 @@ public class WorldUtils
     {
         if (player instanceof EntityPlayerMP)
         {
+            JustEnoughDimensions.logInfo("WorldUtils.syncWorldProviderProperties: Syncing WorldProvider properties " +
+                                         "of dimension {} to player '{}'", player.getEntityWorld().provider.getDimension(), player.getName());
             PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProperties(player.getEntityWorld()), (EntityPlayerMP) player);
         }
     }
@@ -208,7 +210,7 @@ public class WorldUtils
         {
             BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
-            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with {}" +
+            JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
                 " using the biome '{}' ('{}')", dimension, biomeProvider.getClass().getName(), biomeName, biome.getBiomeName());
 
             try
@@ -241,25 +243,25 @@ public class WorldUtils
             world.provider.registerWorld(world);
 
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
-            IChunkGenerator newChunkProvider = world.provider.createChunkGenerator();
+            IChunkGenerator newChunkGenerator = world.provider.createChunkGenerator();
 
-            if (newChunkProvider == null)
+            if (newChunkGenerator == null)
             {
                 JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {}", dimension);
                 return;
             }
 
-            JustEnoughDimensions.logInfo("Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
-                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
+            JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
+                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
 
             try
             {
-                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkProvider);
+                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkGenerator);
             }
             catch (Exception e)
             {
                 JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkProvider.getClass().getName(), e);
+                        dimension, newChunkGenerator.getClass().getName(), e);
             }
         }
     }

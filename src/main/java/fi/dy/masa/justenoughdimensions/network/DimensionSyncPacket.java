@@ -107,12 +107,14 @@ public class DimensionSyncPacket
 
             if (type.createDimension().getClass() != entry.getDimensionTypeEntry().getProviderClass())
             {
+                JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Dimension {} already registered, unregistering the old one", id);
                 DimensionManager.unregisterDimension(id);
             }
         }
 
         if (DimensionManager.isDimensionRegistered(id) == false)
         {
+            JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", id);
             DimensionManager.registerDimension(id, entry.getDimensionTypeEntry().registerDimensionType());
         }
     }
