@@ -14,5 +14,5 @@ public interface IWorldProviderJED
      * Set server-side required properties from WorldInfoJED
      * @param worldInfo
      */
-    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo);
+    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties);
 }
