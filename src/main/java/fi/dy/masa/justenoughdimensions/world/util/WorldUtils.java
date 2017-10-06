@@ -141,6 +141,8 @@ public class WorldUtils
     {
         if (player instanceof EntityPlayerMP)
         {
+            JustEnoughDimensions.logInfo("WorldUtils.syncWorldProviderProperties: Syncing WorldProvider properties " +
+                                         "of dimension {} to player '{}'", player.getEntityWorld().provider.getDimension(), player.getName());
             PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProperties(player.getEntityWorld()), (EntityPlayerMP) player);
         }
     }
@@ -209,8 +211,8 @@ public class WorldUtils
         {
             BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
-            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with {}" +
-                " using the biome '{}' ('{}')", dimension, biomeProvider.getClass().getName(), biomeName, biome.getBiomeName());
+            JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
+                " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
 
             try
             {
@@ -250,7 +252,7 @@ public class WorldUtils
                 return;
             }
 
-            JustEnoughDimensions.logInfo("Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
+            JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
                     chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkProvider.getClass().getName());
 
             try
@@ -476,7 +478,9 @@ public class WorldUtils
 
             if (canRespawnHere != null && canRespawnHere && world.provider.canRespawnHere() == false)
             {
-                player.setSpawnDimension(world.provider.getDimension());
+                final int dim = world.provider.getDimension();
+                JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Setting the respawn dimension of player '{}' to: {}", player.getName(), dim);
+                player.setSpawnDimension(dim);
                 player.addTag(JED_RESPAWN_DIM_TAG);
                 return;
             }
@@ -484,6 +488,7 @@ public class WorldUtils
 
         if (player.getTags().contains(JED_RESPAWN_DIM_TAG))
         {
+            JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Removing the respawn dimension data from player '{}'", player.getName());
             player.setSpawnDimension(null);
             player.removeTag(JED_RESPAWN_DIM_TAG);
         }
