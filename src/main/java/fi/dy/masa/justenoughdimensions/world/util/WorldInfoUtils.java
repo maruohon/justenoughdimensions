@@ -151,7 +151,7 @@ public class WorldInfoUtils
                 {
                     JustEnoughDimensions.logInfo("Setting JED properties in the WorldProvider for dimension {}", world.provider.getDimension());
 
-                    ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldInfo(info);
+                    ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldProperties(info);
 
                     // This sets the WorldType (the terrainType field) and the generatorSettings field
                     // from the newly overridden WorldInfoJED

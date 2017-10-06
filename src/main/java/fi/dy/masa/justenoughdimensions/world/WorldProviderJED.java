@@ -152,14 +152,14 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
+    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties)
     {
-        this.useCustomDayCycle = worldInfo.getUseCustomDayCycle();
-        this.dayLength = worldInfo.getDayLength();
-        this.nightLength = worldInfo.getNightLength();
-        this.customLightBrightnessTable = worldInfo.getCustomLightBrightnessTable();
-        this.canRespawnHere = worldInfo.canRespawnHere();
-        this.respawnDimension = worldInfo.getRespawnDimension();
+        this.useCustomDayCycle = properties.getUseCustomDayCycle();
+        this.dayLength = properties.getDayLength();
+        this.nightLength = properties.getNightLength();
+        this.customLightBrightnessTable = properties.getCustomLightBrightnessTable();
+        this.canRespawnHere = properties.canRespawnHere();
+        this.respawnDimension = properties.getRespawnDimension();
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }
