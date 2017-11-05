@@ -29,7 +29,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
@@ -65,15 +65,15 @@ public class CommandJED extends CommandBase
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
-                    "listloadeddimensions",
-                    "listregistereddimensions",
+                    "list-loaded-dimensions",
+                    "list-registered-dimensions",
                     "register",
                     "reload",
-                    "reloadmainconfig",
+                    "reload-main-config",
                     "seed",
                     "setworldspawn",
                     "time",
-                    "unloademptydimensions",
+                    "unload-empty-dimensions",
                     "unregister",
                     "unregister-remove",
                     "weather",
@@ -154,9 +154,9 @@ public class CommandJED extends CommandBase
             {
                 return getListOfStringsMatchingLastWord(args, "query");
             }
-            else if (cmd.equals("unloademptydimensions") && args.length == 1)
+            else if (cmd.equals("unload-empty-dimensions") && args.length == 1)
             {
-                return getListOfStringsMatchingLastWord(args, "true");
+                return getListOfStringsMatchingLastWord(args, "unload-chunks");
             }
             else if (cmd.equals("worldborder"))
             {
@@ -200,7 +200,7 @@ public class CommandJED extends CommandBase
             DimensionConfig.instance().registerDimensions();
             notifyCommandListener(sender, this, "jed.commands.reloaded");
         }
-        else if (cmd.equals("reloadmainconfig"))
+        else if (cmd.equals("reload-main-config"))
         {
             if (Configs.reloadConfigsFromFile())
             {
@@ -211,7 +211,7 @@ public class CommandJED extends CommandBase
                 throwCommand("reload_main_config.failure");
             }
         }
-        else if (cmd.equals("listregistereddimensions"))
+        else if (cmd.equals("list-registered-dimensions"))
         {
             Integer[] dims = DimensionManager.getStaticDimensionIDs();
             String[] dimsStr = new String[dims.length];
@@ -225,7 +225,7 @@ public class CommandJED extends CommandBase
             sender.sendMessage(new TextComponentTranslation("jed.commands.listdims.list", String.join(", ", dimsStr)));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console.full"));
         }
-        else if (cmd.equals("listloadeddimensions"))
+        else if (cmd.equals("list-loaded-dimensions"))
         {
             for (String line : DimensionDump.getFormattedLoadedDimensionsDump())
             {
@@ -234,9 +234,9 @@ public class CommandJED extends CommandBase
 
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
         }
-        else if (cmd.equals("unloademptydimensions"))
+        else if (cmd.equals("unload-empty-dimensions"))
         {
-            int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("true"));
+            int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("unload-chunks"));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
         else if (cmd.equals("dimbuilder"))
@@ -309,21 +309,28 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("DimensionType ID: {}", world.provider.getDimensionType().getId());
                 JustEnoughDimensions.logger.info("DimensionType name: {}", world.provider.getDimensionType().getName());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
-                JustEnoughDimensions.logger.info("World {}", world.getClass().getName());
+                JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
-                JustEnoughDimensions.logger.info("WorldType: '{}' - {}", type.getName(), type.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldType: '{}' (class: {})", type.getName(), type.getClass().getName());
                 JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
                         ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
-                if (world.getWorldInfo() instanceof WorldInfoJED)
+
+                JEDWorldProperties props = JEDWorldProperties.getProperties(world);
+                if (props != null)
                 {
-                    NBTTagCompound nbt = ((WorldInfoJED) world.getWorldInfo()).getFullJEDTag();
-                    JustEnoughDimensions.logger.info("JED NBT tag: {}", nbt != null ? nbt.toString() : "null");
+                    JustEnoughDimensions.logger.info("Dimension has JED properties");
+                    NBTTagCompound nbt = props.getFullJEDTag();
+                    JustEnoughDimensions.logger.info("JED properties NBT tag: {}", nbt != null ? nbt.toString() : "null");
                 }
+                else
+                {
+                    JustEnoughDimensions.logger.info("Dimension doesn't have JED properties");
+                }
+
                 NBTTagCompound tag = world.getWorldInfo().cloneNBTCompound(new NBTTagCompound());
-                tag.removeTag("JED");
                 JustEnoughDimensions.logger.info("Vanilla level NBT: {}", tag.toString());
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 

@@ -138,7 +138,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
         if (this.dimensionTypeName != null)
         {
-            dimensionType.addProperty("vanilladimensiontype", this.dimensionTypeName);
+            dimensionType.addProperty("vanilla_dimensiontype", this.dimensionTypeName);
         }
         else
         {
@@ -154,7 +154,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
     public String getDescription()
     {
-        return String.format("{id: %d, name: \"%s\", suffix: \"%s\", keepLoaded: %s, WorldProvider: %s}",
+        return String.format("{id=%d,name=\"%s\",suffix=\"%s\",keepLoaded=%s,WorldProvider:\"%s\"}",
                 this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
     }
 

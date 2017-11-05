@@ -13,6 +13,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
+    private JsonObject jedTag;
     private JsonObject colorJson;
     private JsonObject worldInfoJson;
     private JsonObject oneTimeWorldInfoJson;
@@ -94,12 +95,6 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         this.dimensionTypeEntry = entry;
     }
 
-    public DimensionConfigEntry setColorJson(JsonObject obj)
-    {
-        this.colorJson = obj;
-        return this;
-    }
-
     public DimensionConfigEntry setWorldInfoJson(JsonObject obj)
     {
         this.worldInfoJson = obj;
@@ -109,6 +104,18 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public DimensionConfigEntry setOneTimeWorldInfoJson(JsonObject obj)
     {
         this.oneTimeWorldInfoJson = obj;
+        return this;
+    }
+
+    public DimensionConfigEntry setJEDTag(JsonObject obj)
+    {
+        this.jedTag = obj;
+
+        if (obj != null && obj.has("Colors") && obj.get("Colors").isJsonObject())
+        {
+            this.colorJson = obj.get("Colors").getAsJsonObject();
+        }
+
         return this;
     }
 
@@ -146,12 +153,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     @Nullable
     public JsonObject getColorData()
     {
-        if (this.colorJson != null && this.colorJson.isJsonObject())
-        {
-            return this.colorJson;
-        }
-
-        return null;
+        return this.colorJson;
     }
 
     public JsonObject toJson()
@@ -171,12 +173,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
         if (this.disableTeleportingFrom)
         {
-            jsonEntry.addProperty("disableteleportingfrom", true);
+            jsonEntry.addProperty("disable_teleporting_from", true);
         }
 
         if (this.disableTeleportingTo)
         {
-            jsonEntry.addProperty("disableteleportingto", true);
+            jsonEntry.addProperty("disable_teleporting_to", true);
         }
 
         if (this.biome != null)
@@ -189,7 +191,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
-        JEDJsonUtils.copyJsonObject(jsonEntry, "colors",            this.colorJson);
+        JEDJsonUtils.copyJsonObject(jsonEntry, "jed",               this.jedTag);
         JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
         JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
 
@@ -198,8 +200,8 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
     public String getDescription()
     {
-        return String.format("{id: %d, override: %s, unregister: %s, biome: '%s'," +
-                             " disableteleportingfrom: %s, disableteleportingto: %s, DimensionTypeEntry: [%s]}",
+        return String.format("{id=%d,override=%s,unregister=%s,biome=%s," +
+                             "disable_teleporting_from=%s,disable_teleporting_to=%s,DimensionTypeEntry:[%s]}",
                 this.id, this.override, this.unregister, this.biome, this.disableTeleportingFrom, this.disableTeleportingTo,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }

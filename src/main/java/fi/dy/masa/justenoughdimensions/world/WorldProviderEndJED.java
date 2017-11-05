@@ -39,6 +39,7 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         if (this.world != null)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
+            JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
         }
     }
