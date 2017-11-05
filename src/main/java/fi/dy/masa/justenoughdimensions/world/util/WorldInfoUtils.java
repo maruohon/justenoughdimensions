@@ -70,16 +70,13 @@ public class WorldInfoUtils
     {
         NBTTagCompound nbt = loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world));
         NBTTagCompound playerNBT = world.getWorldInfo().getPlayerNBTTagCompound();
-        boolean isDimensionInit = false;
+        boolean isDimensionInit = nbt == null;
 
         // No level.dat exists for this dimension yet, inherit the values from the overworld
         if (nbt == null)
         {
             // Get the values from the overworld WorldInfo
             nbt = world.getWorldInfo().cloneNBTCompound(playerNBT);
-
-            // Search for a proper suitable spawn position
-            isDimensionInit = true;
         }
 
         // Any tags/properties that are set in the dimensions.json take precedence over the level.dat
@@ -149,10 +146,6 @@ public class WorldInfoUtils
 
                 if (world.provider instanceof IWorldProviderJED)
                 {
-                    JustEnoughDimensions.logInfo("Setting JED properties in the WorldProvider for dimension {}", world.provider.getDimension());
-
-                    ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldProperties(info);
-
                     // This sets the WorldType (the terrainType field) and the generatorSettings field
                     // from the newly overridden WorldInfoJED
                     world.provider.setWorld(world);

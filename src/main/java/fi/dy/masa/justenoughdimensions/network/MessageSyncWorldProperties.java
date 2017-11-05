@@ -12,7 +12,6 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -26,7 +25,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.event.JEDEventHandlerClient;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -45,13 +44,13 @@ public class MessageSyncWorldProperties implements IMessage
     public MessageSyncWorldProperties(World world)
     {
         int dimension = world.provider.getDimension();
-        WorldInfo info = world.getWorldInfo();
         DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
+        JEDWorldProperties props = JEDWorldProperties.getProperties(world);
 
-        if (info instanceof WorldInfoJED)
+        if (props != null)
         {
             this.hasJEDTag = true;
-            this.nbt = ((WorldInfoJED) info).getJEDTagForClientSync();
+            this.nbt = props.getJEDTagForClientSync();
         }
 
         if (entry != null)
@@ -169,9 +168,9 @@ public class MessageSyncWorldProperties implements IMessage
                         world.provider.getDimension());
             }
 
-            JEDEventHandlerClient.setColors(ColorType.FOLIAGE, DimensionConfig.getColorMap(message.colorData, ColorType.FOLIAGE));
-            JEDEventHandlerClient.setColors(ColorType.GRASS,   DimensionConfig.getColorMap(message.colorData, ColorType.GRASS));
-            JEDEventHandlerClient.setColors(ColorType.WATER,   DimensionConfig.getColorMap(message.colorData, ColorType.WATER));
+            JEDEventHandlerClient.setColors(ColorType.FOLIAGE, JEDEventHandlerClient.getColorMap(message.colorData, ColorType.FOLIAGE));
+            JEDEventHandlerClient.setColors(ColorType.GRASS,   JEDEventHandlerClient.getColorMap(message.colorData, ColorType.GRASS));
+            JEDEventHandlerClient.setColors(ColorType.WATER,   JEDEventHandlerClient.getColorMap(message.colorData, ColorType.WATER));
 
             if (message.colorData != null)
             {

@@ -40,15 +40,14 @@ import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 
 public class WorldUtils
 {
     private static final String JED_RESPAWN_DIM_TAG = "justenoughdimensions:respawndimension";
-    private static Field field_WorldProvider_terrainType;
-    private static Field field_WorldProvider_generatorSettings;
+    //private static Field field_WorldProvider_terrainType;
+    //private static Field field_WorldProvider_generatorSettings;
     private static Field field_WorldProvider_biomeProvider = null;
     private static Field field_ChunkProviderServer_chunkGenerator = null;
 
@@ -56,8 +55,8 @@ public class WorldUtils
     {
         try
         {
-            field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
-            field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
+            //field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
+            //field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
             field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
@@ -180,6 +179,7 @@ public class WorldUtils
         }
     }
 
+    /*
     public static void overrideWorldProviderSettings(World world, WorldProvider provider)
     {
         WorldInfo info = world.getWorldInfo();
@@ -200,6 +200,7 @@ public class WorldUtils
             }
         }
     }
+    */
 
     public static void overrideBiomeProvider(World world)
     {
