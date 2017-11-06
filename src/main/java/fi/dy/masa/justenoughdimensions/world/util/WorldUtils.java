@@ -19,7 +19,6 @@ import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -37,6 +36,7 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -162,17 +162,17 @@ public class WorldUtils
         return false;
     }
 
-    public static void findAndSetWorldSpawn(World world)
+    public static void findAndSetWorldSpawnIfApplicable(World world)
     {
-        int dimension = world.provider.getDimension();
+        final int dimension = world.provider.getDimension();
 
-        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        if (Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
-            boolean isDimensionInit = WorldFileUtils.levelFileExists(world) == false;
+            final boolean isDimensionInit = WorldFileUtils.levelFileExists(world) == false;
 
             if (isDimensionInit)
             {
-                findAndSetWorldSpawn(world, true);
+                findAndSetWorldSpawn(world);
             }
         }
     }
@@ -267,29 +267,32 @@ public class WorldUtils
         }
     }
 
-    public static void findAndSetWorldSpawn(World world, boolean fireEvent)
+    public static void findAndSetWorldSpawn(World world)
     {
-        WorldSettings worldSettings = new WorldSettings(world.getWorldInfo());
         WorldProvider provider = world.provider;
+        NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
+        BlockPos pos = world.getSpawnPoint();
 
-        JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", provider.getDimension());
-
-        if (fireEvent && net.minecraftforge.event.ForgeEventFactory.onCreateWorldSpawn(world, worldSettings))
+        if (nbt.hasKey("SpawnX") == false || nbt.hasKey("SpawnY") == false || nbt.hasKey("SpawnZ") == false)
         {
-            JustEnoughDimensions.logInfo("Exiting due to a canceled WorldEvent.CreateSpawnPosition event!");
-            return;
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
+            pos = findSuitableSpawnpoint(world);
+            world.getWorldInfo().setSpawn(pos);
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
         }
-
-        BlockPos pos = findSuitableSpawnpoint(world);
-        world.getWorldInfo().setSpawn(pos);
-        JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+        else
+        {
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Spawn point defined in dimension config" +
+                                         "for dimension {}, skipping the search", provider.getDimension());
+        }
 
         WorldBorder border = world.getWorldBorder();
 
         if (border.contains(pos) == false)
         {
             border.setCenter(pos.getX(), pos.getZ());
-            JustEnoughDimensions.logInfo("Moved the WorldBorder of dimension {} to the world's spawn, because the spawn was outside the border", provider.getDimension());
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
+                                         "to the world's spawn, because the spawn was outside the border", provider.getDimension());
         }
     }
 
