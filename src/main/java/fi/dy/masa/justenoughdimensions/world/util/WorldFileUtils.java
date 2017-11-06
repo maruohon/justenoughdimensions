@@ -44,15 +44,14 @@ public class WorldFileUtils
 
     public static boolean levelFileExists(World world)
     {
-        File worldDir = getWorldDirectory(world);
+        File worldDir = WorldFileUtils.getWorldDirectory(world);
 
-        if (worldDir == null)
+        if (worldDir != null)
         {
-            return false;
+            File levelFile = new File(worldDir, "level.dat");
+            return levelFile.exists() && levelFile.isFile();
         }
 
-        File levelFile = new File(worldDir, "level.dat");
-
-        return levelFile.exists();
+        return false;
     }
 }
