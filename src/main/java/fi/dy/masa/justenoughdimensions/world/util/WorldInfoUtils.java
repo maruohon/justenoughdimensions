@@ -51,6 +51,11 @@ public class WorldInfoUtils
      */
     public static void loadAndSetCustomWorldInfo(World world)
     {
+        if ((world.provider instanceof IWorldProviderJED) && ((IWorldProviderJED) world.provider).getWorldInfoHasBeenSet())
+        {
+            return;
+        }
+
         final int dimension = world.provider.getDimension();
 
         if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
