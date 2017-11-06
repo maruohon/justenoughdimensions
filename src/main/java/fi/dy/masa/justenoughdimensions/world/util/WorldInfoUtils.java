@@ -108,10 +108,10 @@ public class WorldInfoUtils
      * @param inheritFromOverworld
      * @return
      */
-    private static NBTTagCompound getWorldInfoTag(World world, int dimension, boolean readFromDisk, boolean inheritFromOverworld)
+    public static NBTTagCompound getWorldInfoTag(World world, int dimension, boolean readFromDisk, boolean inheritFromOverworld)
     {
         NBTTagCompound nbt = readFromDisk ? loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world)) : null;
-        final boolean isDimensionInit = readFromDisk ? nbt == null : levelFileExists(world) == false;
+        final boolean isDimensionInit = readFromDisk ? nbt == null : WorldFileUtils.levelFileExists(world) == false;
 
         // No level.dat exists for this dimension yet
         if (nbt == null)
@@ -150,19 +150,6 @@ public class WorldInfoUtils
         {
             saveWorldInfoToFile(world, WorldFileUtils.getWorldDirectory(world));
         }
-    }
-
-    private static boolean levelFileExists(World world)
-    {
-        File worldDir = WorldFileUtils.getWorldDirectory(world);
-
-        if (worldDir != null)
-        {
-            File levelFile = new File(worldDir, "level.dat");
-            return levelFile.exists() && levelFile.isFile();
-        }
-
-        return false;
     }
 
     private static NBTTagCompound loadWorldInfoFromFile(World world, @Nullable File worldDir)
