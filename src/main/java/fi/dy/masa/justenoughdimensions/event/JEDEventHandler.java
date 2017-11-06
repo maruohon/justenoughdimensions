@@ -25,6 +25,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.world.util.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
@@ -114,7 +115,7 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onWorldSave(WorldEvent.Save event)
     {
-        WorldInfoUtils.saveCustomWorldInfoToFile(event.getWorld());
+        WorldFileUtils.saveCustomWorldInfoToFile(event.getWorld());
 
         if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
         {
