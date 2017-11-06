@@ -15,4 +15,10 @@ public interface IWorldProviderJED
      * @param worldInfo
      */
     public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties);
+
+    /**
+     * Returns true if the WorldInfo values have already been set for this WorldProvider
+     * @return
+     */
+    public boolean getWorldInfoHasBeenSet();
 }
