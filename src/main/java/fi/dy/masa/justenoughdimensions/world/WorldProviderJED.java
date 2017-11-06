@@ -32,6 +32,13 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected float[] customLightBrightnessTable;
     protected Boolean canRespawnHere = null;
     protected Integer respawnDimension = null;
+    private boolean worldInfoSet;
+
+    @Override
+    public boolean getWorldInfoHasBeenSet()
+    {
+        return this.worldInfoSet;
+    }
 
     @Override
     public void setDimension(int dim)
@@ -41,11 +48,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // This method gets called the first time from DimensionManager.createProviderFor(),
         // at which time the world hasn't been set yet. The second call comes from the WorldServer
         // constructor, and there the world has just been set.
-        if (this.world != null)
+        if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
             JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
+            this.worldInfoSet = true;
         }
     }
 
