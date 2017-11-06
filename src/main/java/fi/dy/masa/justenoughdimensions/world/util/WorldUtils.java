@@ -168,7 +168,7 @@ public class WorldUtils
 
         if (Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
-            final boolean isDimensionInit = WorldFileUtils.levelFileExists(world) == false;
+            final boolean isDimensionInit = WorldFileUtils.jedLevelFileExists(world) == false;
 
             if (isDimensionInit)
             {
