@@ -273,18 +273,20 @@ public class WorldUtils
         NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
         BlockPos pos = world.getSpawnPoint();
 
-        if (nbt.hasKey("SpawnX") == false || nbt.hasKey("SpawnY") == false || nbt.hasKey("SpawnZ") == false)
+        if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnY") && nbt.hasKey("SpawnZ"))
         {
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
-            pos = findSuitableSpawnpoint(world);
-            world.getWorldInfo().setSpawn(pos);
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Spawn point defined in dimension config " +
+                                         "for dimension {}, skipping the search", provider.getDimension());
+            pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
         }
         else
         {
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Spawn point defined in dimension config" +
-                                         "for dimension {}, skipping the search", provider.getDimension());
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
+            pos = findSuitableSpawnpoint(world);
         }
+
+        world.setSpawnPoint(pos);
+        JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
 
         WorldBorder border = world.getWorldBorder();
 
