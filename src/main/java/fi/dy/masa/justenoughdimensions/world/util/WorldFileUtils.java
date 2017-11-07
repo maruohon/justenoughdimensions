@@ -171,7 +171,7 @@ public class WorldFileUtils
     {
         int dimension = world.provider.getDimension();
 
-        if (Configs.enableSeparateWorldInfo && world.isRemote == false && dimension != 0 &&
+        if (Configs.enableSeparateWorldInfo && world.isRemote == false &&
             DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
             saveWorldInfoToFile(world, WorldFileUtils.getWorldDirectory(world));
