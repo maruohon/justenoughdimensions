@@ -784,17 +784,16 @@ public class DimensionConfig
     @Nullable
     private NBTBase getTagForWorldInfoValue(String key, JsonElement element)
     {
-        if (key.equals("RandomSeed"))
+        if (key.equals("RandomSeed") && element.isJsonPrimitive())
         {
-            String seedStr = element.getAsString();
             try
             {
-                long seed = Long.parseLong(seedStr);
+                long seed = Long.parseLong(element.getAsString());
                 return new NBTTagLong(seed);
             }
             catch (NumberFormatException e)
             {
-                return new NBTTagLong(seedStr.hashCode());
+                return new NBTTagLong(element.getAsString().hashCode());
             }
         }
         else if (element.isJsonObject())
@@ -806,7 +805,16 @@ public class DimensionConfig
             {
                 for (Map.Entry<String, JsonElement> entry : obj.entrySet())
                 {
-                    tag.setString(entry.getKey(), entry.getValue().getAsString());
+                    JsonElement el = entry.getValue();
+
+                    if (el.isJsonPrimitive())
+                    {
+                        tag.setString(entry.getKey(), el.getAsString());
+                    }
+                    else
+                    {
+                        JustEnoughDimensions.logger.warn("Invalid GameRule value: '{} = {}'", entry.getKey(), el);
+                    }
                 }
             }
 
@@ -821,7 +829,7 @@ public class DimensionConfig
             return this.getTagForType(key, type, element);
         }
 
-        JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element.getAsString());
+        JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element);
         return null;
     }
 
@@ -853,7 +861,7 @@ public class DimensionConfig
             return this.getTagForType(key, type, element);
         }
 
-        JustEnoughDimensions.logger.warn("Unrecognized key in jed properties: '{} = {}'", key, element.getAsString());
+        JustEnoughDimensions.logger.warn("Unrecognized key in jed properties: '{} = {}'", key, element);
 
         return null;
     }
@@ -861,57 +869,64 @@ public class DimensionConfig
     @Nullable
     private NBTBase getTagForType(String key, int type, JsonElement element)
     {
-        switch (type)
+        try
         {
-            case Constants.NBT.TAG_BYTE:
-                try
-                {
-                    String str = element.getAsString();
-                    if (str != null && (str.equals("true") || str.equals("false")))
+            switch (type)
+            {
+                case Constants.NBT.TAG_BYTE:
+                    try
                     {
-                        return new NBTTagByte(element.getAsBoolean() ? (byte) 1 : 0);
-                    }
-                }
-                catch (Exception e) {}
-                return new NBTTagByte(element.getAsByte());
-
-            case Constants.NBT.TAG_SHORT:
-                return new NBTTagShort(element.getAsShort());
-
-            case Constants.NBT.TAG_INT:
-                return new NBTTagInt(element.getAsInt());
-
-            case Constants.NBT.TAG_LONG:
-                return new NBTTagLong(element.getAsLong());
-
-            case Constants.NBT.TAG_FLOAT:
-                return new NBTTagFloat(element.getAsFloat());
-
-            case Constants.NBT.TAG_DOUBLE:
-                return new NBTTagDouble(element.getAsDouble());
-
-            case Constants.NBT.TAG_STRING:
-                return new NBTTagString(element.getAsString());
-
-            case Constants.NBT.TAG_LIST:
-                if (element.isJsonArray() && this.jedKeysListTypes.containsKey(key))
-                {
-                    JsonArray arr = element.getAsJsonArray();
-                    NBTTagList list = new NBTTagList();
-                    int listType = this.jedKeysListTypes.get(key);
-
-                    for (JsonElement el : arr)
-                    {
-                        NBTBase tag = this.getTagForType("", listType, el);
-
-                        if (tag != null)
+                        String str = element.getAsString();
+                        if (str != null && (str.equals("true") || str.equals("false")))
                         {
-                            list.appendTag(tag);
+                            return new NBTTagByte(element.getAsBoolean() ? (byte) 1 : 0);
                         }
                     }
+                    catch (Exception e) {}
+                    return new NBTTagByte(element.getAsByte());
 
-                    return list;
-                }
+                case Constants.NBT.TAG_SHORT:
+                    return new NBTTagShort(element.getAsShort());
+
+                case Constants.NBT.TAG_INT:
+                    return new NBTTagInt(element.getAsInt());
+
+                case Constants.NBT.TAG_LONG:
+                    return new NBTTagLong(element.getAsLong());
+
+                case Constants.NBT.TAG_FLOAT:
+                    return new NBTTagFloat(element.getAsFloat());
+
+                case Constants.NBT.TAG_DOUBLE:
+                    return new NBTTagDouble(element.getAsDouble());
+
+                case Constants.NBT.TAG_STRING:
+                    return new NBTTagString(element.getAsString());
+
+                case Constants.NBT.TAG_LIST:
+                    if (element.isJsonArray() && this.jedKeysListTypes.containsKey(key))
+                    {
+                        JsonArray arr = element.getAsJsonArray();
+                        NBTTagList list = new NBTTagList();
+                        int listType = this.jedKeysListTypes.get(key);
+
+                        for (JsonElement el : arr)
+                        {
+                            NBTBase tag = this.getTagForType("", listType, el);
+
+                            if (tag != null)
+                            {
+                                list.appendTag(tag);
+                            }
+                        }
+
+                        return list;
+                    }
+            }
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Invalid/unexpected value: '{}' for key '{}'", key, element);
         }
 
         return null;
