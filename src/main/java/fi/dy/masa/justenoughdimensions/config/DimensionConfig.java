@@ -592,12 +592,12 @@ public class DimensionConfig
             else
             {
                 obj = JEDJsonUtils.getOrCreateNestedObject(obj, type.getKeyName());
-            }
 
-            // Not a JED property and not a (direct) vanilla level.dat key, so let's assume it's a GameRule then
-            if (this.worldInfoKeys.get(key) == null)
-            {
-                obj = JEDJsonUtils.getOrCreateNestedObject(obj, "GameRules");
+                // Not a JED property and not a (direct) vanilla level.dat key, so let's assume it's a GameRule then
+                if (this.worldInfoKeys.get(key) == null)
+                {
+                    obj = JEDJsonUtils.getOrCreateNestedObject(obj, "GameRules");
+                }
             }
 
             obj.add(key, new JsonPrimitive(value));
@@ -608,28 +608,40 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome") ||
-            key.equals("disable_teleporting_from") || key.equals("disable_teleporting_to"))
+        if (key.equals("override") ||
+            key.equals("unregister") ||
+            key.equals("biome") ||
+            key.equals("disable_teleporting_from") ||
+            key.equals("disable_teleporting_to") ||
+            key.equals("jed") ||
+            key.equals("worldinfo") ||
+            key.equals("worldinfo_onetime"))
         {
             return obj.remove(key) != null;
         }
-        else if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-                 key.equals("worldprovider") || key.equals("vanilla_dimensiontype"))
+        else if (key.equals("id") ||
+                 key.equals("name") ||
+                 key.equals("suffix") ||
+                 key.equals("keeploaded") ||
+                 key.equals("worldprovider") ||
+                 key.equals("vanilla_dimensiontype"))
         {
             obj = JEDJsonUtils.getNestedObject(obj, "dimensiontype", false);
             return obj != null ? obj.remove(key) != null : false;
-        }
-        else if (key.equals("worldinfo") || key.equals("worldinfo_onetime"))
-        {
-            obj.remove(type.getKeyName());
-            return true;
         }
         else
         {
             if (this.isJEDProperty(key))
             {
                 obj = JEDJsonUtils.getNestedObject(obj, "jed", false);
-                return obj != null ? obj.remove(key) != null : false;
+                boolean success = obj != null ? obj.remove(key) != null : false;
+
+                if (obj != null && obj.size() == 0)
+                {
+                    this.dimBuilderData.remove("jed");
+                }
+
+                return success;
             }
             else
             {
@@ -712,15 +724,22 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister") || key.equals("biome") ||
-             key.equals("disable_teleporting_from") || key.equals("disable_teleporting_to")) &&
+        if ((key.equals("override") ||
+             key.equals("unregister") ||
+             key.equals("biome") ||
+             key.equals("disable_teleporting_from") ||
+             key.equals("disable_teleporting_to")) &&
                 obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
         }
 
-        if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-            key.equals("worldprovider") || key.equals("vanilla_dimensiontype"))
+        if (key.equals("id") ||
+            key.equals("name") ||
+            key.equals("suffix") ||
+            key.equals("keeploaded") ||
+            key.equals("worldprovider") ||
+            key.equals("vanilla_dimensiontype"))
         {
             if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
             {
