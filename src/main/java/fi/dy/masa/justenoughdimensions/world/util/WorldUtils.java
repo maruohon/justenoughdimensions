@@ -41,6 +41,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 
 public class WorldUtils
 {
@@ -202,25 +203,29 @@ public class WorldUtils
 
     public static void overrideBiomeProvider(World world)
     {
-        int dimension = world.provider.getDimension();
-        String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
-        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
-
-        if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
-            world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+        // For WorldProviderSurfaceJED the BiomeProvider has already been set in WorldProviderSurfaceJED#init()
+        if ((world.provider instanceof WorldProviderSurfaceJED) == false)
         {
-            BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
+            int dimension = world.provider.getDimension();
+            String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
+            Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
 
-            JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
-                " using the biome '{}' ('{}')", dimension, biomeProvider.getClass().getName(), biomeName, biome.getBiomeName());
+            if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
+                world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+            {
+                BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
-            try
-            {
-                field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
+                    " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
+
+                try
+                {
+                    field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                }
             }
         }
     }
