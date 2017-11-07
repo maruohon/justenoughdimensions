@@ -201,7 +201,10 @@ public class WorldInfoUtils
             WorldSettings settings = new WorldSettings(seed, gameType, mapFeatures, hardcore, worldType);
             settings.setGeneratorOptions(nbt.getString("generatorOptions"));
 
+            // Need to cache and restore this, the populateFromWorldSettings() will reset it to false
+            boolean allowCommands = info.areCommandsAllowed();
             info.populateFromWorldSettings(settings);
+            info.setAllowCommands(allowCommands);
         }
 
         if (nbt.hasKey("generatorName", Constants.NBT.TAG_STRING) && nbt.hasKey("generatorOptions", Constants.NBT.TAG_STRING) == false)
