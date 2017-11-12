@@ -32,6 +32,13 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected float[] customLightBrightnessTable;
     protected Boolean canRespawnHere = null;
     protected Integer respawnDimension = null;
+    private boolean worldInfoSet;
+
+    @Override
+    public boolean getWorldInfoHasBeenSet()
+    {
+        return this.worldInfoSet;
+    }
 
     @Override
     public void setDimension(int dim)
@@ -41,10 +48,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // This method gets called the first time from DimensionManager.createProviderFor(),
         // at which time the world hasn't been set yet. The second call comes from the WorldServer
         // constructor, and there the world has just been set.
-        if (this.world != null)
+        if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
+            JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
+            this.worldInfoSet = true;
         }
     }
 
@@ -152,14 +161,14 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setJEDPropertiesFromWorldInfo(WorldInfoJED worldInfo)
+    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties)
     {
-        this.useCustomDayCycle = worldInfo.getUseCustomDayCycle();
-        this.dayLength = worldInfo.getDayLength();
-        this.nightLength = worldInfo.getNightLength();
-        this.customLightBrightnessTable = worldInfo.getCustomLightBrightnessTable();
-        this.canRespawnHere = worldInfo.canRespawnHere();
-        this.respawnDimension = worldInfo.getRespawnDimension();
+        this.useCustomDayCycle = properties.getUseCustomDayCycle();
+        this.dayLength = properties.getDayLength();
+        this.nightLength = properties.getNightLength();
+        this.customLightBrightnessTable = properties.getCustomLightBrightnessTable();
+        this.canRespawnHere = properties.canRespawnHere();
+        this.respawnDimension = properties.getRespawnDimension();
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }

@@ -19,7 +19,6 @@ import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -37,17 +36,19 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 
 public class WorldUtils
 {
     private static final String JED_RESPAWN_DIM_TAG = "justenoughdimensions:respawndimension";
-    private static Field field_WorldProvider_terrainType;
-    private static Field field_WorldProvider_generatorSettings;
+    //private static Field field_WorldProvider_terrainType;
+    //private static Field field_WorldProvider_generatorSettings;
     private static Field field_WorldProvider_biomeProvider = null;
     private static Field field_ChunkProviderServer_chunkGenerator = null;
 
@@ -55,8 +56,8 @@ public class WorldUtils
     {
         try
         {
-            field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
-            field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
+            //field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
+            //field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
             field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
@@ -141,6 +142,8 @@ public class WorldUtils
     {
         if (player instanceof EntityPlayerMP)
         {
+            JustEnoughDimensions.logInfo("WorldUtils.syncWorldProviderProperties: Syncing WorldProvider properties " +
+                                         "of dimension {} to player '{}'", player.getEntityWorld().provider.getDimension(), player.getName());
             PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProperties(player.getEntityWorld()), (EntityPlayerMP) player);
         }
     }
@@ -162,21 +165,22 @@ public class WorldUtils
         return false;
     }
 
-    public static void findAndSetWorldSpawn(World world)
+    public static void findAndSetWorldSpawnIfApplicable(World world)
     {
-        int dimension = world.provider.getDimension();
+        final int dimension = world.provider.getDimension();
 
-        if (DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        if (Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
         {
-            boolean isDimensionInit = WorldFileUtils.levelFileExists(world) == false;
+            final boolean isDimensionInit = WorldFileUtils.jedLevelFileExists(world) == false;
 
             if (isDimensionInit)
             {
-                findAndSetWorldSpawn(world, true);
+                findAndSetWorldSpawn(world);
             }
         }
     }
 
+    /*
     public static void overrideWorldProviderSettings(World world, WorldProvider provider)
     {
         WorldInfo info = world.getWorldInfo();
@@ -197,28 +201,33 @@ public class WorldUtils
             }
         }
     }
+    */
 
     public static void overrideBiomeProvider(World world)
     {
-        int dimension = world.provider.getDimension();
-        String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
-        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
-
-        if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
-            world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+        // For WorldProviderSurfaceJED the BiomeProvider has already been set in WorldProviderSurfaceJED#init()
+        if ((world.provider instanceof WorldProviderSurfaceJED) == false)
         {
-            BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
+            int dimension = world.provider.getDimension();
+            String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
+            Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
 
-            JustEnoughDimensions.logInfo("Overriding the BiomeProvider for dimension {} with {}" +
-                " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
+            if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
+                world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+            {
+                BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
 
-            try
-            {
-                field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
+                    " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
+
+                try
+                {
+                    field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                }
             }
         }
     }
@@ -250,7 +259,7 @@ public class WorldUtils
                 return;
             }
 
-            JustEnoughDimensions.logInfo("Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
+            JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
                     chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
 
             try
@@ -265,29 +274,34 @@ public class WorldUtils
         }
     }
 
-    public static void findAndSetWorldSpawn(World world, boolean fireEvent)
+    public static void findAndSetWorldSpawn(World world)
     {
-        WorldSettings worldSettings = new WorldSettings(world.getWorldInfo());
         WorldProvider provider = world.provider;
+        NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
+        BlockPos pos = world.getSpawnPoint();
 
-        JustEnoughDimensions.logInfo("Trying to find a world spawn for dimension {}...", provider.getDimension());
-
-        if (fireEvent && net.minecraftforge.event.ForgeEventFactory.onCreateWorldSpawn(world, worldSettings))
+        if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnY") && nbt.hasKey("SpawnZ"))
         {
-            JustEnoughDimensions.logInfo("Exiting due to a canceled WorldEvent.CreateSpawnPosition event!");
-            return;
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Spawn point defined in dimension config " +
+                                         "for dimension {}, skipping the search", provider.getDimension());
+            pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
+        }
+        else
+        {
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
+            pos = findSuitableSpawnpoint(world);
         }
 
-        BlockPos pos = findSuitableSpawnpoint(world);
-        world.getWorldInfo().setSpawn(pos);
-        JustEnoughDimensions.logInfo("Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+        world.setSpawnPoint(pos);
+        JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
 
         WorldBorder border = world.getWorldBorder();
 
         if (border.contains(pos) == false)
         {
             border.setCenter(pos.getX(), pos.getZ());
-            JustEnoughDimensions.logInfo("Moved the WorldBorder of dimension {} to the world's spawn, because the spawn was outside the border", provider.getDimension());
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
+                                         "to the world's spawn, because the spawn was outside the border", provider.getDimension());
         }
     }
 
@@ -468,15 +482,17 @@ public class WorldUtils
     public static void setupRespawnDimension(EntityPlayer player)
     {
         World world = player.getEntityWorld();
+        JEDWorldProperties props = JEDWorldProperties.getProperties(world);
 
-        if (world.getWorldInfo() instanceof WorldInfoJED)
+        if (props != null)
         {
-            WorldInfoJED info = (WorldInfoJED) world.getWorldInfo();
-            Boolean canRespawnHere = info.canRespawnHere();
+            Boolean canRespawnHere = props.canRespawnHere();
 
-            if (canRespawnHere != null && canRespawnHere && world.provider.canRespawnHere() == false)
+            if (canRespawnHere != null && canRespawnHere.booleanValue() && world.provider.canRespawnHere() == false)
             {
-                player.setSpawnDimension(world.provider.getDimension());
+                final int dim = world.provider.getDimension();
+                JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Setting the respawn dimension of player '{}' to: {}", player.getName(), dim);
+                player.setSpawnDimension(dim);
                 player.addTag(JED_RESPAWN_DIM_TAG);
                 return;
             }
@@ -484,6 +500,7 @@ public class WorldUtils
 
         if (player.getTags().contains(JED_RESPAWN_DIM_TAG))
         {
+            JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Removing the respawn dimension data from player '{}'", player.getName());
             player.setSpawnDimension(null);
             player.removeTag(JED_RESPAWN_DIM_TAG);
         }

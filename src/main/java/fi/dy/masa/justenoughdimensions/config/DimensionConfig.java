@@ -11,8 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
@@ -26,12 +24,10 @@ import com.google.gson.JsonPrimitive;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.nbt.*;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
-import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -40,7 +36,7 @@ import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
-import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 
@@ -54,8 +50,8 @@ public class DimensionConfig
     private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
     private final Map<String, Integer> worldInfoKeys = new HashMap<String, Integer>();
-    private final Map<String, Integer> worldInfoKeysJED = new HashMap<String, Integer>();
-    private final Map<String, Integer> worldInfoKeysListTypes = new HashMap<String, Integer>();
+    private final Map<String, Integer> jedKeys = new HashMap<String, Integer>();
+    private final Map<String, Integer> jedKeysListTypes = new HashMap<String, Integer>();
     private JsonObject dimBuilderData = new JsonObject();
 
     private DimensionConfig(File configDir)
@@ -126,21 +122,23 @@ public class DimensionConfig
         this.worldInfoKeys.put("BorderWarningTime",    Constants.NBT.TAG_INT);
 
         // Custom JED properties
-        this.worldInfoKeysJED.put("ForceGameMode",    Constants.NBT.TAG_BYTE);
-        this.worldInfoKeysJED.put("CustomDayCycle",   Constants.NBT.TAG_BYTE);
-        this.worldInfoKeysJED.put("DayLength",        Constants.NBT.TAG_INT);
-        this.worldInfoKeysJED.put("NightLength",      Constants.NBT.TAG_INT);
-        this.worldInfoKeysJED.put("CloudHeight",      Constants.NBT.TAG_INT);
-        this.worldInfoKeysJED.put("SkyColor",         Constants.NBT.TAG_STRING);
-        this.worldInfoKeysJED.put("CloudColor",       Constants.NBT.TAG_STRING);
-        this.worldInfoKeysJED.put("FogColor",         Constants.NBT.TAG_STRING);
-        this.worldInfoKeysJED.put("SkyRenderType",    Constants.NBT.TAG_BYTE);
-        this.worldInfoKeysJED.put("SkyDisableFlags",  Constants.NBT.TAG_BYTE);
-        this.worldInfoKeysJED.put("LightBrightness",  Constants.NBT.TAG_LIST);
-        this.worldInfoKeysJED.put("CanRespawnHere",   Constants.NBT.TAG_BYTE);
-        this.worldInfoKeysJED.put("RespawnDimension", Constants.NBT.TAG_INT);
+        this.jedKeys.put("CanRespawnHere",      Constants.NBT.TAG_BYTE);
+        this.jedKeys.put("CloudColor",          Constants.NBT.TAG_STRING);
+        this.jedKeys.put("CloudHeight",         Constants.NBT.TAG_INT);
+        this.jedKeys.put("Colors",              Constants.NBT.TAG_LIST);
+        this.jedKeys.put("CustomDayCycle",      Constants.NBT.TAG_BYTE);
+        this.jedKeys.put("DayLength",           Constants.NBT.TAG_INT);
+        this.jedKeys.put("FogColor",            Constants.NBT.TAG_STRING);
+        this.jedKeys.put("ForceGameMode",       Constants.NBT.TAG_BYTE);
+        this.jedKeys.put("LightBrightness",     Constants.NBT.TAG_LIST);
+        this.jedKeys.put("NightLength",         Constants.NBT.TAG_INT);
+        this.jedKeys.put("RespawnDimension",    Constants.NBT.TAG_INT);
+        this.jedKeys.put("SkyColor",            Constants.NBT.TAG_STRING);
+        this.jedKeys.put("SkyDisableFlags",     Constants.NBT.TAG_BYTE);
+        this.jedKeys.put("SkyRenderType",       Constants.NBT.TAG_BYTE);
 
-        this.worldInfoKeysListTypes.put("LightBrightness", Constants.NBT.TAG_FLOAT);
+        this.jedKeysListTypes.put("Colors",             Constants.NBT.TAG_COMPOUND);
+        this.jedKeysListTypes.put("LightBrightness",    Constants.NBT.TAG_FLOAT);
     }
 
     public boolean useCustomWorldInfoFor(int dimension)
@@ -196,6 +194,7 @@ public class DimensionConfig
         this.customWorldInfo.clear();
         this.onetimeWorldInfo.clear();
         this.dimensions.clear();
+        JEDWorldProperties.clearWorldProperties();
 
         File file = this.getConfigFile(worldDir);
 
@@ -427,12 +426,12 @@ public class DimensionConfig
         this.dimensions.remove(dimension);
         this.customWorldInfo.remove(dimension);
         this.onetimeWorldInfo.remove(dimension);
+        JEDWorldProperties.removePropertiesFrom(dimension);
     }
 
     private void saveConfig()
     {
-        List<DimensionConfigEntry> dims = new ArrayList<DimensionConfigEntry>();
-        dims.addAll(this.getRegisteredDimensions());
+        List<DimensionConfigEntry> dims = new ArrayList<DimensionConfigEntry>(this.getRegisteredDimensions());
         Collections.sort(dims);
 
         JsonObject root = new JsonObject();
@@ -454,8 +453,7 @@ public class DimensionConfig
         }
         catch (IOException e)
         {
-            JustEnoughDimensions.logger.warn("Failed to write dimensions.json");
-            e.printStackTrace();
+            JustEnoughDimensions.logger.warn("Failed to write dimensions.json", e);
         }
     }
 
@@ -489,7 +487,7 @@ public class DimensionConfig
         JustEnoughDimensions.logInfo("Read {} dimension entries from the config", count);
     }
 
-    private void parseDimensionConfigEntry(int dimension, JsonObject object)
+    private void parseDimensionConfigEntry(int dimension, final JsonObject object)
     {
         DimensionConfigEntry configEntry = new DimensionConfigEntry(dimension);
 
@@ -497,10 +495,10 @@ public class DimensionConfig
                 object.get("override").getAsBoolean();
         boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
                 object.get("unregister").getAsBoolean();
-        boolean disableTeleportingFrom = object.has("disableteleportingfrom") && object.get("disableteleportingfrom").isJsonPrimitive() &&
-                object.get("disableteleportingfrom").getAsBoolean();
-        boolean disableTeleportingTo = object.has("disableteleportingto") && object.get("disableteleportingto").isJsonPrimitive() &&
-                object.get("disableteleportingto").getAsBoolean();
+        boolean disableTeleportingFrom = object.has("disable_teleporting_from") && object.get("disable_teleporting_from").isJsonPrimitive() &&
+                object.get("disable_teleporting_from").getAsBoolean();
+        boolean disableTeleportingTo = object.has("disable_teleporting_to") && object.get("disable_teleporting_to").isJsonPrimitive() &&
+                object.get("disable_teleporting_to").getAsBoolean();
         String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
                 object.get("biome").getAsString() : null;
 
@@ -510,9 +508,10 @@ public class DimensionConfig
         configEntry.setDisableTeleportingTo(disableTeleportingTo);
         configEntry.setBiome(biome);
 
-        if (object.has("colors") && object.get("colors").isJsonObject())
+        if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
         {
-            configEntry.setColorJson(object.getAsJsonObject("colors"));
+            JsonObject obj = object.get("dimensiontype").getAsJsonObject();
+            configEntry.setDimensionTypeEntry(this.parseDimensionTypeEntry(dimension, obj));
         }
 
         if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
@@ -529,10 +528,16 @@ public class DimensionConfig
             this.onetimeWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
         }
 
-        if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
+        if (object.has("jed") && object.get("jed").isJsonObject())
         {
-            JsonObject obj = object.get("dimensiontype").getAsJsonObject();
-            configEntry.setDimensionTypeEntry(this.parseDimensionTypeEntry(dimension, obj));
+            JsonObject obj = object.getAsJsonObject("jed");
+            configEntry.setJEDTag(obj);
+            NBTTagCompound tag = this.getJEDTag(obj);
+
+            if (tag != null)
+            {
+                JEDWorldProperties.createPropertiesFor(dimension, tag);
+            }
         }
 
         this.dimensions.put(dimension, configEntry);
@@ -565,12 +570,12 @@ public class DimensionConfig
         JsonObject obj = this.dimBuilderData;
 
         if (key.equals("override") || key.equals("unregister") || key.equals("biome") ||
-            key.equals("disableteleportingfrom") || key.equals("disableteleportingto"))
+            key.equals("disable_teleporting_from") || key.equals("disable_teleporting_to"))
         {
             obj.add(key, new JsonPrimitive(value));
         }
         else if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-                 key.equals("worldprovider") || key.equals("vanilladimensiontype"))
+                 key.equals("worldprovider") || key.equals("vanilla_dimensiontype"))
         {
             JEDJsonUtils.getOrCreateNestedObject(obj, "dimensiontype").add(key, new JsonPrimitive(value));
         }
@@ -580,16 +585,19 @@ public class DimensionConfig
         }
         else
         {
-            obj = JEDJsonUtils.getOrCreateNestedObject(obj, type.getKeyName());
-
             if (this.isJEDProperty(key))
             {
-                obj = JEDJsonUtils.getOrCreateNestedObject(obj, "JED");
+                obj = JEDJsonUtils.getOrCreateNestedObject(obj, "jed");
             }
-            // Not a JED property and not a (direct) vanilla level.dat key, so let's assume it's a GameRule then
-            else if (this.worldInfoKeys.get(key) == null)
+            else
             {
-                obj = JEDJsonUtils.getOrCreateNestedObject(obj, "GameRules");
+                obj = JEDJsonUtils.getOrCreateNestedObject(obj, type.getKeyName());
+
+                // Not a JED property and not a (direct) vanilla level.dat key, so let's assume it's a GameRule then
+                if (this.worldInfoKeys.get(key) == null)
+                {
+                    obj = JEDJsonUtils.getOrCreateNestedObject(obj, "GameRules");
+                }
             }
 
             obj.add(key, new JsonPrimitive(value));
@@ -600,39 +608,58 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if (key.equals("override") || key.equals("unregister") || key.equals("biome") || key.equals("colors") ||
-            key.equals("disableteleportingfrom") || key.equals("disableteleportingto"))
+        if (key.equals("override") ||
+            key.equals("unregister") ||
+            key.equals("biome") ||
+            key.equals("disable_teleporting_from") ||
+            key.equals("disable_teleporting_to") ||
+            key.equals("jed") ||
+            key.equals("worldinfo") ||
+            key.equals("worldinfo_onetime"))
         {
             return obj.remove(key) != null;
         }
-        else if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-                 key.equals("worldprovider") || key.equals("vanilladimensiontype"))
+        else if (key.equals("id") ||
+                 key.equals("name") ||
+                 key.equals("suffix") ||
+                 key.equals("keeploaded") ||
+                 key.equals("worldprovider") ||
+                 key.equals("vanilla_dimensiontype"))
         {
             obj = JEDJsonUtils.getNestedObject(obj, "dimensiontype", false);
             return obj != null ? obj.remove(key) != null : false;
         }
-        else if (key.equals("worldinfo") || key.equals("worldinfo_onetime"))
-        {
-            obj.remove(type.getKeyName());
-            return true;
-        }
         else
         {
-            obj = JEDJsonUtils.getNestedObject(obj, type.getKeyName(), false);
-
-            if (obj != null)
+            if (this.isJEDProperty(key))
             {
-                // vanilla level.dat properties
-                if (obj.has(key))
+                obj = JEDJsonUtils.getNestedObject(obj, "jed", false);
+                boolean success = obj != null ? obj.remove(key) != null : false;
+
+                if (obj != null && obj.size() == 0)
                 {
-                    return obj.remove(key) != null;
+                    this.dimBuilderData.remove("jed");
                 }
-                // JED properties or GameRules
-                else
+
+                return success;
+            }
+            else
+            {
+                obj = JEDJsonUtils.getNestedObject(obj, type.getKeyName(), false);
+
+                if (obj != null)
                 {
-                    String tagName = this.isJEDProperty(key) ? "JED" : "GameRules";
-                    obj = JEDJsonUtils.getNestedObject(obj, tagName, false);
-                    return obj != null ? obj.remove(key) != null : false;
+                    // vanilla level.dat properties
+                    if (obj.has(key))
+                    {
+                        return obj.remove(key) != null;
+                    }
+                    // GameRules
+                    else
+                    {
+                        obj = JEDJsonUtils.getNestedObject(obj, "GameRules", false);
+                        return obj != null && obj.remove(key) != null;
+                    }
                 }
             }
 
@@ -697,15 +724,22 @@ public class DimensionConfig
     {
         JsonObject obj = this.dimBuilderData;
 
-        if ((key.equals("override") || key.equals("unregister") || key.equals("biome") ||
-             key.equals("disableteleportingfrom") || key.equals("disableteleportingto")) &&
+        if ((key.equals("override") ||
+             key.equals("unregister") ||
+             key.equals("biome") ||
+             key.equals("disable_teleporting_from") ||
+             key.equals("disable_teleporting_to")) &&
                 obj.has(key) && obj.get(key).isJsonPrimitive())
         {
             return obj.get(key).getAsJsonPrimitive();
         }
 
-        if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-            key.equals("worldprovider") || key.equals("vanilladimensiontype"))
+        if (key.equals("id") ||
+            key.equals("name") ||
+            key.equals("suffix") ||
+            key.equals("keeploaded") ||
+            key.equals("worldprovider") ||
+            key.equals("vanilla_dimensiontype"))
         {
             if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
             {
@@ -718,7 +752,12 @@ public class DimensionConfig
             }
         }
 
-        if (obj.has(type.getKeyName()) && obj.get(type.getKeyName()).isJsonObject())
+        if (this.isJEDProperty(key))
+        {
+            obj = JEDJsonUtils.getNestedObject(obj, "jed", false);
+            return obj != null && obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
+        }
+        else if (obj.has(type.getKeyName()) && obj.get(type.getKeyName()).isJsonObject())
         {
             obj = obj.get(type.getKeyName()).getAsJsonObject();
 
@@ -727,79 +766,14 @@ public class DimensionConfig
             {
                 return obj.get(key).getAsJsonPrimitive();
             }
-            else
+            else if (obj.has("GameRules") && obj.get("GameRules").isJsonObject())
             {
-                String tagName = this.isJEDProperty(key) ? "JED" : "GameRules";
-
-                if (obj.has(tagName) && obj.get(tagName).isJsonObject())
-                {
-                    obj = obj.get(tagName).getAsJsonObject();
-                    // The requested key exists inside the object
-                    return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
-                }
+                obj = obj.get("GameRules").getAsJsonObject();
+                return obj.has(key) && obj.get(key).isJsonPrimitive() ? obj.get(key).getAsJsonPrimitive() : null;
             }
         }
 
         return null;
-    }
-
-    @Nullable
-    public static Map<ResourceLocation, Integer> getColorMap(@Nullable JsonObject obj, ColorType type)
-    {
-        String key = type.getKeyName();
-
-        if (obj != null && obj.has(key) && obj.get(key).isJsonArray())
-        {
-            Map<ResourceLocation, Integer> colors = new HashMap<ResourceLocation, Integer>();
-            JsonArray arr = obj.getAsJsonArray(key);
-
-            for (JsonElement el : arr)
-            {
-                if (el.isJsonObject())
-                {
-                    JsonObject o = el.getAsJsonObject();
-
-                    if (o.has("color"))
-                    {
-                        String strColor = o.get("color").getAsString();
-
-                        if (o.has("biome"))
-                        {
-                            colors.put(new ResourceLocation(o.get("biome").getAsString()), JEDStringUtils.hexStringToInt(strColor));
-                        }
-                        else if (o.has("biome_regex"))
-                        {
-                            addColorForBiomeRegex(o.get("biome_regex").getAsString(), JEDStringUtils.hexStringToInt(strColor), colors);
-                        }
-                    }
-                }
-            }
-
-            return colors;
-        }
-
-        return null;
-    }
-
-    private static void addColorForBiomeRegex(String regex, int color, Map<ResourceLocation, Integer> colors)
-    {
-        try
-        {
-            Pattern pattern = Pattern.compile(regex);
-
-            // ForgeRegistries.BIOMES.getKeys() will fail in a built mod in 1.10.2, due to Forge bug #3427
-            for (ResourceLocation rl : Biome.REGISTRY.getKeys())
-            {
-                if (pattern.matcher(rl.toString()).matches())
-                {
-                    colors.put(rl, color);
-                }
-            }
-        }
-        catch (PatternSyntaxException e)
-        {
-            JustEnoughDimensions.logger.warn("DimensionConfig.addColorForBiomeRegex(): Invalid regular expression", e);
-        }
     }
 
     private NBTTagCompound parseAndGetCustomWorldInfoValues(int dimension, JsonObject object) throws IllegalStateException
@@ -810,7 +784,7 @@ public class DimensionConfig
         {
             JsonElement element = entry.getValue();
             String key = entry.getKey();
-            NBTBase tag = this.getTagForValue(key, element);
+            NBTBase tag = this.getTagForWorldInfoValue(key, element);
 
             if (tag != null)
             {
@@ -823,23 +797,22 @@ public class DimensionConfig
 
     private boolean isJEDProperty(String key)
     {
-        return this.worldInfoKeysJED.get(key) != null;
+        return this.jedKeys.get(key) != null;
     }
 
     @Nullable
-    private NBTBase getTagForValue(String key, JsonElement element)
+    private NBTBase getTagForWorldInfoValue(String key, JsonElement element)
     {
-        if (key.equals("RandomSeed"))
+        if (key.equals("RandomSeed") && element.isJsonPrimitive())
         {
-            String seedStr = element.getAsString();
             try
             {
-                long seed = Long.parseLong(seedStr);
+                long seed = Long.parseLong(element.getAsString());
                 return new NBTTagLong(seed);
             }
             catch (NumberFormatException e)
             {
-                return new NBTTagLong(seedStr.hashCode());
+                return new NBTTagLong(element.getAsString().hashCode());
             }
         }
         else if (element.isJsonObject())
@@ -851,19 +824,15 @@ public class DimensionConfig
             {
                 for (Map.Entry<String, JsonElement> entry : obj.entrySet())
                 {
-                    tag.setString(entry.getKey(), entry.getValue().getAsString());
-                }
-            }
-            else if (key.equals("JED"))
-            {
-                for (Map.Entry<String, JsonElement> entry : obj.entrySet())
-                {
-                    // Calls this method recursively to get the JED-specific values listed above
-                    NBTBase tagTmp = this.getTagForValue(entry.getKey(), entry.getValue());
+                    JsonElement el = entry.getValue();
 
-                    if (tagTmp != null)
+                    if (el.isJsonPrimitive())
                     {
-                        tag.setTag(entry.getKey(), tagTmp);
+                        tag.setString(entry.getKey(), el.getAsString());
+                    }
+                    else
+                    {
+                        JustEnoughDimensions.logger.warn("Invalid GameRule value: '{} = {}'", entry.getKey(), el);
                     }
                 }
             }
@@ -879,72 +848,104 @@ public class DimensionConfig
             return this.getTagForType(key, type, element);
         }
 
-        // Custom JED properties
-        type = this.worldInfoKeysJED.get(key);
+        JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element);
+        return null;
+    }
+
+    @Nullable
+    private NBTTagCompound getJEDTag(JsonObject obj)
+    {
+        NBTTagCompound tag = new NBTTagCompound();
+
+        for (Map.Entry<String, JsonElement> entry : obj.entrySet())
+        {
+            NBTBase tagTmp = this.getTagForJEDProperty(entry.getKey(), entry.getValue());
+
+            if (tagTmp != null)
+            {
+                tag.setTag(entry.getKey(), tagTmp);
+            }
+        }
+
+        return tag.hasNoTags() ? null : tag;
+    }
+
+    @Nullable
+    private NBTBase getTagForJEDProperty(String key, JsonElement element)
+    {
+        Integer type = this.jedKeys.get(key);
 
         if (type != null)
         {
             return this.getTagForType(key, type, element);
         }
 
-        JustEnoughDimensions.logger.warn("Unrecognized option in worldinfo.values: '{} = {}'", key, element.getAsString());
+        JustEnoughDimensions.logger.warn("Unrecognized key in jed properties: '{} = {}'", key, element);
+
         return null;
     }
 
     @Nullable
     private NBTBase getTagForType(String key, int type, JsonElement element)
     {
-        switch (type)
+        try
         {
-            case Constants.NBT.TAG_BYTE:
-                try
-                {
-                    String str = element.getAsString();
-                    if (str != null && (str.equals("true") || str.equals("false")))
+            switch (type)
+            {
+                case Constants.NBT.TAG_BYTE:
+                    try
                     {
-                        return new NBTTagByte(element.getAsBoolean() ? (byte) 1 : 0);
-                    }
-                }
-                catch (Exception e) {}
-                return new NBTTagByte(element.getAsByte());
-
-            case Constants.NBT.TAG_SHORT:
-                return new NBTTagShort(element.getAsShort());
-
-            case Constants.NBT.TAG_INT:
-                return new NBTTagInt(element.getAsInt());
-
-            case Constants.NBT.TAG_LONG:
-                return new NBTTagLong(element.getAsLong());
-
-            case Constants.NBT.TAG_FLOAT:
-                return new NBTTagFloat(element.getAsFloat());
-
-            case Constants.NBT.TAG_DOUBLE:
-                return new NBTTagDouble(element.getAsDouble());
-
-            case Constants.NBT.TAG_STRING:
-                return new NBTTagString(element.getAsString());
-
-            case Constants.NBT.TAG_LIST:
-                if (element.isJsonArray() && this.worldInfoKeysListTypes.containsKey(key))
-                {
-                    JsonArray arr = element.getAsJsonArray();
-                    NBTTagList list = new NBTTagList();
-                    int listType = this.worldInfoKeysListTypes.get(key);
-
-                    for (JsonElement el : arr)
-                    {
-                        NBTBase tag = this.getTagForType("", listType, el);
-
-                        if (tag != null)
+                        String str = element.getAsString();
+                        if (str != null && (str.equals("true") || str.equals("false")))
                         {
-                            list.appendTag(tag);
+                            return new NBTTagByte(element.getAsBoolean() ? (byte) 1 : 0);
                         }
                     }
+                    catch (Exception e) {}
+                    return new NBTTagByte(element.getAsByte());
 
-                    return list;
-                }
+                case Constants.NBT.TAG_SHORT:
+                    return new NBTTagShort(element.getAsShort());
+
+                case Constants.NBT.TAG_INT:
+                    return new NBTTagInt(element.getAsInt());
+
+                case Constants.NBT.TAG_LONG:
+                    return new NBTTagLong(element.getAsLong());
+
+                case Constants.NBT.TAG_FLOAT:
+                    return new NBTTagFloat(element.getAsFloat());
+
+                case Constants.NBT.TAG_DOUBLE:
+                    return new NBTTagDouble(element.getAsDouble());
+
+                case Constants.NBT.TAG_STRING:
+                    return new NBTTagString(element.getAsString());
+
+                case Constants.NBT.TAG_LIST:
+                    if (element.isJsonArray() && this.jedKeysListTypes.containsKey(key))
+                    {
+                        JsonArray arr = element.getAsJsonArray();
+                        NBTTagList list = new NBTTagList();
+                        int listType = this.jedKeysListTypes.get(key);
+
+                        for (JsonElement el : arr)
+                        {
+                            NBTBase tag = this.getTagForType("", listType, el);
+
+                            if (tag != null)
+                            {
+                                list.appendTag(tag);
+                            }
+                        }
+
+                        return list;
+                    }
+            }
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Invalid/unexpected value: '{}' for key '{}'", key, element);
         }
 
         return null;
@@ -954,9 +955,9 @@ public class DimensionConfig
     {
         int dimTypeId = dimType.has("id") && dimType.get("id").isJsonPrimitive() ? dimType.get("id").getAsInt() : dimension;
 
-        if (dimType.has("vanilladimensiontype") && dimType.get("vanilladimensiontype").isJsonPrimitive())
+        if (dimType.has("vanilla_dimensiontype") && dimType.get("vanilla_dimensiontype").isJsonPrimitive())
         {
-            String typeName = dimType.get("vanilladimensiontype").getAsString();
+            String typeName = dimType.get("vanilla_dimensiontype").getAsString();
             JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", typeName, dimension);
             return new DimensionTypeEntry(dimTypeId, typeName);
         }

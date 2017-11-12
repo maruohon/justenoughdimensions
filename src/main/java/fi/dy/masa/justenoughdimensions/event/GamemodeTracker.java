@@ -20,7 +20,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class GamemodeTracker
 {
@@ -81,7 +81,14 @@ public class GamemodeTracker
     private boolean dimensionHasForcedGamemode(int dimension)
     {
         World world = DimensionManager.getWorld(dimension);
-        return world != null && world.getWorldInfo() instanceof WorldInfoJED && ((WorldInfoJED) world.getWorldInfo()).getForceGamemode();
+
+        if (world != null)
+        {
+            JEDWorldProperties props = JEDWorldProperties.getProperties(world);
+            return props != null && props.getForceGamemode();
+        }
+
+        return false;
     }
 
     private void storeNonForcedGamemode(EntityPlayerMP player)

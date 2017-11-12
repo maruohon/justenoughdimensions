@@ -5,6 +5,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -22,8 +23,9 @@ import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
-import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.world.util.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
@@ -39,6 +41,7 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onConnectionCreated(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
+        JustEnoughDimensions.logInfo("FMLNetworkEvent.ServerConnectionFromClientEvent: Syncing dimension data to client");
         DimensionSyncPacket packet = new DimensionSyncPacket();
         packet.addDimensionData(DimensionConfig.instance().getRegisteredDimensions());
 
@@ -57,7 +60,8 @@ public class JEDEventHandler
         {
             JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
 
-            overrideWorldInfoAndBiomeProviderAndFindSpawn(world, true);
+            overrideWorldInfoAndBiomeProvider(world);
+            WorldUtils.findAndSetWorldSpawnIfApplicable(world);
 
             if (Configs.enableSeparateWorldBorders)
             {
@@ -73,7 +77,7 @@ public class JEDEventHandler
         World world = event.getWorld();
         JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - DIM: {}", world.provider.getDimension());
 
-        overrideWorldInfoAndBiomeProviderAndFindSpawn(world, false);
+        overrideWorldInfoAndBiomeProvider(world);
 
         // Find a proper spawn point for the overworld that isn't inside ground...
         // For other dimensions than the regular overworld, this is done after
@@ -81,7 +85,7 @@ public class JEDEventHandler
         // created dimension, see overrideBiomeProviderAndFindSpawn().
         if (world.provider.getDimension() == 0)
         {
-            WorldUtils.findAndSetWorldSpawn(world, false);
+            WorldUtils.findAndSetWorldSpawn(world);
 
             if (event.getSettings().isBonusChestEnabled())
             {
@@ -93,28 +97,25 @@ public class JEDEventHandler
         }
     }
 
-    private static void overrideWorldInfoAndBiomeProviderAndFindSpawn(World world, boolean tryFindSpawn)
+    private static void overrideWorldInfoAndBiomeProvider(World world)
     {
         if (Configs.enableSeparateWorldInfo)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world);
         }
 
+        JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(world);
+
         if (Configs.enableOverrideBiomeProvider)
         {
             WorldUtils.overrideBiomeProvider(world);
-        }
-
-        if (Configs.enableSeparateWorldInfo && tryFindSpawn)
-        {
-            WorldUtils.findAndSetWorldSpawn(world);
         }
     }
 
     @SubscribeEvent
     public void onWorldSave(WorldEvent.Save event)
     {
-        WorldInfoUtils.saveCustomWorldInfoToFile(event.getWorld());
+        WorldFileUtils.saveCustomWorldInfoToFile(event.getWorld());
 
         if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
         {
@@ -126,27 +127,21 @@ public class JEDEventHandler
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerLoggedInEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
-        WorldBorderUtils.sendWorldBorder(event.player);
-        WorldUtils.syncWorldProviderProperties(event.player);
-        WorldUtils.setupRespawnDimension(event.player);
+        this.syncAndSetPlayerData(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
-        WorldBorderUtils.sendWorldBorder(event.player);
-        WorldUtils.syncWorldProviderProperties(event.player);
-        WorldUtils.setupRespawnDimension(event.player);
+        this.syncAndSetPlayerData(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event)
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerChangedDimensionEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
-        WorldBorderUtils.sendWorldBorder(event.player);
-        WorldUtils.syncWorldProviderProperties(event.player);
-        WorldUtils.setupRespawnDimension(event.player);
+        this.syncAndSetPlayerData(event.player);
 
         if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
         {
@@ -154,19 +149,30 @@ public class JEDEventHandler
         }
     }
 
+    private void syncAndSetPlayerData(EntityPlayer player)
+    {
+        WorldBorderUtils.sendWorldBorder(player);
+        WorldUtils.syncWorldProviderProperties(player);
+        WorldUtils.setupRespawnDimension(player);
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onEntityTravelToDimensionEvent(EntityTravelToDimensionEvent event)
     {
         if (DimensionManager.isDimensionRegistered(event.getDimension()) == false)
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Dimension {} is not registered, canceling the TP", event.getDimension());
             event.setCanceled(true);
             return;
         }
 
-        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(event.getEntity().getEntityWorld().provider.getDimension());
+        final int dimFrom = event.getEntity().getEntityWorld().provider.getDimension();
+        DimensionConfigEntry entryFrom = DimensionConfig.instance().getDimensionConfigFor(dimFrom);
 
         if (entryFrom != null && entryFrom.getDisableTeleportingFrom())
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Teleporting from DIM {} has been disabled " +
+                                         "in the dimension config, canceling the TP", dimFrom);
             event.setCanceled(true);
             return;
         }
@@ -175,6 +181,8 @@ public class JEDEventHandler
 
         if (entryTo != null && entryTo.getDisableTeleportingTo())
         {
+            JustEnoughDimensions.logInfo("EntityTravelToDimensionEvent: Teleporting to DIM {} has been disabled " +
+                                         "in the dimension config, canceling the TP", event.getDimension());
             event.setCanceled(true);
             return;
         }
@@ -195,7 +203,7 @@ public class JEDEventHandler
                 player.dimension = Configs.initialSpawnDimensionId;
                 BlockPos pos;
 
-                if (world.getWorldInfo() instanceof WorldInfoJED)
+                if ((world.getWorldInfo() instanceof DerivedWorldInfo) == false)
                 {
                     pos = world.getSpawnPoint();
                 }
