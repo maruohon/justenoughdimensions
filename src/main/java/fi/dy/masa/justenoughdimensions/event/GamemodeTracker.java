@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
-import java.util.ArrayList;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
@@ -15,7 +13,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
-import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -25,15 +22,10 @@ import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 public class GamemodeTracker
 {
     private static GamemodeTracker instance;
+    private static GamemodeInventory inventory;
+    
     private Map<UUID, GameType> gameModes = new HashMap<UUID, GameType>();
     private boolean dirty = false;
-
-    // New inventory groups, with support for modded custom inventories
-    // UUID: player identity
-    // GameType: creative / survival / ..
-    // String: vanilla / baubles / ..
-    // List<ItemStack>: the actual inventory
-    private Map<UUID, Map<GameType, Map<String, List<ItemStack>>>> modInventoryGroups = new HashMap<>();
 
     public static GamemodeTracker getInstance()
     {
@@ -41,7 +33,10 @@ public class GamemodeTracker
         {
             instance = new GamemodeTracker();
         }
-
+        if (inventory == null)
+        {
+        	inventory = new GamemodeInventory();
+        }
         return instance;
     }
 
@@ -115,46 +110,13 @@ public class GamemodeTracker
         // Not on login, keep using inventory from the loaded player.dat (it seems that gamemode must be corrected though)
         if (!type.equals(oldtype) && !login)
         {
-            this.swapPlayerInventory(player, oldtype, type);
+        	inventory.swapPlayerInventory(player, oldtype, type);
         }
-    }
-
-    private void swapPlayerInventory(EntityPlayerMP player, GameType oldtype, GameType type)
-    {
-    	// Get the different inventories for the player
-    	Map<GameType, Map<String, List<ItemStack>>> playerInventories = modInventoryGroups.get(player.getUniqueID());
-        if (playerInventories == null)
-        	playerInventories = new HashMap<>();
-        
-    	// Get the inventory for the new gametype
-    	Map<String, List<ItemStack>> newInventory = playerInventories.get(type);
-        if (newInventory == null)
-            newInventory = new HashMap<>();
-
-        // Swap player inventory and store the old one, optionally clear the inventory-group that was assigned to the player
-        newInventory.put("vanilla", swapInventory(player, newInventory.getOrDefault("vanilla", new ArrayList<>())));
-        playerInventories.put(oldtype, newInventory);
-        playerInventories.put(type, null);
-        modInventoryGroups.put(player.getUniqueID(), playerInventories);
-    }
-    
-    private List<ItemStack> swapInventory(EntityPlayerMP player, List<ItemStack> newItems)
-    {
-        List<ItemStack> oldItems = new ArrayList<>();
-        for (int slotIdx = 0; slotIdx < player.inventory.getSizeInventory(); slotIdx++)
-        {
-            oldItems.add(player.inventory.getStackInSlot(slotIdx));
-            if (newItems != null && slotIdx < newItems.size())
-                player.inventory.setInventorySlotContents(slotIdx, newItems.get(slotIdx));
-            else
-                player.inventory.setInventorySlotContents(slotIdx, ItemStack.EMPTY);
-        }
-        return oldItems;
     }
     
     public void readFromDisk()
     {
-        // Clear the data structures when reading the data for a world/save, so that data
+    	// Clear the data structures when reading the data for a world/save, so that data
         // from another world won't carry over to a world/save that doesn't have the file yet.
         this.gameModes.clear();
 
@@ -182,7 +144,7 @@ public class GamemodeTracker
 
     public void writeToDisk()
     {
-        if (this.dirty == false)
+    	if (this.dirty == false)
         {
             return;
         }
