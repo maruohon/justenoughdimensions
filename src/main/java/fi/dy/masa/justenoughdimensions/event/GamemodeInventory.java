@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -18,33 +17,26 @@ public class GamemodeInventory
 {
 	public void swapPlayerInventory(EntityPlayerMP player, GameType oldtype, GameType type)
 	{
-	    // Get the inventory for the new gametype
-		ItemStack[] newInventory = readFromDisk(player, type);
-	    // Swap player inventory, get the old one
-		ItemStack[] oldInventory = swapInventory(player, newInventory);
-	    // Store the old inventory, clear the inventory assigned to the player
-	    writeToDisk(player, oldtype, oldInventory, type);
-	}
-	
-	private ItemStack[] swapInventory(EntityPlayerMP player, ItemStack[] newItems)
-	{
-		ItemStack[] oldItems = new ItemStack[player.inventory.getSizeInventory()];
-	    for (int slotIdx = 0; slotIdx < player.inventory.getSizeInventory(); slotIdx++)
-	    {
-	        oldItems[slotIdx] = player.inventory.getStackInSlot(slotIdx);
-	        player.inventory.setInventorySlotContents(slotIdx, newItems[slotIdx]);
-	    }
-	    return oldItems;
-	}
-	
-	private ItemStack[] readFromDisk(EntityPlayerMP player, GameType type)
-    {
-		ItemStack[] items = new ItemStack[player.inventory.getSizeInventory()];
-		for (int slotIdx = 0; slotIdx < player.inventory.getSizeInventory(); slotIdx++)
-		{
-			items[slotIdx] = ItemStack.EMPTY;
-		}
+		// read player inventory file
+		NBTTagCompound nbt = readFromDisk(player);
 		
+		// copy main inventory to file for old gamemode
+		NBTTagList main_old = new NBTTagList();
+		player.inventory.writeToNBT(main_old);
+		nbt.setTag(oldtype.toString(), main_old);
+		
+		// move main inventory to player for new gamemode
+		NBTTagList main_new = nbt.getTagList(type.toString(), 10);
+		player.inventory.readFromNBT(main_new);
+		nbt.setTag(type.toString(), new NBTTagList());
+		
+		// write player inventory file
+		writeToDisk(player, nbt);
+	}
+	
+	private NBTTagCompound readFromDisk(EntityPlayerMP player)
+    {
+		NBTTagCompound nbt = new NBTTagCompound();
 		try
         {
             File saveDir = DimensionManager.getCurrentSaveRootDirectory();
@@ -57,15 +49,8 @@ public class GamemodeInventory
                 {
                 	// read player inventory file
                 	FileInputStream in = new FileInputStream(file);
-                	NBTTagCompound nbt = CompressedStreamTools.readCompressed(in);
+                	nbt = CompressedStreamTools.readCompressed(in);
                 	in.close();
-                	
-                	// get items
-                	NBTTagList itemList = nbt.getTagList(type.toString(), 10);
-                    if (itemList != null)
-                    {
-                    	readFromNBTTag(items, itemList);
-                    }
                 }
             }
         }
@@ -73,24 +58,10 @@ public class GamemodeInventory
         {
             JustEnoughDimensions.logger.warn("Failed to read GamemodeInventory for player " + player.getName());
         }
-		return items;
-    }
-    
-    public void readFromNBTTag(ItemStack[] items, NBTTagList tagList)
-    {
-        for (int i = 0; i < tagList.tagCount(); i++)
-        {
-            NBTTagCompound tag = tagList.getCompoundTagAt(i);
-            int b = tag.getShort("Slot");
-            items[b] = new ItemStack(tag);
-            //if (tag.hasKey("Quantity"))
-            //{
-            //    items[b].setCount(((NBTPrimitive) tag.getTag("Quantity")).getInt());
-            //}
-        }
+		return nbt;
     }
 	
-	private void writeToDisk(EntityPlayerMP player, GameType type, ItemStack[] newItems, GameType loadedtype)
+	private void writeToDisk(EntityPlayerMP player, NBTTagCompound nbt)
     {
 		try
         {
@@ -99,12 +70,6 @@ public class GamemodeInventory
             if (saveDir != null)
             {
                 File file = new File(new File(saveDir, Reference.MOD_ID), player.getUniqueID() + ".dat");
-
-                // store items
-                NBTTagCompound nbt = new NBTTagCompound();
-        		NBTTagList invsave = writeToNBTTag(newItems);
-                nbt.setTag(type.toString(), invsave);
-                nbt.setTag(loadedtype.toString(), new NBTTagList());
             	
                 // write player inventory file
                 FileOutputStream out = new FileOutputStream(file);
@@ -116,19 +81,5 @@ public class GamemodeInventory
         {
         	JustEnoughDimensions.logger.warn("Failed to write GamemodeInventory for player " + player.getName());
         }
-    }
-	
-	private NBTTagList writeToNBTTag(ItemStack[] items)
-    {
-        NBTTagList tagList = new NBTTagList();
-        for (int i = 0; i < items.length; i++)
-        {
-            NBTTagCompound tag = new NBTTagCompound();
-            tag.setShort("Slot", (short) i);
-            items[i].writeToNBT(tag);
-            //tag.setByte("Quantity", (byte)items[i].getCount());
-            tagList.appendTag(tag);
-        }
-        return tagList;
     }
 }
