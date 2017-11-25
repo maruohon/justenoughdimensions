@@ -12,9 +12,22 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.GameType;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.common.Loader;
 
 public class GamemodeInventory
 {
+	private final String NBTTAG = "main.";
+	
+	private GamemodeInventoryBaubles baubles;
+	
+	public GamemodeInventory()
+	{
+		if (Loader.isModLoaded("baubles"))
+		{
+			baubles = new GamemodeInventoryBaubles();
+		}
+	}
+	
 	public void swapPlayerInventory(EntityPlayerMP player, GameType oldtype, GameType type)
 	{
 		// read player inventory file
@@ -23,12 +36,18 @@ public class GamemodeInventory
 		// copy main inventory to file for old gamemode
 		NBTTagList main_old = new NBTTagList();
 		player.inventory.writeToNBT(main_old);
-		nbt.setTag(oldtype.toString(), main_old);
+		nbt.setTag(NBTTAG + oldtype.toString(), main_old);
 		
 		// move main inventory to player for new gamemode
-		NBTTagList main_new = nbt.getTagList(type.toString(), 10);
+		NBTTagList main_new = nbt.getTagList(NBTTAG + type.toString(), 10);
 		player.inventory.readFromNBT(main_new);
-		nbt.setTag(type.toString(), new NBTTagList());
+		nbt.setTag(NBTTAG + type.toString(), new NBTTagList());
+		
+		// handle baubles
+		if (baubles != null)
+		{
+			baubles.swapPlayerInventory(player, oldtype, type, nbt);
+		}
 		
 		// write player inventory file
 		writeToDisk(player, nbt);
