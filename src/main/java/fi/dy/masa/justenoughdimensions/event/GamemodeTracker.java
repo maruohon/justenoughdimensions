@@ -16,6 +16,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
@@ -33,7 +34,7 @@ public class GamemodeTracker
         {
             instance = new GamemodeTracker();
         }
-        if (inventory == null)
+        if (Configs.enableForcedGamemodeInventories && (inventory == null))
         {
         	inventory = new GamemodeInventory();
         }
@@ -106,11 +107,14 @@ public class GamemodeTracker
     	player.setGameType(type);
         player.sendMessage(new TextComponentTranslation("jed.info.gamemode.changed", type.toString()));
 
-        // Swap inventory on gametype change
-        // Not on login, keep using inventory from the loaded player.dat (it seems that gamemode must be corrected though)
-        if (!type.equals(oldtype) && !login)
+        if (Configs.enableForcedGamemodeInventories)
         {
-        	inventory.swapPlayerInventory(player, oldtype, type);
+	        // Swap inventory on gametype change
+	        // Not on login, keep using inventory from the loaded player.dat (it seems that gamemode must be corrected though)
+	        if (!type.equals(oldtype) && !login)
+	        {
+	        	inventory.swapPlayerInventory(player, oldtype, type);
+	        }
         }
     }
     

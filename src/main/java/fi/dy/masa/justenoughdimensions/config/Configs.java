@@ -16,6 +16,7 @@ public class Configs
     public static final String CATEGORY_GENERIC = "Generic";
 
     public static boolean enableForcedGamemodes;
+    public static boolean enableForcedGamemodeInventories;
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
@@ -65,6 +66,10 @@ public class Configs
         prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");
         enableForcedGamemodes = prop.getBoolean();
 
+        prop = conf.get(CATEGORY_GENERIC, "enableForcedGamemodeInventories", false).setRequiresMcRestart(false);
+        prop.setComment("Enables switching players' inventory when they enter a dimension with a different gamemode");
+        enableForcedGamemodeInventories = prop.getBoolean();
+        
         prop = conf.get(CATEGORY_GENERIC, "enableInitialSpawnDimensionOverride", false).setRequiresMcRestart(false);
         prop.setComment("Enables overriding the initial spawning dimension to something other than dim 0 (overworld).");
         enableInitialSpawnDimensionOverride = prop.getBoolean();
