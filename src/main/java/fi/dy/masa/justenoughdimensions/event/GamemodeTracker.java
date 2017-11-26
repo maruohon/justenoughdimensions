@@ -16,12 +16,15 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class GamemodeTracker
 {
     private static GamemodeTracker instance;
+    private static GamemodeInventory inventory;
+    
     private Map<UUID, GameType> gameModes = new HashMap<UUID, GameType>();
     private boolean dirty = false;
 
@@ -31,7 +34,10 @@ public class GamemodeTracker
         {
             instance = new GamemodeTracker();
         }
-
+        if (Configs.enableForcedGamemodeInventories && (inventory == null))
+        {
+        	inventory = new GamemodeInventory();
+        }
         return instance;
     }
 
@@ -58,13 +64,13 @@ public class GamemodeTracker
             }
 
             // The player is in the destination world at this point, so we get the gamemode from there
-            this.setPlayerGamemode(player, player.getEntityWorld().getWorldInfo().getGameType());
+            this.setPlayerGamemode(player, player.getEntityWorld().getWorldInfo().getGameType(), (dimFrom == Integer.MIN_VALUE));
         }
         // When switching to a non-forced-gamemode dimension from a forced-gamemode dimension,
         // ie. we have a stored gamemode for the player.
         else if (this.gameModes.containsKey(player.getUniqueID()))
         {
-            this.restoreStoredGamemode(player);
+            this.restoreStoredGamemode(player, (dimFrom == Integer.MIN_VALUE));
         }
     }
 
@@ -87,22 +93,34 @@ public class GamemodeTracker
         this.dirty = true;
     }
 
-    private void restoreStoredGamemode(EntityPlayerMP player)
+    private void restoreStoredGamemode(EntityPlayerMP player, Boolean login)
     {
-        this.setPlayerGamemode(player, this.gameModes.get(player.getUniqueID()));
+        this.setPlayerGamemode(player, this.gameModes.get(player.getUniqueID()), login);
         this.gameModes.remove(player.getUniqueID());
         this.dirty = true;
     }
 
-    private void setPlayerGamemode(EntityPlayerMP player, GameType type)
+    private void setPlayerGamemode(EntityPlayerMP player, GameType type, Boolean login)
     {
-        player.setGameType(type);
+    	GameType oldtype = player.interactionManager.getGameType();
+    	
+    	player.setGameType(type);
         player.sendMessage(new TextComponentTranslation("jed.info.gamemode.changed", type.toString()));
-    }
 
+        if (Configs.enableForcedGamemodeInventories)
+        {
+	        // Swap inventory on gametype change
+	        // Not on login, keep using inventory from the loaded player.dat (it seems that gamemode must be corrected though)
+	        if (!type.equals(oldtype) && !login)
+	        {
+	        	inventory.swapPlayerInventory(player, oldtype, type);
+	        }
+        }
+    }
+    
     public void readFromDisk()
     {
-        // Clear the data structures when reading the data for a world/save, so that data
+    	// Clear the data structures when reading the data for a world/save, so that data
         // from another world won't carry over to a world/save that doesn't have the file yet.
         this.gameModes.clear();
 
@@ -130,7 +148,7 @@ public class GamemodeTracker
 
     public void writeToDisk()
     {
-        if (this.dirty == false)
+    	if (this.dirty == false)
         {
             return;
         }
