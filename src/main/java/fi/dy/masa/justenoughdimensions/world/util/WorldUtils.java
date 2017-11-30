@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -29,6 +30,7 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
+import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.util.Constants;
@@ -150,17 +152,50 @@ public class WorldUtils
 
     public static boolean setRenderersOnNonJEDWorld(World world, NBTTagCompound tag)
     {
-        int skyRenderType = 0;
-        int skyDisableFlags = 0;
-
-        if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { skyRenderType = tag.getByte("SkyRenderType"); }
-        if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { skyDisableFlags = tag.getByte("SkyDisableFlags"); }
+        int skyRenderType = tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE) ? tag.getByte("SkyRenderType") : 0;
+        int skyDisableFlags = tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE) ? tag.getByte("SkyDisableFlags") : 0;
 
         if (skyRenderType != 0)
         {
             world.provider.setSkyRenderer(new SkyRenderer(skyRenderType, skyDisableFlags));
             return true;
         }
+        else if (tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+        {
+            return createSkyRendererFromName(world.provider, tag.getString("SkyRenderer"));
+        }
+
+        return false;
+    }
+
+    @Nullable
+    public static boolean createSkyRendererFromName(WorldProvider provider, String name)
+    {
+        try
+        {
+            @SuppressWarnings("unchecked")
+            Class<? extends IRenderHandler> clazz = (Class<? extends IRenderHandler>) Class.forName(name);
+
+            if (clazz != null)
+            {
+                IRenderHandler renderer = clazz.newInstance();
+
+                if (renderer != null)
+                {
+                    JustEnoughDimensions.logInfo("WorldUtils.setRenderersOnNonJEDWorld(): Setting a custom sky renderer '{}' for dimension {}",
+                            renderer.getClass().getName(), provider.getDimension());
+                    provider.setSkyRenderer(renderer);
+
+                    return true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Failed to create a sky renderer from class name '{}'", name, e);
+        }
+
+        provider.setSkyRenderer(null);
 
         return false;
     }

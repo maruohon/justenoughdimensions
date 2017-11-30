@@ -17,6 +17,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
+import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
@@ -81,6 +82,10 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             if (this.skyRenderType != 0)
             {
                 this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
+            }
+            else if (tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+            {
+                WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
             }
             else
             {

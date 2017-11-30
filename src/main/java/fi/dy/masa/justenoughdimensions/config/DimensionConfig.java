@@ -135,6 +135,7 @@ public class DimensionConfig
         this.jedKeys.put("RespawnDimension",    Constants.NBT.TAG_INT);
         this.jedKeys.put("SkyColor",            Constants.NBT.TAG_STRING);
         this.jedKeys.put("SkyDisableFlags",     Constants.NBT.TAG_BYTE);
+        this.jedKeys.put("SkyRenderer",         Constants.NBT.TAG_STRING);
         this.jedKeys.put("SkyRenderType",       Constants.NBT.TAG_BYTE);
 
         this.jedKeysListTypes.put("Colors",             Constants.NBT.TAG_COMPOUND);

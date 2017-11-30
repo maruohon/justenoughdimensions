@@ -241,8 +241,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for '{}'", providerClassName);
-                e.printStackTrace();
+                JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for name '{}'", providerClassName, e);
                 return null;
             }
         }
