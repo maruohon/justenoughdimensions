@@ -232,16 +232,19 @@ public class WorldUtils
         }
     }
 
-    public static void reCreateChunkProvider(World world)
+    public static void reCreateChunkGenerator(World world, boolean generatorChangedForOverworld)
     {
         if (world instanceof WorldServer && world.getChunkProvider() instanceof ChunkProviderServer)
         {
-            int dimension = world.provider.getDimension();
+            final int dimension = world.provider.getDimension();
             WorldInfo info = world.getWorldInfo();
             WorldInfo infoOverWorld = world.getMinecraftServer().getWorld(0).getWorldInfo();
 
-            if (infoOverWorld.getTerrainType() == info.getTerrainType() &&
+            if ((dimension != 0 &&
+                infoOverWorld.getTerrainType() == info.getTerrainType() &&
                 infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()))
+                ||
+                (dimension == 0 && generatorChangedForOverworld == false))
             {
                 JustEnoughDimensions.logInfo("No need to re-create the ChunkProvider in dimension {}", dimension);
                 return;
