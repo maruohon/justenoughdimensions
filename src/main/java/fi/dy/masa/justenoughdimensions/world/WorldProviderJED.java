@@ -151,13 +151,13 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }
 
-        if (this.skyRenderType != 0)
-        {
-            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
-        }
-        else if (tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+        if (tag != null && tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
         {
             WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
+        }
+        else if (this.skyRenderType != 0)
+        {
+            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
         }
         else
         {

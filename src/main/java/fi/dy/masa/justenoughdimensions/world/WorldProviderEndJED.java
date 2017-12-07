@@ -79,19 +79,6 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             if (tag.hasKey("SkyRenderType",   Constants.NBT.TAG_BYTE)) { this.skyRenderType   = tag.getByte("SkyRenderType");   }
             if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
 
-            if (this.skyRenderType != 0)
-            {
-                this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
-            }
-            else if (tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
-            {
-                WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
-            }
-            else
-            {
-                this.setSkyRenderer(null);
-            }
-
             if (tag.hasKey("LightBrightness", Constants.NBT.TAG_LIST))
             {
                 NBTTagList list = tag.getTagList("LightBrightness", Constants.NBT.TAG_FLOAT);
@@ -106,6 +93,19 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
                     }
                 }
             }
+        }
+
+        if (tag != null && tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+        {
+            WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
+        }
+        else if (this.skyRenderType != 0)
+        {
+            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
+        }
+        else
+        {
+            this.setSkyRenderer(null);
         }
     }
 
