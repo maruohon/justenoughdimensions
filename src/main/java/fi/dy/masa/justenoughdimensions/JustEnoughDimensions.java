@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.EnumMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.chunk.storage.AnvilSaveConverter;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
@@ -25,6 +26,9 @@ import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.IProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
 
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION, certificateFingerprint = Reference.FINGERPRINT,
@@ -126,5 +130,18 @@ public class JustEnoughDimensions
             logger.warn("*****   that it may contain malware or other unwanted things!                           *****");
             logger.warn("*********************************************************************************************");
         }
+    }
+
+    // Register some default DimensionType entries early on, to try to avoid some issues
+    // with mods that use a switch() with the DimensionType values (Optifine...).
+    // Note that these still have some potential issues, the suffix being one.
+    static
+    {
+        DimensionType.register("JED Surface",               "_dim7891", 7891, WorldProviderSurfaceJED.class, false);
+        DimensionType.register("JED Hell",                  "_dim7892", 7892, WorldProviderHellJED.class, false);
+        DimensionType.register("JED End",                   "_dim7893", 7893, WorldProviderEndJED.class, false);
+        DimensionType.register("JED Surface (keep loaded)", "_dim7894", 7894, WorldProviderSurfaceJED.class, true);
+        DimensionType.register("JED Hell (keep loaded)",    "_dim7895", 7895, WorldProviderHellJED.class, true);
+        DimensionType.register("JED End (keep loaded)",     "_dim7896", 7896, WorldProviderEndJED.class, true);
     }
 }

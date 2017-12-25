@@ -94,28 +94,28 @@ public class DimensionSyncPacket
         return String.join(", ", ids);
     }
 
-    private static void registerDimension(int id, DimensionConfigEntry entry)
+    private static void registerDimension(int dimension, DimensionConfigEntry entry)
     {
         if (entry.getUnregister() || entry.hasDimensionTypeEntry() == false)
         {
             return;
         }
 
-        if (DimensionManager.isDimensionRegistered(id))
+        if (DimensionManager.isDimensionRegistered(dimension))
         {
-            DimensionType type = DimensionManager.getProviderType(id);
+            DimensionType type = DimensionManager.getProviderType(dimension);
 
             if (type.createDimension().getClass() != entry.getDimensionTypeEntry().getProviderClass())
             {
-                JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Dimension {} already registered, unregistering the old one", id);
-                DimensionManager.unregisterDimension(id);
+                JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Dimension {} already registered, unregistering the old one", dimension);
+                DimensionManager.unregisterDimension(dimension);
             }
         }
 
-        if (DimensionManager.isDimensionRegistered(id) == false)
+        if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
-            JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", id);
-            DimensionManager.registerDimension(id, entry.getDimensionTypeEntry().registerDimensionType());
+            JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", dimension);
+            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
         }
     }
 }

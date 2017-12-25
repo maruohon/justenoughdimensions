@@ -306,7 +306,7 @@ public class DimensionConfig
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
-            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().registerDimensionType());
+            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
             this.registeredDimensions.add(dimension);
             return true;
         }
@@ -316,7 +316,7 @@ public class DimensionConfig
             {
                 JustEnoughDimensions.logInfo("Overriding dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
-                DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().registerDimensionType());
+                DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
                 this.registeredDimensions.add(dimension);
                 return true;
             }
@@ -393,7 +393,7 @@ public class DimensionConfig
         }
 
         DimensionConfigEntry entry = new DimensionConfigEntry(dimension);
-        entry.setDimensionTypeEntry(new DimensionTypeEntry(dimension, name, suffix, keepLoaded, providerClass));
+        entry.setDimensionTypeEntry(new DimensionTypeEntry(dimension, dimension, name, suffix, keepLoaded, providerClass));
         entry.setOverride(override);
 
         return this.registerNewDimension(dimension, entry);
@@ -546,7 +546,7 @@ public class DimensionConfig
 
     private DimensionTypeEntry createDefaultDimensionTypeEntry(int dimension)
     {
-        DimensionTypeEntry dte = new DimensionTypeEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
+        DimensionTypeEntry dte = new DimensionTypeEntry(dimension, dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
         JustEnoughDimensions.logInfo("Created a default DimensionTypeEntry for dimension {}: {}", dimension, dte.getDescription());
         return dte;
     }
@@ -960,7 +960,7 @@ public class DimensionConfig
         {
             String typeName = dimType.get("vanilla_dimensiontype").getAsString();
             JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", typeName, dimension);
-            return new DimensionTypeEntry(dimTypeId, typeName);
+            return new DimensionTypeEntry(dimension, dimTypeId, typeName);
         }
 
         String name = (dimType.has("name") && dimType.get("name").isJsonPrimitive()) ?
@@ -971,6 +971,8 @@ public class DimensionConfig
                 dimType.get("suffix").getAsString() : "_dim" + dimension;
 
         boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
+        boolean forceRegister = dimType.has("force_register") && dimType.get("force_register").isJsonPrimitive() && dimType.get("force_register").getAsBoolean();
+        boolean allowDifferentId = dimType.has("allow_different_id") == false || dimType.get("allow_different_id").isJsonPrimitive() == false || dimType.get("allow_different_id").getAsBoolean();
 
         Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
         String providerName = "";
@@ -1007,9 +1009,10 @@ public class DimensionConfig
                     providerName, DimensionTypeEntry.getNameForWorldProvider(providerClass));
         }
 
-        JustEnoughDimensions.logInfo("Creating a customized DimensionType for dimension {}", dimension);
+        DimensionTypeEntry entry = new DimensionTypeEntry(dimension, dimTypeId, name, suffix, keepLoaded, providerClass);
+        entry.setForceRegister(forceRegister).setAllowDifferentId(allowDifferentId);
 
-        return new DimensionTypeEntry(dimension, name, suffix, keepLoaded, providerClass);
+        return entry;
     }
 
     public enum WorldInfoType
