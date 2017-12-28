@@ -97,10 +97,12 @@ public class WorldUtils
             }
 
             ChunkProviderServer chunkProviderServer = world.getChunkProvider();
+            int loadedCountBefore = chunkProviderServer.getLoadedChunkCount();
 
-            if (tryUnloadChunks && chunkProviderServer.getLoadedChunkCount() > 0)
+            if (tryUnloadChunks && loadedCountBefore > 0)
             {
-                JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Trying to unload chunks for dimension {}", dim);
+                JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Trying to unload chunks for " +
+                                             "dimension {}, currently loaded chunks: {}", dim, loadedCountBefore);
                 boolean disable = world.disableLevelSaving;
                 world.disableLevelSaving = false;
 
@@ -112,7 +114,7 @@ public class WorldUtils
                 catch (MinecraftException e)
                 {
                     JustEnoughDimensions.logger.warn("WorldUtils.unloadEmptyDimensions(): Exception while "+
-                                                     "trying to save chunks for dimension {}", world.provider.getDimension(), e);
+                                                     "trying to save chunks for dimension {}", dim, e);
                 }
 
                 // This would flush the chunks to disk from the AnvilChunkLoader. Probably not what we want to do.
@@ -123,8 +125,12 @@ public class WorldUtils
                 // This will unload the dimension, if it unloaded at least one chunk, and it has no loaded chunks anymore
                 chunkProviderServer.tick();
 
-                if (chunkProviderServer.getLoadedChunkCount() == 0)
+                int loadedCountAfter = chunkProviderServer.getLoadedChunkCount();
+                JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Unloaded {} chunks in dimension {}", loadedCountBefore - loadedCountAfter, dim);
+
+                if (loadedCountAfter == 0)
                 {
+                    JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Likely unloaded dimension {}", dim);
                     count++;
                 }
             }
@@ -132,6 +138,7 @@ public class WorldUtils
                 world.provider.getDimensionType().shouldLoadSpawn() == false &&
                 ForgeChunkManager.getPersistentChunksFor(world).size() == 0)
             {
+                JustEnoughDimensions.logInfo("WorldUtils.unloadEmptyDimensions(): Unloading dimension {}", dim);
                 DimensionManager.unloadWorld(world.provider.getDimension());
                 count++;
             }
