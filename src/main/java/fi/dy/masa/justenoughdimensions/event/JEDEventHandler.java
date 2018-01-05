@@ -31,13 +31,6 @@ import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class JEDEventHandler
 {
-    private static final JEDEventHandler INSTANCE = new JEDEventHandler();
-
-    public static JEDEventHandler instance()
-    {
-        return INSTANCE;
-    }
-
     @SubscribeEvent
     public void onConnectionCreated(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {

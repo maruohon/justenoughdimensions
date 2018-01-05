@@ -11,14 +11,11 @@ import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.event.terraingen.BiomeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.ColorType;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 
-@Mod.EventBusSubscriber(Side.CLIENT)
 public class JEDEventHandlerClient
 {
     private static final Map<ResourceLocation, Integer> FOLIAGE_COLORS = new HashMap<ResourceLocation, Integer>();
@@ -29,21 +26,30 @@ public class JEDEventHandlerClient
     private static boolean hasWaterColors;
 
     @SubscribeEvent
-    public static void onGetFoliageColor(BiomeEvent.GetFoliageColor event)
+    public void onGetFoliageColor(BiomeEvent.GetFoliageColor event)
     {
-        event.setNewColor(getColor(ColorType.FOLIAGE, event.getBiome(), event.getOriginalColor()));
+        if (hasFoliageColors)
+        {
+            event.setNewColor(getColor(ColorType.FOLIAGE, event.getBiome(), event.getOriginalColor()));
+        }
     }
 
     @SubscribeEvent
-    public static void onGetGrassColor(BiomeEvent.GetGrassColor event)
+    public void onGetGrassColor(BiomeEvent.GetGrassColor event)
     {
-        event.setNewColor(getColor(ColorType.GRASS, event.getBiome(), event.getOriginalColor()));
+        if (hasGrassColors)
+        {
+            event.setNewColor(getColor(ColorType.GRASS, event.getBiome(), event.getOriginalColor()));
+        }
     }
 
     @SubscribeEvent
-    public static void onGetWaterColor(BiomeEvent.GetWaterColor event)
+    public void onGetWaterColor(BiomeEvent.GetWaterColor event)
     {
-        event.setNewColor(getColor(ColorType.WATER, event.getBiome(), event.getOriginalColor()));
+        if (hasWaterColors)
+        {
+            event.setNewColor(getColor(ColorType.WATER, event.getBiome(), event.getOriginalColor()));
+        }
     }
 
     public static void setColors(ColorType type, @Nullable Map<ResourceLocation, Integer> colorsIn)
@@ -61,13 +67,8 @@ public class JEDEventHandlerClient
 
     private static int getColor(ColorType type, Biome biome, int defaultColor)
     {
-        if (getFlag(type))
-        {
-            Integer color = getColorMap(type).get(biome.getRegistryName());
-            return color != null ? color.intValue() : defaultColor;
-        }
-
-        return defaultColor;
+        Integer color = getColorMap(type).get(biome.getRegistryName());
+        return color != null ? color.intValue() : defaultColor;
     }
 
     @Nullable
@@ -137,17 +138,6 @@ public class JEDEventHandlerClient
             case GRASS:     return GRASS_COLORS;
             case WATER:     return WATER_COLORS;
             default:        return FOLIAGE_COLORS;
-        }
-    }
-
-    private static boolean getFlag(ColorType type)
-    {
-        switch (type)
-        {
-            case FOLIAGE:   return hasFoliageColors;
-            case GRASS:     return hasGrassColors;
-            case WATER:     return hasWaterColors;
-            default:        return false;
         }
     }
 

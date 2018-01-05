@@ -13,8 +13,10 @@ public class Configs
     public static String configurationFileName;
     public static Configuration config;
     
+    public static final String CATEGORY_CLIENT = "Client";
     public static final String CATEGORY_GENERIC = "Generic";
 
+    public static boolean enableColorOverrides;
     public static boolean enableForcedGamemodes;
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
@@ -102,7 +104,24 @@ public class Configs
         prop.setComment("If enabled with the enableInitialSpawnDimensionOverride option, this will be used as the initial spawn dimension ID");
         initialSpawnDimensionId = prop.getInt();
 
-        if (conf.hasChanged() == true)
+        // Client stuff
+
+        prop = conf.get(CATEGORY_CLIENT, "enableColorOverrides", false).setRequiresMcRestart(false);
+        prop.setComment("Enables the Grass/Foliage/Water color customizations. This controls whether or not the event handlers get registered.");
+        enableColorOverrides = prop.getBoolean();
+
+        if (enableColorOverrides)
+        {
+            JustEnoughDimensions.logInfo("Registering the client event handler (for Grass/Foliage/Water colors)");
+            JustEnoughDimensions.proxy.registerClientEventHandler();
+        }
+        else
+        {
+            JustEnoughDimensions.logInfo("Un-registering the client event handler (for Grass/Foliage/Water colors)");
+            JustEnoughDimensions.proxy.unregisterClientEventHandler();
+        }
+
+        if (conf.hasChanged())
         {
             conf.save();
         }

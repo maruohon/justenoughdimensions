@@ -24,7 +24,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.event.GamemodeTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.proxy.IProxy;
+import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
@@ -41,7 +41,7 @@ public class JustEnoughDimensions
     public static JustEnoughDimensions instance;
 
     @SidedProxy(clientSide = Reference.PROXY_CLIENT, serverSide = Reference.PROXY_SERVER)
-    public static IProxy proxy;
+    public static CommonProxy proxy;
 
     public static final Logger logger = LogManager.getLogger(Reference.MOD_ID);
     public static EnumMap<Side, FMLEmbeddedChannel> channels;
