@@ -1,31 +1,70 @@
 package fi.dy.masa.justenoughdimensions.world;
 
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
+import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumDifficulty;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
-import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.util.ClientUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
-import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 {
     protected JEDWorldProperties properties;
     private boolean worldInfoSet;
+    protected boolean canRespawnHere;
+    protected boolean isSurfaceWorld;
+    protected boolean hasXZFog;
+    protected double movementFactor;
 
     @Override
     public boolean getWorldInfoHasBeenSet()
     {
         return this.worldInfoSet;
+    }
+
+    @Override
+    protected void init()
+    {
+        super.init();
+
+        // Initialize the default values (used if the properties haven't been set via the config)
+        this.canRespawnHere = true;
+        this.isSurfaceWorld = true;
+        this.hasXZFog = false;
+        this.movementFactor = 1.0D;
+
+        this.setBiomeProviderIfConfigured();
+    }
+
+    protected void setBiomeProviderIfConfigured()
+    {
+        // If this dimension has been configured for a single biome,
+        // then set it here so that it's early enough for Sponge to use it.
+        String biomeName = DimensionConfig.instance().getBiomeFor(this.getDimension());
+        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
+
+        if (biome != null)
+        {
+            JustEnoughDimensions.logInfo("WorldProviderJED.setBiomeProviderIfConfigured(): Using BiomeProviderSingle with biome '{}' for dimension {}",
+                    biomeName, this.getDimension());
+            this.biomeProvider = new BiomeProviderSingle(biome);
+        }
     }
 
     @Override
@@ -41,6 +80,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
+            this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;
         }
@@ -65,7 +105,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public boolean canRespawnHere()
     {
-        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : true;
+        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : this.canRespawnHere;
     }
 
     @Override
@@ -112,18 +152,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
             this.properties = JEDWorldProperties.getOrCreateProperties(this.getDimension(), obj);
         }
 
-        if (obj != null && JEDJsonUtils.hasString(obj, "SkyRenderer"))
-        {
-            WorldUtils.createSkyRendererFromName(this, JEDJsonUtils.getString(obj, "SkyRenderer"));
-        }
-        else if (this.properties.getSkyRenderType() != 0)
-        {
-            this.setSkyRenderer(new SkyRenderer(this.properties.getSkyRenderType(), this.properties.getSkyDisableFlags()));
-        }
-        else
-        {
-            this.setSkyRenderer(null);
-        }
+        ClientUtils.setRenderersFrom(this, obj);
     }
 
     @Override
@@ -152,20 +181,25 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public float calculateCelestialAngle(long worldTime, float partialTicks)
     {
-        if (this.properties.getUseCustomDayCycle() == false)
+        if (this.properties.getUseCustomDayCycle())
         {
-            return super.calculateCelestialAngle(worldTime, partialTicks);
+            return calculateCelestialAngle(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
         }
 
-        int cycleLength = this.getDayCycleLength();
-        int dayTicks = (int) (worldTime % cycleLength);
-        int duskOrDawnLength = (int) (0.075f * cycleLength);
-        int dayLength = this.properties.getDayLength();
-        int nightLength = this.properties.getNightLength();
+        return super.calculateCelestialAngle(worldTime, partialTicks);
+    }
+
+    public static float calculateCelestialAngle(World world, JEDWorldProperties properties, int dayCycleLength, long worldTime, float partialTicks)
+    {
+        int dayTicks = (int) (worldTime % dayCycleLength);
+        int duskOrDawnLength = (int) (0.075f * dayCycleLength);
+        int dayLength = properties.getDayLength();
+        int nightLength = properties.getNightLength();
         float angle;
 
-        // This fixes the sun/moon spazzing out in-place noticeably with short day cycles
-        if (this.world.getGameRules().getBoolean("doDaylightCycle") == false)
+        // This check fixes the sun/moon spazzing out in-place noticeably
+        // with short day cycles if the daylight cycle has been disabled.
+        if (world.getGameRules().getBoolean("doDaylightCycle") == false)
         {
             partialTicks = 0f;
         }
@@ -173,12 +207,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // Day, including dusk (The day part starts duskOrDawnLength before 0, so
         // subtract the duskOrDawnLength length from the day length to get the upper limit
         // of the day part of the cycle.)
-        if (dayTicks > cycleLength - duskOrDawnLength || dayTicks < dayLength - duskOrDawnLength)
+        if (dayTicks > dayCycleLength - duskOrDawnLength || dayTicks < dayLength - duskOrDawnLength)
         {
             // Dawn (1.5 / 20)th of the full day cycle just before the day rolls over to 0 ticks
             if (dayTicks > dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
             {
-                dayTicks -= cycleLength - duskOrDawnLength;
+                dayTicks -= dayCycleLength - duskOrDawnLength;
             }
             // Day, starts from 0 ticks, so we need to add the dawn part
             else
@@ -206,7 +240,98 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         return angle;
     }
 
+    @Override
+    public boolean canCoordinateBeSpawn(int x, int z)
+    {
+        Boolean ignore = this.properties.ignoreSpawnSuitability();
+
+        if (ignore != null && ignore.booleanValue())
+        {
+            return true;
+        }
+
+        return super.canCoordinateBeSpawn(x, z);
+    }
+
+    @Override
+    public boolean canDoLightning(net.minecraft.world.chunk.Chunk chunk)
+    {
+        return this.properties.canDoLightning() != null ? this.properties.canDoLightning().booleanValue() : true;
+    }
+
+    @Override
+    public boolean canDoRainSnowIce(net.minecraft.world.chunk.Chunk chunk)
+    {
+        return this.properties.canDoRainSnowIce() != null ? this.properties.canDoRainSnowIce().booleanValue() : true;
+    }
+
+    @Override
+    public boolean doesXZShowFog(int x, int z)
+    {
+        return this.properties.getHasXZFog() != null ? this.properties.getHasXZFog().booleanValue() : this.hasXZFog;
+    }
+
+    @Override
+    public boolean isSurfaceWorld()
+    {
+        return this.properties.isSurfaceWorld() != null ? this.properties.isSurfaceWorld().booleanValue() : this.isSurfaceWorld;
+    }
+
+    @Override
+    public int getAverageGroundLevel()
+    {
+        return this.properties.getAverageGroundLevel() != null ? this.properties.getAverageGroundLevel().intValue() : super.getAverageGroundLevel();
+    }
+
+    @Override
+    public double getHorizon()
+    {
+        return this.properties.getHorizon() != null ? this.properties.getHorizon().doubleValue() : super.getHorizon();
+    }
+
+    @Override
+    public double getMovementFactor()
+    {
+        return this.properties.getMovementFactor() != null ? this.properties.getMovementFactor().doubleValue() : this.movementFactor;
+    }
+
+    @Override
+    public float getSunBrightness(float partialTicks)
+    {
+        return this.properties.getSunBrightness() != null ? this.properties.getSunBrightness().floatValue() : super.getSunBrightness(partialTicks);
+    }
+
+    @Override
+    public float getSunBrightnessFactor(float partialTicks)
+    {
+        return this.properties.getSunBrightnessFactor() != null ? this.properties.getSunBrightnessFactor().floatValue() : super.getSunBrightnessFactor(partialTicks);
+    }
+
+    @Override
+    public boolean shouldMapSpin(String entity, double x, double y, double z)
+    {
+        return this.isSurfaceWorld() == false;
+    }
+
+    @Override
+    public boolean shouldClientCheckLighting()
+    {
+        if (this.properties.shouldClientCheckLight() != null)
+        {
+            return this.properties.shouldClientCheckLight().booleanValue();
+        }
+
+        return (this instanceof WorldProviderSurfaceJED) == false;
+    }
+
     @SideOnly(Side.CLIENT)
+    @Override
+    @Nullable
+    public MusicType getMusicType()
+    {
+        return ClientUtils.getMusicTypeFromProperties(this.properties);
+    }
+
     @Override
     public Vec3d getSkyColor(Entity entity, float partialTicks)
     {
@@ -217,21 +342,24 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
             return super.getSkyColor(entity, partialTicks);
         }
 
-        float f1 = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float)Math.PI * 2F)) * 2.0F + 0.5F;
-        f1 = MathHelper.clamp(f1, 0.0F, 1.0F);
         int x = MathHelper.floor(entity.posX);
         int y = MathHelper.floor(entity.posY);
         int z = MathHelper.floor(entity.posZ);
         BlockPos blockpos = new BlockPos(x, y, z);
+
         int blendColour = net.minecraftforge.client.ForgeHooksClient.getSkyBlendColour(this.world, blockpos);
         float r = (float)((blendColour >> 16 & 255) / 255.0F * skyColor.x);
         float g = (float)((blendColour >>  8 & 255) / 255.0F * skyColor.y);
         float b = (float)((blendColour       & 255) / 255.0F * skyColor.z);
+        float f1 = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
+        f1 = MathHelper.clamp(f1, 0.0F, 1.0F);
+
         r = r * f1;
         g = g * f1;
         b = b * f1;
 
         float rain = this.world.getRainStrength(partialTicks);
+
         if (rain > 0.0F)
         {
             float f7 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.6F;
@@ -242,6 +370,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
 
         float thunder = this.world.getThunderStrength(partialTicks);
+
         if (thunder > 0.0F)
         {
             float f11 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.2F;
@@ -269,7 +398,6 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         return new Vec3d(r, g, b);
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public Vec3d getCloudColor(float partialTicks)
     {
@@ -313,14 +441,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         return new Vec3d(r, g, b);
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public float getCloudHeight()
     {
         return (float) this.properties.getCloudHeight();
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public Vec3d getFogColor(float celestialAngle, float partialTicks)
     {

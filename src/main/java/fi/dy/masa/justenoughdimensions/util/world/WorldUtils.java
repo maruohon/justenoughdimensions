@@ -4,8 +4,6 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import com.google.gson.JsonObject;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -31,18 +29,15 @@ import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
-import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
-import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -156,56 +151,6 @@ public class WorldUtils
                                          "of dimension {} to player '{}'", player.getEntityWorld().provider.getDimension(), player.getName());
             PacketHandler.INSTANCE.sendTo(new MessageSyncWorldProperties(player.getEntityWorld()), (EntityPlayerMP) player);
         }
-    }
-
-    public static boolean setRenderersOnNonJEDWorld(World world, JsonObject obj)
-    {
-        int skyRenderType   = JEDJsonUtils.hasInteger(obj, "SkyRenderType") ?   JEDJsonUtils.getInteger(obj, "SkyRenderType")   : 0;
-        int skyDisableFlags = JEDJsonUtils.hasInteger(obj, "SkyDisableFlags") ? JEDJsonUtils.getInteger(obj, "SkyDisableFlags") : 0;
-
-        if (skyRenderType != 0)
-        {
-            world.provider.setSkyRenderer(new SkyRenderer(skyRenderType, skyDisableFlags));
-            return true;
-        }
-        else if (JEDJsonUtils.hasString(obj, "SkyRenderer"))
-        {
-            return createSkyRendererFromName(world.provider, JEDJsonUtils.getString(obj, "SkyRenderer"));
-        }
-
-        return false;
-    }
-
-    @Nullable
-    public static boolean createSkyRendererFromName(WorldProvider provider, String name)
-    {
-        try
-        {
-            @SuppressWarnings("unchecked")
-            Class<? extends IRenderHandler> clazz = (Class<? extends IRenderHandler>) Class.forName(name);
-
-            if (clazz != null)
-            {
-                IRenderHandler renderer = clazz.newInstance();
-
-                if (renderer != null)
-                {
-                    JustEnoughDimensions.logInfo("WorldUtils.setRenderersOnNonJEDWorld(): Setting a custom sky renderer '{}' for dimension {}",
-                            renderer.getClass().getName(), provider.getDimension());
-                    provider.setSkyRenderer(renderer);
-
-                    return true;
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            JustEnoughDimensions.logger.warn("Failed to create a sky renderer from class name '{}'", name, e);
-        }
-
-        provider.setSkyRenderer(null);
-
-        return false;
     }
 
     public static void findAndSetWorldSpawnIfApplicable(World world)

@@ -19,8 +19,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.ColorType;
 import fi.dy.masa.justenoughdimensions.event.JEDEventHandlerClient;
+import fi.dy.masa.justenoughdimensions.util.ClientUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
-import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import io.netty.buffer.ByteBuf;
@@ -131,9 +131,9 @@ public class MessageSyncWorldProperties implements IMessage
                 JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
                         world.provider.getDimension(), message.jedProperties);
             }
-            else if (message.jedProperties != null && WorldUtils.setRenderersOnNonJEDWorld(world, message.jedProperties))
+            else if (ClientUtils.setRenderersFrom(world.provider, message.jedProperties))
             {
-                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky render type for a non-JED world",
+                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky/cloud/weather render type for a non-JED world",
                         world.provider.getDimension());
             }
 

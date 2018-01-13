@@ -128,6 +128,34 @@ public class JEDJsonUtils
         return defaultValue;
     }
 
+    public static float getFloatOrDefault(JsonObject obj, String name, float defaultValue)
+    {
+        if (obj.has(name) && obj.get(name).isJsonPrimitive())
+        {
+            try
+            {
+                return obj.get(name).getAsFloat();
+            }
+            catch (Exception e) {}
+        }
+
+        return defaultValue;
+    }
+
+    public static double getDoubleOrDefault(JsonObject obj, String name, double defaultValue)
+    {
+        if (obj.has(name) && obj.get(name).isJsonPrimitive())
+        {
+            try
+            {
+                return obj.get(name).getAsDouble();
+            }
+            catch (Exception e) {}
+        }
+
+        return defaultValue;
+    }
+
     public static boolean getBooleanOrDefault(JsonObject obj, String name, boolean defaultValue)
     {
         if (obj.has(name) && obj.get(name).isJsonPrimitive())
@@ -155,6 +183,16 @@ public class JEDJsonUtils
     public static int getInteger(JsonObject obj, String name)
     {
         return getIntegerOrDefault(obj, name, 0);
+    }
+
+    public static float getFloat(JsonObject obj, String name)
+    {
+        return getFloatOrDefault(obj, name, 0F);
+    }
+
+    public static double getDouble(JsonObject obj, String name)
+    {
+        return getDoubleOrDefault(obj, name, 0D);
     }
 
     public static String getString(JsonObject obj, String name)
