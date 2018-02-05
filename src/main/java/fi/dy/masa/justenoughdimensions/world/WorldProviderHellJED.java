@@ -34,7 +34,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     @Override
     public Vec3d getFogColor(float celestialAngle, float partialTicks)
     {
-        if (this.fogColor == null)
+        if (this.properties.getFogColor() == null)
         {
             return new Vec3d(0.2, 0.03, 0.03);
         }
@@ -80,6 +80,6 @@ public class WorldProviderHellJED extends WorldProviderJED
     @Override
     public boolean canRespawnHere()
     {
-        return this.canRespawnHere != null ? this.canRespawnHere : false;
+        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : false;
     }
 }

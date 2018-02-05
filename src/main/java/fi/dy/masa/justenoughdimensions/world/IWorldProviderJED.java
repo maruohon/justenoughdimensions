@@ -11,12 +11,6 @@ public interface IWorldProviderJED
     public void setJEDPropertiesFromNBT(NBTTagCompound tag);
 
     /**
-     * Set server-side required properties from WorldInfoJED
-     * @param worldInfo
-     */
-    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties);
-
-    /**
      * Returns true if the WorldInfo values have already been set for this WorldProvider
      * @return
      */

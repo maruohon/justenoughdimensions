@@ -3,7 +3,6 @@ package fi.dy.masa.justenoughdimensions.world;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -15,24 +14,12 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
-import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 {
-    protected int dayLength = 12000;
-    protected int nightLength = 12000;
-    protected int cloudHeight = 128;
-    private int skyRenderType = 0;
-    private int skyDisableFlags = 0;
-    private boolean useCustomDayCycle;
-    protected Vec3d skyColor = null;
-    protected Vec3d cloudColor = null;
-    protected Vec3d fogColor = null;
-    protected float[] customLightBrightnessTable;
-    protected Boolean canRespawnHere = null;
-    protected Integer respawnDimension = null;
+    protected JEDWorldProperties properties;
     private boolean worldInfoSet;
 
     @Override
@@ -42,9 +29,18 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setDimension(int dim)
+    public void setDimension(int dimension)
     {
-        super.setDimension(dim);
+        super.setDimension(dimension);
+
+        JEDWorldProperties props = JEDWorldProperties.getProperties(dimension);
+
+        if (props == null)
+        {
+            props = new JEDWorldProperties();
+        }
+
+        this.properties = props;
 
         // This method gets called the first time from DimensionManager.createProviderFor(),
         // at which time the world hasn't been set yet. The second call comes from the WorldServer
@@ -52,7 +48,6 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
-            JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;
         }
@@ -77,15 +72,15 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public boolean canRespawnHere()
     {
-        return this.canRespawnHere != null ? this.canRespawnHere : true;
+        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : true;
     }
 
     @Override
     public int getRespawnDimension(EntityPlayerMP player)
     {
-        if (this.respawnDimension != null)
+        if (this.properties.getRespawnDimension() != null)
         {
-            return this.respawnDimension;
+            return this.properties.getRespawnDimension();
         }
         else
         {
@@ -121,43 +116,16 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     {
         if (tag != null)
         {
-            this.useCustomDayCycle = tag.getBoolean("CustomDayCycle");
-            if (tag.hasKey("DayLength",     Constants.NBT.TAG_INT))    { this.dayLength   = tag.getInteger("DayLength"); }
-            if (tag.hasKey("NightLength",   Constants.NBT.TAG_INT))    { this.nightLength = tag.getInteger("NightLength"); }
-            if (tag.hasKey("CloudHeight",   Constants.NBT.TAG_INT))    { this.cloudHeight = tag.getInteger("CloudHeight"); }
-            if (tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE))   { this.skyRenderType = tag.getByte("SkyRenderType"); }
-            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
-
-            if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = JEDStringUtils.hexStringToColor(tag.getString("SkyColor")); }
-            if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = JEDStringUtils.hexStringToColor(tag.getString("CloudColor")); }
-            if (tag.hasKey("FogColor",      Constants.NBT.TAG_STRING)) { this.fogColor   = JEDStringUtils.hexStringToColor(tag.getString("FogColor")); }
-
-            if (tag.hasKey("LightBrightness", Constants.NBT.TAG_LIST))
-            {
-                NBTTagList list = tag.getTagList("LightBrightness", Constants.NBT.TAG_FLOAT);
-
-                if (list.tagCount() == 16)
-                {
-                    this.customLightBrightnessTable = new float[16];
-
-                    for (int i = 0; i < 16; i++)
-                    {
-                        this.customLightBrightnessTable[i] = list.getFloatAt(i);
-                    }
-                }
-            }
+            this.properties = JEDWorldProperties.createPropertiesFor(this.getDimension(), tag);
         }
-
-        if (this.dayLength   <= 0) { this.dayLength = 1; }
-        if (this.nightLength <= 0) { this.nightLength = 1; }
 
         if (tag != null && tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
         {
             WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
         }
-        else if (this.skyRenderType != 0)
+        else if (this.properties.getSkyRenderType() != 0)
         {
-            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
+            this.setSkyRenderer(new SkyRenderer(this.properties.getSkyRenderType(), this.properties.getSkyDisableFlags()));
         }
         else
         {
@@ -166,25 +134,11 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties)
-    {
-        this.useCustomDayCycle = properties.getUseCustomDayCycle();
-        this.dayLength = properties.getDayLength();
-        this.nightLength = properties.getNightLength();
-        this.customLightBrightnessTable = properties.getCustomLightBrightnessTable();
-        this.canRespawnHere = properties.canRespawnHere();
-        this.respawnDimension = properties.getRespawnDimension();
-
-        if (this.dayLength   <= 0) { this.dayLength = 1; }
-        if (this.nightLength <= 0) { this.nightLength = 1; }
-    }
-
-    @Override
     public float[] getLightBrightnessTable()
     {
-        if (this.customLightBrightnessTable != null)
+        if (this.properties.getCustomLightBrightnessTable() != null)
         {
-            return this.customLightBrightnessTable;
+            return this.properties.getCustomLightBrightnessTable();
         }
 
         return super.getLightBrightnessTable();
@@ -192,7 +146,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 
     public int getDayCycleLength()
     {
-        return this.dayLength + this.nightLength;
+        return this.properties.getDayLength() + this.properties.getNightLength();
     }
 
     @Override
@@ -205,7 +159,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public float calculateCelestialAngle(long worldTime, float partialTicks)
     {
-        if (this.useCustomDayCycle == false)
+        if (this.properties.getUseCustomDayCycle() == false)
         {
             return super.calculateCelestialAngle(worldTime, partialTicks);
         }
@@ -213,6 +167,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         int cycleLength = this.getDayCycleLength();
         int dayTicks = (int) (worldTime % cycleLength);
         int duskOrDawnLength = (int) (0.075f * cycleLength);
+        int dayLength = this.properties.getDayLength();
+        int nightLength = this.properties.getNightLength();
         float angle;
 
         // This fixes the sun/moon spazzing out in-place noticeably with short day cycles
@@ -224,10 +180,10 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // Day, including dusk (The day part starts duskOrDawnLength before 0, so
         // subtract the duskOrDawnLength length from the day length to get the upper limit
         // of the day part of the cycle.)
-        if (dayTicks > cycleLength - duskOrDawnLength || dayTicks < this.dayLength - duskOrDawnLength)
+        if (dayTicks > cycleLength - duskOrDawnLength || dayTicks < dayLength - duskOrDawnLength)
         {
             // Dawn (1.5 / 20)th of the full day cycle just before the day rolls over to 0 ticks
-            if (dayTicks > this.dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
+            if (dayTicks > dayLength) // this check could also be the "i > cycleLength - duskOrDawnLength"
             {
                 dayTicks -= cycleLength - duskOrDawnLength;
             }
@@ -237,13 +193,13 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
                 dayTicks += duskOrDawnLength;
             }
 
-            angle = (((float) dayTicks + partialTicks) / (float) this.dayLength * 0.65f) + 0.675f;
+            angle = (((float) dayTicks + partialTicks) / (float) dayLength * 0.65f) + 0.675f;
         }
         // Night
         else
         {
-            dayTicks -= (this.dayLength - duskOrDawnLength);
-            angle = (((float) dayTicks + partialTicks) / (float) this.nightLength * 0.35f) + 0.325f;
+            dayTicks -= (dayLength - duskOrDawnLength);
+            angle = (((float) dayTicks + partialTicks) / (float) nightLength * 0.35f) + 0.325f;
         }
 
         if (angle > 1.0F)
@@ -261,7 +217,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public Vec3d getSkyColor(Entity entity, float partialTicks)
     {
-        Vec3d skyColor = this.skyColor;
+        Vec3d skyColor = this.properties.getSkyColor();
+
         if (skyColor == null)
         {
             return super.getSkyColor(entity, partialTicks);
@@ -323,7 +280,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public Vec3d getCloudColor(float partialTicks)
     {
-        Vec3d cloudColor = this.cloudColor;
+        Vec3d cloudColor = this.properties.getCloudColor();
+
         if (cloudColor == null)
         {
             return super.getCloudColor(partialTicks);
@@ -366,14 +324,15 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     @Override
     public float getCloudHeight()
     {
-        return (float) this.cloudHeight;
+        return (float) this.properties.getCloudHeight();
     }
 
     @SideOnly(Side.CLIENT)
     @Override
     public Vec3d getFogColor(float celestialAngle, float partialTicks)
     {
-        Vec3d fogColor = this.fogColor;
+        Vec3d fogColor = this.properties.getFogColor();
+
         if (fogColor == null)
         {
             return super.getFogColor(celestialAngle, partialTicks);

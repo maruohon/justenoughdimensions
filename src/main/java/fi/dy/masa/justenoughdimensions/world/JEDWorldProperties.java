@@ -10,7 +10,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
-import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 
 public class JEDWorldProperties
@@ -36,7 +35,13 @@ public class JEDWorldProperties
     @Nullable
     public static JEDWorldProperties getProperties(World world)
     {
-        return PROPERTIES.get(world.provider.getDimension());
+        return getProperties(world.provider.getDimension());
+    }
+
+    @Nullable
+    public static JEDWorldProperties getProperties(int dimension)
+    {
+        return PROPERTIES.get(dimension);
     }
 
     public static JEDWorldProperties createPropertiesFor(int dimension, NBTTagCompound nbt)
@@ -56,18 +61,8 @@ public class JEDWorldProperties
         PROPERTIES.clear();
     }
 
-    public static boolean applyJEDWorldPropertiesToWorldProvider(World world)
+    public JEDWorldProperties()
     {
-        JEDWorldProperties props = getProperties(world);
-
-        if (props != null && world.provider instanceof IWorldProviderJED)
-        {
-            JustEnoughDimensions.logInfo("Setting JED properties in the WorldProvider for dimension {}", world.provider.getDimension());
-            ((IWorldProviderJED) world.provider).setJEDPropertiesFromWorldProperties(props);
-            return true;
-        }
-
-        return false;
     }
 
     private JEDWorldProperties(NBTTagCompound tag)
@@ -169,6 +164,39 @@ public class JEDWorldProperties
     public float[] getCustomLightBrightnessTable()
     {
         return this.customLightBrightnessTable;
+    }
+
+    public int getSkyRenderType()
+    {
+        return this.skyRenderType;
+    }
+
+    public int getSkyDisableFlags()
+    {
+        return this.skyDisableFlags;
+    }
+
+    public int getCloudHeight()
+    {
+        return this.cloudHeight;
+    }
+
+    @Nullable
+    public Vec3d getSkyColor()
+    {
+        return this.skyColor;
+    }
+
+    @Nullable
+    public Vec3d getFogColor()
+    {
+        return this.fogColor;
+    }
+
+    @Nullable
+    public Vec3d getCloudColor()
+    {
+        return this.cloudColor;
     }
 
     @Nullable

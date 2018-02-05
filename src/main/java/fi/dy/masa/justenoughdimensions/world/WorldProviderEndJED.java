@@ -3,7 +3,6 @@ package fi.dy.masa.justenoughdimensions.world;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -15,19 +14,12 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
-import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
-    private int skyRenderType = 0;
-    private int skyDisableFlags = 0;
-    protected Vec3d skyColor = null;
-    protected Vec3d fogColor = null;
-    protected Boolean canRespawnHere = null;
-    protected Integer respawnDimension = null;
-    protected float[] customLightBrightnessTable;
+    protected JEDWorldProperties properties;
     private boolean worldInfoSet;
 
     @Override
@@ -37,9 +29,18 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
-    public void setDimension(int dim)
+    public void setDimension(int dimension)
     {
-        super.setDimension(dim);
+        super.setDimension(dimension);
+
+        JEDWorldProperties props = JEDWorldProperties.getProperties(dimension);
+
+        if (props == null)
+        {
+            props = new JEDWorldProperties();
+        }
+
+        this.properties = props;
 
         // This method gets called the first time from DimensionManager.createProviderFor(),
         // at which time the world hasn't been set yet. The second call comes from the WorldServer
@@ -47,7 +48,6 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
-            JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(this.world);
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;
         }
@@ -74,34 +74,16 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     {
         if (tag != null)
         {
-            if (tag.hasKey("SkyColor", Constants.NBT.TAG_STRING))    { this.skyColor = JEDStringUtils.hexStringToColor(tag.getString("SkyColor")); }
-            if (tag.hasKey("FogColor", Constants.NBT.TAG_STRING))    { this.fogColor = JEDStringUtils.hexStringToColor(tag.getString("FogColor")); }
-            if (tag.hasKey("SkyRenderType",   Constants.NBT.TAG_BYTE)) { this.skyRenderType   = tag.getByte("SkyRenderType");   }
-            if (tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE)) { this.skyDisableFlags = tag.getByte("SkyDisableFlags"); }
-
-            if (tag.hasKey("LightBrightness", Constants.NBT.TAG_LIST))
-            {
-                NBTTagList list = tag.getTagList("LightBrightness", Constants.NBT.TAG_FLOAT);
-
-                if (list.tagCount() == 16)
-                {
-                    this.customLightBrightnessTable = new float[16];
-
-                    for (int i = 0; i < 16; i++)
-                    {
-                        this.customLightBrightnessTable[i] = list.getFloatAt(i);
-                    }
-                }
-            }
+            this.properties = JEDWorldProperties.createPropertiesFor(this.getDimension(), tag);
         }
 
         if (tag != null && tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
         {
             WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
         }
-        else if (this.skyRenderType != 0)
+        else if (this.properties.getSkyRenderType() != 0)
         {
-            this.setSkyRenderer(new SkyRenderer(this.skyRenderType, this.skyDisableFlags));
+            this.setSkyRenderer(new SkyRenderer(this.properties.getSkyRenderType(), this.properties.getSkyDisableFlags()));
         }
         else
         {
@@ -110,25 +92,17 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
-    public void setJEDPropertiesFromWorldProperties(JEDWorldProperties properties)
-    {
-        this.customLightBrightnessTable = properties.getCustomLightBrightnessTable();
-        this.canRespawnHere = properties.canRespawnHere();
-        this.respawnDimension = properties.getRespawnDimension();
-    }
-
-    @Override
     public boolean canRespawnHere()
     {
-        return this.canRespawnHere != null ? this.canRespawnHere : false;
+        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : false;
     }
 
     @Override
     public int getRespawnDimension(EntityPlayerMP player)
     {
-        if (this.respawnDimension != null)
+        if (this.properties.getRespawnDimension() != null)
         {
-            return this.respawnDimension;
+            return this.properties.getRespawnDimension();
         }
         else
         {
@@ -139,9 +113,9 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public float[] getLightBrightnessTable()
     {
-        if (this.customLightBrightnessTable != null)
+        if (this.properties.getCustomLightBrightnessTable() != null)
         {
-            return this.customLightBrightnessTable;
+            return this.properties.getCustomLightBrightnessTable();
         }
 
         return super.getLightBrightnessTable();
@@ -160,14 +134,22 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public boolean isSkyColored()
     {
-        return this.skyColor != null;
+        return this.properties.getSkyColor() != null;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public float getCloudHeight()
+    {
+        return (float) this.properties.getCloudHeight();
     }
 
     @SideOnly(Side.CLIENT)
     @Override
     public Vec3d getSkyColor(Entity entity, float partialTicks)
     {
-        Vec3d skyColor = this.skyColor;
+        Vec3d skyColor = this.properties.getSkyColor();
+
         if (skyColor == null)
         {
             return super.getSkyColor(entity, partialTicks);
@@ -194,7 +176,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public Vec3d getFogColor(float celestialAngle, float partialTicks)
     {
-        Vec3d fogColor = this.fogColor;
+        Vec3d fogColor = this.properties.getFogColor();
+
         if (fogColor == null)
         {
             return super.getFogColor(celestialAngle, partialTicks);

@@ -27,7 +27,6 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
-import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class JEDEventHandler
 {
@@ -96,8 +95,6 @@ public class JEDEventHandler
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world);
         }
-
-        JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(world);
 
         if (Configs.enableOverrideBiomeProvider)
         {
