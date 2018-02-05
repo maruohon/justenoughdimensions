@@ -1,4 +1,4 @@
-package fi.dy.masa.justenoughdimensions.world.util;
+package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.util.ArrayList;
 import java.util.Collections;

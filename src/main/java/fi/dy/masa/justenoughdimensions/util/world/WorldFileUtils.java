@@ -1,4 +1,4 @@
-package fi.dy.masa.justenoughdimensions.world.util;
+package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -16,8 +16,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
 {

@@ -29,9 +29,9 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.util.world.DimensionDump;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
-import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
-import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class CommandJED extends CommandBase
 {

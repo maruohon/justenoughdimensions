@@ -23,11 +23,11 @@ import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
+import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
-import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldFileUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class JEDEventHandler
 {
