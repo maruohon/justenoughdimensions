@@ -15,12 +15,17 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.util.ClientUtils;
+import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
+import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
     protected JEDWorldProperties properties;
     private boolean worldInfoSet;
+    protected VoidTeleportData voidTeleport = null;
+    protected VoidTeleportData skyTeleport = null;
+    protected int teleportCounter;
 
     @Override
     public boolean getWorldInfoHasBeenSet()
@@ -43,6 +48,12 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             this.worldInfoSet = true;
+
+            if (this.properties != null)
+            {
+                this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
+                this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
+            }
         }
     }
 
@@ -89,6 +100,18 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         else
         {
             return this.canRespawnHere() ? this.getDimension() : 0;
+        }
+    }
+
+    @Override
+    public void onWorldUpdateEntities()
+    {
+        super.onWorldUpdateEntities();
+
+        if (++this.teleportCounter >= this.properties.getVoidTeleportInterval())
+        {
+            VoidTeleport.tryVoidTeleportEntities(this.world, this.voidTeleport, this.skyTeleport);
+            this.teleportCounter = 0;
         }
     }
 

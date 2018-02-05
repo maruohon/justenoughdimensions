@@ -12,6 +12,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import net.minecraft.util.math.Vec3d;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 
 public class JEDJsonUtils
 {
@@ -224,6 +226,26 @@ public class JEDJsonUtils
         {
             return parent.get(key).getAsJsonObject();
         }
+    }
+
+    public static Vec3d getVec3dOrDefault(JsonObject obj, String arrayName, Vec3d defaultValue)
+    {
+        if (obj.has(arrayName) && obj.get(arrayName).isJsonArray())
+        {
+            JsonArray arr = obj.get(arrayName).getAsJsonArray();
+
+            try
+            {
+                Vec3d vec = new Vec3d(arr.get(0).getAsDouble(), arr.get(1).getAsDouble(), arr.get(2).getAsDouble());
+                return vec;
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.warn("Failed to parse a Vec3d value '{}' from JSON", arrayName, e);
+            }
+        }
+
+        return defaultValue;
     }
 
     // https://stackoverflow.com/questions/29786197/gson-jsonobject-copy-value-affected-others-jsonobject-instance

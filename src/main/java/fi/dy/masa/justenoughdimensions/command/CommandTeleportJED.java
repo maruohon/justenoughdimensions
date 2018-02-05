@@ -33,6 +33,7 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 public class CommandTeleportJED extends CommandBase
 {
     private MethodHandle methodHandle_Entity_copyDataFromOld;
+    private static CommandTeleportJED instance;
 
     public CommandTeleportJED()
     {
@@ -45,6 +46,13 @@ public class CommandTeleportJED extends CommandBase
         {
             JustEnoughDimensions.logger.error("CommandTeleportJED: Failed to get MethodHandle for Entity#copyDataFromOld()", e);
         }
+
+        instance = this;
+    }
+
+    public static CommandTeleportJED instance()
+    {
+        return instance;
     }
 
     @Override
@@ -210,7 +218,7 @@ public class CommandTeleportJED extends CommandBase
         return new TeleportData(target, dimension, true, server);
     }
 
-    private Entity teleportEntityToLocation(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
+    public Entity teleportEntityToLocation(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
     {
         // TODO hook up the mounted entity TP code from Ender Utilities?
         entity.dismountRidingEntity();

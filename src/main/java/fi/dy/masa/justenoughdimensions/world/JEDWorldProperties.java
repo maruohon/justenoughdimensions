@@ -29,6 +29,7 @@ public class JEDWorldProperties
     private int cloudHeight = 128;
     private int skyRenderType;
     private int skyDisableFlags;
+    private int voidTeleportInterval = 40;
     private Vec3d skyColor = null;
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
@@ -141,6 +142,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasInteger(obj, "SkyDisableFlags"))    { this.skyDisableFlags      = JEDJsonUtils.getInteger(obj, "SkyDisableFlags"); }
         if (JEDJsonUtils.hasInteger(obj, "RespawnDimension"))   { this.respawnDimension     = JEDJsonUtils.getInteger(obj, "RespawnDimension"); }
         if (JEDJsonUtils.hasInteger(obj, "AverageGroundLevel")) { this.averageGroundLevel   = JEDJsonUtils.getInteger(obj, "AverageGroundLevel"); }
+        if (JEDJsonUtils.hasInteger(obj, "VoidTeleportInterval")) { this.voidTeleportInterval = JEDJsonUtils.getInteger(obj, "VoidTeleportInterval"); }
 
         if (JEDJsonUtils.hasInteger(obj, "SunBrightnessFactor")){ this.sunBrightnessFactor  = JEDJsonUtils.getFloat(obj, "SunBrightnessFactor"); }
         if (JEDJsonUtils.hasInteger(obj, "SunBrightness"))      { this.sunBrightness        = JEDJsonUtils.getFloat(obj, "SunBrightness"); }
@@ -238,6 +240,18 @@ public class JEDWorldProperties
         return JEDJsonUtils.deepCopy(this.fullJEDTag);
     }
 
+    @Nullable
+    public JsonObject getNestedObject(String name)
+    {
+        if (this.fullJEDTag != null)
+        {
+            JsonObject obj = JEDJsonUtils.getNestedObject(this.fullJEDTag, name, false);
+            return obj != null ? JEDJsonUtils.deepCopy(obj) : null;
+        }
+
+        return null;
+    }
+
     @Nonnull
     private static NBTTagList writeFloats(float... values)
     {
@@ -289,6 +303,11 @@ public class JEDWorldProperties
     public int getCloudHeight()
     {
         return this.cloudHeight;
+    }
+
+    public int getVoidTeleportInterval()
+    {
+        return this.voidTeleportInterval;
     }
 
     @Nullable

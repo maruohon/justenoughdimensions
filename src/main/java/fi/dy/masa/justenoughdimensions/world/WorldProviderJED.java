@@ -21,6 +21,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.util.ClientUtils;
+import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
+import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 
 public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
@@ -31,6 +33,9 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     protected boolean isSurfaceWorld;
     protected boolean hasXZFog;
     protected double movementFactor;
+    protected VoidTeleportData voidTeleport = null;
+    protected VoidTeleportData skyTeleport = null;
+    protected int teleportCounter;
 
     @Override
     public boolean getWorldInfoHasBeenSet()
@@ -83,6 +88,12 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;
+
+            if (this.properties != null)
+            {
+                this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
+                this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
+            }
         }
     }
 
@@ -153,6 +164,18 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         }
 
         ClientUtils.setRenderersFrom(this, obj);
+    }
+
+    @Override
+    public void onWorldUpdateEntities()
+    {
+        super.onWorldUpdateEntities();
+
+        if (++this.teleportCounter >= this.properties.getVoidTeleportInterval())
+        {
+            VoidTeleport.tryVoidTeleportEntities(this.world, this.voidTeleport, this.skyTeleport);
+            this.teleportCounter = 0;
+        }
     }
 
     @Override

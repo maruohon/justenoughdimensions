@@ -65,6 +65,19 @@ public class WorldUtils
         }
     }
 
+    public static BlockPos getWorldSpawn(WorldServer world)
+    {
+        BlockPos spawn = world.getSpawnCoordinate();
+
+        // Only the End has a spawn coordinate
+        if (spawn == null)
+        {
+            spawn = world.getSpawnPoint();
+        }
+
+        return spawn;
+    }
+
     public static int getLoadedChunkCount(WorldServer world)
     {
         return world.getChunkProvider().getLoadedChunkCount();
