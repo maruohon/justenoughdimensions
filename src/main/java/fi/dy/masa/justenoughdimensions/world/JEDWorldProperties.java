@@ -4,19 +4,24 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.minecraft.nbt.NBTTagCompound;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraftforge.common.util.Constants;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
 
 public class JEDWorldProperties
 {
     private static final Map<Integer, JEDWorldProperties> PROPERTIES = new HashMap<>();
 
-    private NBTTagCompound fullJEDTag;
+    private JsonObject fullJEDTag;
+    private JsonObject colorData;
     private boolean forceGameMode;
     private boolean useCustomDayCycle;
     private int dayLength = 12000;
@@ -33,20 +38,53 @@ public class JEDWorldProperties
     private Integer respawnDimension = null;
 
     @Nullable
-    public static JEDWorldProperties getProperties(World world)
+    public static JEDWorldProperties getPropertiesIfExists(World world)
     {
-        return getProperties(world.provider.getDimension());
+        return getPropertiesIfExists(world.provider.getDimension());
     }
 
     @Nullable
-    public static JEDWorldProperties getProperties(int dimension)
+    public static JEDWorldProperties getPropertiesIfExists(int dimension)
     {
         return PROPERTIES.get(dimension);
     }
 
-    public static JEDWorldProperties createPropertiesFor(int dimension, NBTTagCompound nbt)
+    /**
+     * Gets the properties for the requested dimension.
+     * If there no properties for that dimension, then a new default instance is returned.
+     * NOTE: If the default instance is created and returned, it is NOT added to the map.
+     * @param dimension
+     * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
+     */
+    public static JEDWorldProperties getOrCreateProperties(int dimension)
     {
-        JEDWorldProperties props = new JEDWorldProperties(nbt);
+        return getOrCreateProperties(dimension, null);
+    }
+
+    /**
+     * Gets the properties for the requested dimension.
+     * If there no properties for that dimension, then a new instance is created and returned,
+     * based on the JsonObject passed in.
+     * NOTE: If a new instance is created and returned, it is NOT added to the map.
+     * @param dimension
+     * @param obj the properties to set for the created instance
+     * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
+     */
+    public static JEDWorldProperties getOrCreateProperties(int dimension, @Nullable JsonObject obj)
+    {
+        JEDWorldProperties props = PROPERTIES.get(dimension);
+
+        if (props == null)
+        {
+            props = obj != null ? new JEDWorldProperties(obj) : new JEDWorldProperties();
+        }
+
+        return props;
+    }
+
+    public static JEDWorldProperties createAndSetPropertiesForDimension(int dimension, @Nonnull JsonObject obj)
+    {
+        JEDWorldProperties props = new JEDWorldProperties(obj);
         PROPERTIES.put(dimension, props);
         return props;
     }
@@ -61,71 +99,100 @@ public class JEDWorldProperties
         PROPERTIES.clear();
     }
 
-    public JEDWorldProperties()
+    private JEDWorldProperties()
     {
     }
 
-    private JEDWorldProperties(NBTTagCompound tag)
+    private JEDWorldProperties(JsonObject obj)
     {
-        this.fullJEDTag = tag;
+        this.fullJEDTag = JEDJsonUtils.deepCopy(obj);
+        this.colorData = JEDJsonUtils.getNestedObject(obj, "Colors", false);
 
-        if (tag.hasKey("ForceGameMode",     Constants.NBT.TAG_BYTE))   { this.forceGameMode     = tag.getBoolean("ForceGameMode"); }
-        if (tag.hasKey("CustomDayCycle",    Constants.NBT.TAG_BYTE))   { this.useCustomDayCycle = tag.getBoolean("CustomDayCycle"); }
-        if (tag.hasKey("DayLength",         Constants.NBT.TAG_INT))    { this.dayLength         = tag.getInteger("DayLength"); }
-        if (tag.hasKey("NightLength",       Constants.NBT.TAG_INT))    { this.nightLength       = tag.getInteger("NightLength"); }
-        if (tag.hasKey("CloudHeight",       Constants.NBT.TAG_INT))    { this.cloudHeight       = tag.getInteger("CloudHeight"); }
-        if (tag.hasKey("SkyRenderer",       Constants.NBT.TAG_STRING)) { this.skyRenderer       = tag.getString("SkyRenderer"); }
-        if (tag.hasKey("SkyRenderType",     Constants.NBT.TAG_BYTE))   { this.skyRenderType     = tag.getByte("SkyRenderType"); }
-        if (tag.hasKey("SkyDisableFlags",   Constants.NBT.TAG_BYTE))   { this.skyDisableFlags   = tag.getByte("SkyDisableFlags"); }
+        if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))      { this.forceGameMode        = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))     { this.useCustomDayCycle    = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanRespawnHere"))     { this.canRespawnHere       = JEDJsonUtils.getBoolean(obj, "CanRespawnHere"); }
+        
+        if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
+        if (JEDJsonUtils.hasInteger(obj, "NightLength"))        { this.nightLength          = JEDJsonUtils.getInteger(obj, "NightLength"); }
+        if (JEDJsonUtils.hasInteger(obj, "CloudHeight"))        { this.cloudHeight          = JEDJsonUtils.getInteger(obj, "CloudHeight"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyRenderType"))      { this.skyRenderType        = JEDJsonUtils.getInteger(obj, "SkyRenderType"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyDisableFlags"))    { this.skyDisableFlags      = JEDJsonUtils.getInteger(obj, "SkyDisableFlags"); }
+        if (JEDJsonUtils.hasInteger(obj, "RespawnDimension"))   { this.respawnDimension     = JEDJsonUtils.getInteger(obj, "RespawnDimension"); }
 
-        if (tag.hasKey("SkyColor",      Constants.NBT.TAG_STRING)) { this.skyColor   = JEDStringUtils.hexStringToColor(tag.getString("SkyColor")); }
-        if (tag.hasKey("CloudColor",    Constants.NBT.TAG_STRING)) { this.cloudColor = JEDStringUtils.hexStringToColor(tag.getString("CloudColor")); }
-        if (tag.hasKey("FogColor",      Constants.NBT.TAG_STRING)) { this.fogColor   = JEDStringUtils.hexStringToColor(tag.getString("FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "SkyRenderer"))         { this.skyRenderer          = JEDJsonUtils.getString(obj, "SkyRenderer"); }
 
-        if (tag.hasKey("LightBrightness", Constants.NBT.TAG_LIST))
+        if (JEDJsonUtils.hasString(obj, "SkyColor"))   { this.skyColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
+        if (JEDJsonUtils.hasString(obj, "FogColor"))   { this.fogColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "CloudColor")) { this.cloudColor = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+
+        JsonElement el = obj.get("LightBrightness");
+
+        if (el != null && el.isJsonArray())
         {
-            NBTTagList list = tag.getTagList("LightBrightness", Constants.NBT.TAG_FLOAT);
+            JsonArray arr = el.getAsJsonArray();
 
-            if (list.tagCount() == 16)
+            if (arr.size() == 16)
             {
-                this.customLightBrightnessTable = new float[16];
-
-                for (int i = 0; i < 16; i++)
+                try
                 {
-                    this.customLightBrightnessTable[i] = list.getFloatAt(i);
+                    float[] light = new float[16];
+
+                    for (int i = 0; i < 16; i++)
+                    {
+                        this.customLightBrightnessTable[i] = arr.get(i).getAsFloat();
+                    }
+
+                    this.customLightBrightnessTable = light;
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.warn("Failed to read a light brightness table from JSON", e);
                 }
             }
         }
-
-        if (tag.hasKey("CanRespawnHere", Constants.NBT.TAG_BYTE))   { this.canRespawnHere = tag.getBoolean("CanRespawnHere"); }
-        if (tag.hasKey("RespawnDimension", Constants.NBT.TAG_INT))  { this.respawnDimension = tag.getInteger("RespawnDimension"); }
 
         if (this.dayLength   <= 0) { this.dayLength = 1; }
         if (this.nightLength <= 0) { this.nightLength = 1; }
     }
 
-    public NBTTagCompound getJEDTagForClientSync()
+    public JsonObject getJEDPropsForClientSync()
     {
-        NBTTagCompound tag = new NBTTagCompound();
+        JsonObject obj = new JsonObject();
 
-        if (this.dayLength != 12000)    { tag.setInteger("DayLength", this.dayLength); }
-        if (this.nightLength != 12000)  { tag.setInteger("NightLength", this.nightLength); }
-        if (this.cloudHeight != 128)    { tag.setInteger("CloudHeight", this.cloudHeight); }
-        if (this.skyRenderer != null)   { tag.setString("SkyRenderer", this.skyRenderer); }
-        if (this.skyRenderType != 0)    { tag.setByte("SkyRenderType", (byte) this.skyRenderType); }
-        if (this.skyDisableFlags != 0)  { tag.setByte("SkyDisableFlags", (byte) this.skyDisableFlags); }
-        if (this.useCustomDayCycle)  { tag.setBoolean("CustomDayCycle", this.useCustomDayCycle); }
-        if (this.skyColor != null)   { tag.setString("SkyColor",   JEDStringUtils.colorToHexString(this.skyColor)); }
-        if (this.cloudColor != null) { tag.setString("CloudColor", JEDStringUtils.colorToHexString(this.cloudColor)); }
-        if (this.fogColor != null)   { tag.setString("FogColor",   JEDStringUtils.colorToHexString(this.fogColor)); }
-        if (this.customLightBrightnessTable != null) { tag.setTag("LightBrightness", writeFloats(this.customLightBrightnessTable)); }
+        if (this.dayLength != 12000)    { obj.add("DayLength",          new JsonPrimitive(this.dayLength)); }
+        if (this.nightLength != 12000)  { obj.add("NightLength",        new JsonPrimitive(this.nightLength)); }
+        if (this.cloudHeight != 128)    { obj.add("CloudHeight",        new JsonPrimitive(this.cloudHeight)); }
+        if (this.skyRenderer != null)   { obj.add("SkyRenderer",        new JsonPrimitive(this.skyRenderer)); }
+        if (this.skyRenderType != 0)    { obj.add("SkyRenderType",      new JsonPrimitive(this.skyRenderType)); }
+        if (this.skyDisableFlags != 0)  { obj.add("SkyDisableFlags",    new JsonPrimitive(this.skyDisableFlags)); }
+        if (this.useCustomDayCycle)     { obj.add("CustomDayCycle",     new JsonPrimitive(this.useCustomDayCycle)); }
+        if (this.skyColor != null)      { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
+        if (this.cloudColor != null)    { obj.add("CloudColor",         new JsonPrimitive(JEDStringUtils.colorToHexString(this.cloudColor))); }
+        if (this.fogColor != null)      { obj.add("FogColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.fogColor))); }
 
-        return tag;
+        if (this.colorData != null)
+        {
+            obj.add("Colors", JEDJsonUtils.deepCopy(this.colorData));
+        }
+
+        if (this.customLightBrightnessTable != null)
+        {
+            JsonArray arr = new JsonArray();
+
+            for (int i = 0; i < this.customLightBrightnessTable.length; i++)
+            {
+                arr.add(this.customLightBrightnessTable[i]);
+            }
+
+            obj.add("LightBrightness", arr);
+        }
+
+        return obj;
     }
 
-    public NBTTagCompound getFullJEDTag()
+    public JsonObject getFullJEDPropertiesObject()
     {
-        return this.fullJEDTag;
+        return JEDJsonUtils.deepCopy(this.fullJEDTag);
     }
 
     @Nonnull
@@ -141,7 +208,7 @@ public class JEDWorldProperties
         return tagList;
     }
 
-    public boolean getForceGamemode()
+    public boolean getForceGameMode()
     {
         return this.forceGameMode;
     }

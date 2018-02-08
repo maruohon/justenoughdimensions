@@ -106,7 +106,7 @@ public class Configs
 
         // Client stuff
 
-        prop = conf.get(CATEGORY_CLIENT, "enableColorOverrides", false).setRequiresMcRestart(false);
+        prop = conf.get(CATEGORY_CLIENT, "enableColorOverrides", true).setRequiresMcRestart(false);
         prop.setComment("Enables the Grass/Foliage/Water color customizations. This controls whether or not the event handlers get registered.");
         enableColorOverrides = prop.getBoolean();
 

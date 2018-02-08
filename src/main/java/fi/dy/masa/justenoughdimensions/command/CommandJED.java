@@ -12,12 +12,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDifficulty;
@@ -29,6 +32,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.world.DimensionDump;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
@@ -304,26 +308,41 @@ public class CommandJED extends CommandBase
             if (world != null)
             {
                 IChunkProvider cp = world.getChunkProvider();
+                DimensionType dimType = world.provider.getDimensionType();
+
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
-                JustEnoughDimensions.logger.info("DimensionType ID: {}", world.provider.getDimensionType().getId());
-                JustEnoughDimensions.logger.info("DimensionType name: {}", world.provider.getDimensionType().getName());
+
+                String clazzName = "?";
+                try
+                {
+                    Class <? extends WorldProvider > clazz = ReflectionHelper.getPrivateValue(DimensionType.class, dimType, "field_186077_g", "clazz");
+                    clazzName = clazz.getName();
+                }
+                catch (Exception e) {}
+
+                JustEnoughDimensions.logger.info(String.format("DimensionType: ID: %d, name: '%s', suffix: '%s', " +
+                                                  "shouldLoadSpawn: %s, WorldProvider class: '%s'",
+                                                  dimType.getId(), dimType.getName(), dimType.getSuffix(), dimType.shouldLoadSpawn(), clazzName));
+
+                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", world.provider.getDimensionType().toString());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
                 JustEnoughDimensions.logger.info("WorldType: '{}' (class: {})", type.getName(), type.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldInfo class: '{}'", world.getWorldInfo().getClass().getName());
                 JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
                         ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
 
-                JEDWorldProperties props = JEDWorldProperties.getProperties(world);
+                JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
                 if (props != null)
                 {
                     JustEnoughDimensions.logger.info("Dimension has JED properties");
-                    NBTTagCompound nbt = props.getFullJEDTag();
-                    JustEnoughDimensions.logger.info("JED properties NBT tag: {}", nbt != null ? nbt.toString() : "null");
+                    String str = JEDJsonUtils.serialize(props.getFullJEDPropertiesObject());
+                    JustEnoughDimensions.logger.info("JED properties tag: {}", str);
                 }
                 else
                 {

@@ -1,8 +1,8 @@
 package fi.dy.masa.justenoughdimensions.world;
 
+import com.google.gson.JsonObject;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -10,10 +10,10 @@ import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.WorldProvider;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
@@ -33,14 +33,7 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     {
         super.setDimension(dimension);
 
-        JEDWorldProperties props = JEDWorldProperties.getProperties(dimension);
-
-        if (props == null)
-        {
-            props = new JEDWorldProperties();
-        }
-
-        this.properties = props;
+        this.properties = JEDWorldProperties.getOrCreateProperties(dimension);
 
         // This method gets called the first time from DimensionManager.createProviderFor(),
         // at which time the world hasn't been set yet. The second call comes from the WorldServer
@@ -112,16 +105,16 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setJEDPropertiesFromNBT(NBTTagCompound tag)
+    public void setJEDPropertiesFromJson(JsonObject obj)
     {
-        if (tag != null)
+        if (obj != null)
         {
-            this.properties = JEDWorldProperties.createPropertiesFor(this.getDimension(), tag);
+            this.properties = JEDWorldProperties.getOrCreateProperties(this.getDimension(), obj);
         }
 
-        if (tag != null && tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+        if (obj != null && JEDJsonUtils.hasString(obj, "SkyRenderer"))
         {
-            WorldUtils.createSkyRendererFromName(this, tag.getString("SkyRenderer"));
+            WorldUtils.createSkyRendererFromName(this, JEDJsonUtils.getString(obj, "SkyRenderer"));
         }
         else if (this.properties.getSkyRenderType() != 0)
         {

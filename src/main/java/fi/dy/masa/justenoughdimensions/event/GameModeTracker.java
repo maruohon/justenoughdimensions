@@ -12,24 +12,23 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.GameType;
-import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
-public class GamemodeTracker
+public class GameModeTracker
 {
-    private static GamemodeTracker instance;
+    private static GameModeTracker instance;
     private Map<UUID, GameType> gameModes = new HashMap<UUID, GameType>();
     private boolean dirty = false;
 
-    public static GamemodeTracker getInstance()
+    public static GameModeTracker getInstance()
     {
         if (instance == null)
         {
-            instance = new GamemodeTracker();
+            instance = new GameModeTracker();
         }
 
         return instance;
@@ -70,15 +69,8 @@ public class GamemodeTracker
 
     private boolean dimensionHasForcedGamemode(int dimension)
     {
-        World world = DimensionManager.getWorld(dimension);
-
-        if (world != null)
-        {
-            JEDWorldProperties props = JEDWorldProperties.getProperties(world);
-            return props != null && props.getForceGamemode();
-        }
-
-        return false;
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dimension);
+        return props != null && props.getForceGameMode();
     }
 
     private void storeNonForcedGamemode(EntityPlayerMP player)

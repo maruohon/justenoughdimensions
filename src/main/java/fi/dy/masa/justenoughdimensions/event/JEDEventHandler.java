@@ -109,7 +109,7 @@ public class JEDEventHandler
 
         if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
         {
-            GamemodeTracker.getInstance().writeToDisk();
+            GameModeTracker.getInstance().writeToDisk();
         }
     }
 
@@ -135,7 +135,7 @@ public class JEDEventHandler
 
         if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
         {
-            GamemodeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, event.fromDim, event.toDim);
+            GameModeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, event.fromDim, event.toDim);
         }
     }
 

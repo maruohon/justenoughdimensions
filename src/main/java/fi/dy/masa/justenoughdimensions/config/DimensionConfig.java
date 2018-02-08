@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -37,7 +36,6 @@ import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
-import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 
 public class DimensionConfig
@@ -201,6 +199,8 @@ public class DimensionConfig
 
         if (file.exists() && file.isFile() && file.canRead())
         {
+            String fileName = file.getAbsolutePath();
+
             try
             {
                 JsonParser parser = new JsonParser();
@@ -208,16 +208,17 @@ public class DimensionConfig
 
                 if (rootElement != null)
                 {
+                    JustEnoughDimensions.logInfo("Reading the dimension config from file '{}'", fileName);
                     this.parseDimensionConfig(rootElement);
                 }
                 else
                 {
-                    JustEnoughDimensions.logger.warn("The dimensions.json config was empty");
+                    JustEnoughDimensions.logger.warn("The dimension config in file '{}' was empty", fileName);
                 }
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Failed to parse the config file '{}'", file.getName(), e);
+                JustEnoughDimensions.logger.error("Failed to parse the config file '{}'", fileName, e);
             }
         }
         else if (this.configDirConfigs.isDirectory() == false)
@@ -258,7 +259,7 @@ public class DimensionConfig
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
-            this.registerDimension(entry.getId(), entry);
+            this.registerDimension(entry.getDimension(), entry);
         }
 
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
@@ -270,7 +271,7 @@ public class DimensionConfig
         {
             if (Configs.enableReplacingRegisteredDimensions == false || entry.getOverride() == false)
             {
-                this.registerDimension(entry.getId(), entry);
+                this.registerDimension(entry.getDimension(), entry);
             }
         }
 
@@ -282,16 +283,16 @@ public class DimensionConfig
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
             if (Configs.enableUnregisteringDimensions && entry.getUnregister() &&
-                DimensionManager.isDimensionRegistered(entry.getId()))
+                DimensionManager.isDimensionRegistered(entry.getDimension()))
             {
-                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getId());
-                DimensionManager.unregisterDimension(entry.getId());
+                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getDimension());
+                DimensionManager.unregisterDimension(entry.getDimension());
             }
             else if (entry.getOverride() &&
                         (Configs.enableReplacingRegisteredDimensions ||
-                         DimensionManager.isDimensionRegistered(entry.getId()) == false))
+                         DimensionManager.isDimensionRegistered(entry.getDimension()) == false))
             {
-                this.registerDimension(entry.getId(), entry);
+                this.registerDimension(entry.getDimension(), entry);
             }
         }
     }
@@ -306,7 +307,7 @@ public class DimensionConfig
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
-            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
+            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
             this.registeredDimensions.add(dimension);
             return true;
         }
@@ -316,7 +317,7 @@ public class DimensionConfig
             {
                 JustEnoughDimensions.logInfo("Overriding dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
-                DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
+                DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
                 this.registeredDimensions.add(dimension);
                 return true;
             }
@@ -393,7 +394,7 @@ public class DimensionConfig
         }
 
         DimensionConfigEntry entry = new DimensionConfigEntry(dimension);
-        entry.setDimensionTypeEntry(new DimensionTypeEntry(dimension, dimension, name, suffix, keepLoaded, providerClass));
+        entry.setDimensionTypeEntry(new DimensionTypeEntry(dimension, name, suffix, keepLoaded, providerClass));
         entry.setOverride(override);
 
         return this.registerNewDimension(dimension, entry);
@@ -460,13 +461,11 @@ public class DimensionConfig
 
     private void parseDimensionConfig(JsonElement rootElement) throws IllegalStateException
     {
-        JustEnoughDimensions.logInfo("Reading the dimensions.json config...");
-
         if (rootElement == null || rootElement.isJsonObject() == false ||
             rootElement.getAsJsonObject().has("dimensions") == false ||
             rootElement.getAsJsonObject().get("dimensions").isJsonArray() == false)
         {
-            JustEnoughDimensions.logger.warn("The dimensions.json config is missing some of the top level elements...");
+            JustEnoughDimensions.logger.warn("The dimension config is missing some of the required top level elements!");
             return;
         }
 
@@ -490,55 +489,16 @@ public class DimensionConfig
 
     private void parseDimensionConfigEntry(int dimension, final JsonObject object)
     {
-        DimensionConfigEntry configEntry = new DimensionConfigEntry(dimension);
+        DimensionConfigEntry configEntry = DimensionConfigEntry.fromJson(dimension, object);
 
-        boolean override = object.has("override") && object.get("override").isJsonPrimitive() &&
-                object.get("override").getAsBoolean();
-        boolean unregister = object.has("unregister") && object.get("unregister").isJsonPrimitive() &&
-                object.get("unregister").getAsBoolean();
-        boolean disableTeleportingFrom = object.has("disable_teleporting_from") && object.get("disable_teleporting_from").isJsonPrimitive() &&
-                object.get("disable_teleporting_from").getAsBoolean();
-        boolean disableTeleportingTo = object.has("disable_teleporting_to") && object.get("disable_teleporting_to").isJsonPrimitive() &&
-                object.get("disable_teleporting_to").getAsBoolean();
-        String biome = object.has("biome") && object.get("biome").isJsonPrimitive() ?
-                object.get("biome").getAsString() : null;
-
-        configEntry.setOverride(override);
-        configEntry.setUnregister(unregister);
-        configEntry.setDisableTeleportingFrom(disableTeleportingFrom);
-        configEntry.setDisableTeleportingTo(disableTeleportingTo);
-        configEntry.setBiome(biome);
-
-        if (object.has("dimensiontype") && object.get("dimensiontype").isJsonObject())
+        if (configEntry.getWorldInfoJson() != null)
         {
-            JsonObject obj = object.get("dimensiontype").getAsJsonObject();
-            configEntry.setDimensionTypeEntry(this.parseDimensionTypeEntry(dimension, obj));
+            this.customWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, configEntry.getWorldInfoJson()));
         }
 
-        if (object.has("worldinfo") && object.get("worldinfo").isJsonObject())
+        if (configEntry.getOneTimeWorldInfoJson() != null)
         {
-            JsonObject obj = object.get("worldinfo").getAsJsonObject();
-            configEntry.setWorldInfoJson(obj);
-            this.customWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
-        }
-
-        if (object.has("worldinfo_onetime") && object.get("worldinfo_onetime").isJsonObject())
-        {
-            JsonObject obj = object.get("worldinfo_onetime").getAsJsonObject();
-            configEntry.setOneTimeWorldInfoJson(obj);
-            this.onetimeWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, obj));
-        }
-
-        if (object.has("jed") && object.get("jed").isJsonObject())
-        {
-            JsonObject obj = object.getAsJsonObject("jed");
-            configEntry.setJEDTag(obj);
-            NBTTagCompound tag = this.getJEDTag(obj);
-
-            if (tag != null)
-            {
-                JEDWorldProperties.createPropertiesFor(dimension, tag);
-            }
+            this.onetimeWorldInfo.put(dimension, this.parseAndGetCustomWorldInfoValues(dimension, configEntry.getOneTimeWorldInfoJson()));
         }
 
         this.dimensions.put(dimension, configEntry);
@@ -546,7 +506,7 @@ public class DimensionConfig
 
     private DimensionTypeEntry createDefaultDimensionTypeEntry(int dimension)
     {
-        DimensionTypeEntry dte = new DimensionTypeEntry(dimension, dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
+        DimensionTypeEntry dte = new DimensionTypeEntry(dimension, "DIM" + dimension, "dim_" + dimension, false, WorldProviderSurfaceJED.class);
         JustEnoughDimensions.logInfo("Created a default DimensionTypeEntry for dimension {}: {}", dimension, dte.getDescription());
         return dte;
     }
@@ -576,7 +536,7 @@ public class DimensionConfig
             obj.add(key, new JsonPrimitive(value));
         }
         else if (key.equals("id") || key.equals("name") || key.equals("suffix") || key.equals("keeploaded") ||
-                 key.equals("worldprovider") || key.equals("vanilla_dimensiontype"))
+                 key.equals("worldprovider") || key.equals("existing_dimensiontype"))
         {
             JEDJsonUtils.getOrCreateNestedObject(obj, "dimensiontype").add(key, new JsonPrimitive(value));
         }
@@ -625,7 +585,7 @@ public class DimensionConfig
                  key.equals("suffix") ||
                  key.equals("keeploaded") ||
                  key.equals("worldprovider") ||
-                 key.equals("vanilla_dimensiontype"))
+                 key.equals("existing_dimensiontype"))
         {
             obj = JEDJsonUtils.getNestedObject(obj, "dimensiontype", false);
             return obj != null ? obj.remove(key) != null : false;
@@ -740,7 +700,7 @@ public class DimensionConfig
             key.equals("suffix") ||
             key.equals("keeploaded") ||
             key.equals("worldprovider") ||
-            key.equals("vanilla_dimensiontype"))
+            key.equals("existing_dimensiontype"))
         {
             if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
             {
@@ -854,39 +814,6 @@ public class DimensionConfig
     }
 
     @Nullable
-    private NBTTagCompound getJEDTag(JsonObject obj)
-    {
-        NBTTagCompound tag = new NBTTagCompound();
-
-        for (Map.Entry<String, JsonElement> entry : obj.entrySet())
-        {
-            NBTBase tagTmp = this.getTagForJEDProperty(entry.getKey(), entry.getValue());
-
-            if (tagTmp != null)
-            {
-                tag.setTag(entry.getKey(), tagTmp);
-            }
-        }
-
-        return tag.hasNoTags() ? null : tag;
-    }
-
-    @Nullable
-    private NBTBase getTagForJEDProperty(String key, JsonElement element)
-    {
-        Integer type = this.jedKeys.get(key);
-
-        if (type != null)
-        {
-            return this.getTagForType(key, type, element);
-        }
-
-        JustEnoughDimensions.logger.warn("Unrecognized key in jed properties: '{} = {}'", key, element);
-
-        return null;
-    }
-
-    @Nullable
     private NBTBase getTagForType(String key, int type, JsonElement element)
     {
         try
@@ -950,69 +877,6 @@ public class DimensionConfig
         }
 
         return null;
-    }
-
-    private DimensionTypeEntry parseDimensionTypeEntry(int dimension, JsonObject dimType)
-    {
-        int dimTypeId = dimType.has("id") && dimType.get("id").isJsonPrimitive() ? dimType.get("id").getAsInt() : dimension;
-
-        if (dimType.has("vanilla_dimensiontype") && dimType.get("vanilla_dimensiontype").isJsonPrimitive())
-        {
-            String typeName = dimType.get("vanilla_dimensiontype").getAsString();
-            JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", typeName, dimension);
-            return new DimensionTypeEntry(dimension, dimTypeId, typeName);
-        }
-
-        String name = (dimType.has("name") && dimType.get("name").isJsonPrimitive()) ?
-                dimType.get("name").getAsString() : "DIM" + dimension;
-        if (StringUtils.isBlank(name)) { name = "DIM" + dimension; }
-
-        String suffix = (dimType.has("suffix") && dimType.get("suffix").isJsonPrimitive()) ?
-                dimType.get("suffix").getAsString() : "_dim" + dimension;
-
-        boolean keepLoaded = dimType.has("keeploaded") && dimType.get("keeploaded").isJsonPrimitive() && dimType.get("keeploaded").getAsBoolean();
-        boolean forceRegister = dimType.has("force_register") && dimType.get("force_register").isJsonPrimitive() && dimType.get("force_register").getAsBoolean();
-        boolean allowDifferentId = dimType.has("allow_different_id") == false || dimType.get("allow_different_id").isJsonPrimitive() == false || dimType.get("allow_different_id").getAsBoolean();
-
-        Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
-        String providerName = "";
-
-        if (dimType.has("worldprovider") && dimType.get("worldprovider").isJsonPrimitive())
-        {
-            providerName = dimType.get("worldprovider").getAsString();
-
-            // Don't allow using the vanilla surface or hell providers for the vanilla end dimension,
-            // because that will lead to a crash in the teleport code (null returned from getSpawnCoordinate() for
-            // other vanilla providers than the End).
-            if (dimension == 1)
-            {
-                if (providerName.equals("WorldProviderSurface") || providerName.equals("net.minecraft.world.WorldProviderSurface"))
-                {
-                    providerName = WorldProviderSurfaceJED.class.getSimpleName();
-                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
-                }
-                else if (providerName.equals("WorldProviderHell") || providerName.equals("net.minecraft.world.WorldProviderHell"))
-                {
-                    providerName = WorldProviderHellJED.class.getSimpleName();
-                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
-                }
-            }
-
-            providerClass = DimensionTypeEntry.getProviderClass(providerName);
-        }
-
-        if (providerClass == null)
-        {
-            providerClass = WorldProviderSurfaceJED.class;
-
-            JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
-                    providerName, DimensionTypeEntry.getNameForWorldProvider(providerClass));
-        }
-
-        DimensionTypeEntry entry = new DimensionTypeEntry(dimension, dimTypeId, name, suffix, keepLoaded, providerClass);
-        entry.setForceRegister(forceRegister).setAllowDifferentId(allowDifferentId);
-
-        return entry;
     }
 
     public enum WorldInfoType

@@ -21,7 +21,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
-import fi.dy.masa.justenoughdimensions.event.GamemodeTracker;
+import fi.dy.masa.justenoughdimensions.event.GameModeTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
@@ -90,7 +90,7 @@ public class JustEnoughDimensions
         // won't get auto-loaded on server start as 'static' dimensions.
         DimensionConfig.instance().registerNonOverrideDimensions();
 
-        GamemodeTracker.getInstance().readFromDisk();
+        GameModeTracker.getInstance().readFromDisk();
     }
 
     @Mod.EventHandler
@@ -137,11 +137,11 @@ public class JustEnoughDimensions
     // Note that these still have some potential issues, the suffix being one.
     static
     {
-        DimensionType.register("JED Surface",               "_dim7891", 7891, WorldProviderSurfaceJED.class, false);
-        DimensionType.register("JED Hell",                  "_dim7892", 7892, WorldProviderHellJED.class, false);
-        DimensionType.register("JED End",                   "_dim7893", 7893, WorldProviderEndJED.class, false);
-        DimensionType.register("JED Surface (keep loaded)", "_dim7894", 7894, WorldProviderSurfaceJED.class, true);
-        DimensionType.register("JED Hell (keep loaded)",    "_dim7895", 7895, WorldProviderHellJED.class, true);
-        DimensionType.register("JED End (keep loaded)",     "_dim7896", 7896, WorldProviderEndJED.class, true);
+        DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false);
+        DimensionType.register("JED Hell",              "_dim7892", 7892, WorldProviderHellJED.class,       false);
+        DimensionType.register("JED End",               "_dim7893", 7893, WorldProviderEndJED.class,        false);
+        DimensionType.register("JED Surface 0",         "_dim7894",    0, WorldProviderSurfaceJED.class,    false);
+        DimensionType.register("JED Surface Loaded",    "_dim7895", 7895, WorldProviderSurfaceJED.class,    true);
+        DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true);
     }
 }

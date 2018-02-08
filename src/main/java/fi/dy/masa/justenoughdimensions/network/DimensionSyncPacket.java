@@ -83,11 +83,11 @@ public class DimensionSyncPacket
 
         for (DimensionConfigEntry entry : dimensions)
         {
-            registerDimension(entry.getId(), entry);
+            registerDimension(entry.getDimension(), entry);
 
             if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
             {
-                ids.add(String.valueOf(entry.getId()));
+                ids.add(String.valueOf(entry.getDimension()));
             }
         }
 
@@ -115,7 +115,7 @@ public class DimensionSyncPacket
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", dimension);
-            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType());
+            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
         }
     }
 }

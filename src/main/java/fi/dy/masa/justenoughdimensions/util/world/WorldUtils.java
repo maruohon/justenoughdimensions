@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import com.google.gson.JsonObject;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -33,7 +34,6 @@ import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -42,6 +42,7 @@ import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -157,19 +158,19 @@ public class WorldUtils
         }
     }
 
-    public static boolean setRenderersOnNonJEDWorld(World world, NBTTagCompound tag)
+    public static boolean setRenderersOnNonJEDWorld(World world, JsonObject obj)
     {
-        int skyRenderType = tag.hasKey("SkyRenderType", Constants.NBT.TAG_BYTE) ? tag.getByte("SkyRenderType") : 0;
-        int skyDisableFlags = tag.hasKey("SkyDisableFlags", Constants.NBT.TAG_BYTE) ? tag.getByte("SkyDisableFlags") : 0;
+        int skyRenderType   = JEDJsonUtils.hasInteger(obj, "SkyRenderType") ?   JEDJsonUtils.getInteger(obj, "SkyRenderType")   : 0;
+        int skyDisableFlags = JEDJsonUtils.hasInteger(obj, "SkyDisableFlags") ? JEDJsonUtils.getInteger(obj, "SkyDisableFlags") : 0;
 
         if (skyRenderType != 0)
         {
             world.provider.setSkyRenderer(new SkyRenderer(skyRenderType, skyDisableFlags));
             return true;
         }
-        else if (tag.hasKey("SkyRenderer", Constants.NBT.TAG_STRING))
+        else if (JEDJsonUtils.hasString(obj, "SkyRenderer"))
         {
-            return createSkyRendererFromName(world.provider, tag.getString("SkyRenderer"));
+            return createSkyRendererFromName(world.provider, JEDJsonUtils.getString(obj, "SkyRenderer"));
         }
 
         return false;
@@ -527,7 +528,7 @@ public class WorldUtils
     public static void setupRespawnDimension(EntityPlayer player)
     {
         World world = player.getEntityWorld();
-        JEDWorldProperties props = JEDWorldProperties.getProperties(world);
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
 
         if (props != null)
         {
