@@ -17,6 +17,7 @@ public class Configs
     public static final String CATEGORY_GENERIC = "Generic";
 
     public static boolean enableColorOverrides;
+    public static boolean enableCommandRedirecting;
     public static boolean enableForcedGamemodes;
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
@@ -62,6 +63,10 @@ public class Configs
     public static void loadConfigs(Configuration conf)
     {
         Property prop;
+
+        prop = conf.get(CATEGORY_GENERIC, "enableCommandRedirecting", true).setRequiresMcRestart(false);
+        prop.setComment("Enables redirecting the vanilla /time, /weather etc. commands to the JED variants in WorldInfo-overridden dimensions");
+        enableCommandRedirecting = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableForcedGamemodes", false).setRequiresMcRestart(false);
         prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");

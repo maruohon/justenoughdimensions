@@ -1,12 +1,15 @@
 package fi.dy.masa.justenoughdimensions.event;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -27,9 +30,25 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
 {
+    private static final Set<String> REDIRECTED_COMMANDS = new HashSet<>();
+
+    public JEDEventHandler()
+    {
+        REDIRECTED_COMMANDS.clear();
+        REDIRECTED_COMMANDS.add("defaultgamemode");
+        REDIRECTED_COMMANDS.add("difficulty");
+        REDIRECTED_COMMANDS.add("gamerule");
+        REDIRECTED_COMMANDS.add("seed");
+        REDIRECTED_COMMANDS.add("setworldspawn");
+        REDIRECTED_COMMANDS.add("time");
+        REDIRECTED_COMMANDS.add("weather");
+        REDIRECTED_COMMANDS.add("worldborder");
+    }
+
     @SubscribeEvent
     public void onConnectionCreated(FMLNetworkEvent.ServerConnectionFromClientEvent event)
     {
@@ -213,6 +232,21 @@ public class JEDEventHandler
                 JustEnoughDimensions.logger.warn("Player {} joined for the first time, but the currently set" +
                         " initial spawn dimension {} didn't exist", event.getEntityPlayer().getName(), Configs.initialSpawnDimensionId);
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onCommand(CommandEvent event)
+    {
+        String command = event.getCommand().getName();
+
+        if (Configs.enableCommandRedirecting && REDIRECTED_COMMANDS.contains(command) &&
+            event.getSender().getEntityWorld().getWorldInfo() instanceof WorldInfoJED)
+        {
+            String newCommand = "jed " + command + " " + String.join(" ", event.getParameters());
+            JustEnoughDimensions.logInfo("Redirecting a vanilla command '/{}' to the JED variant as '/{}'", command, newCommand);
+            event.setCanceled(true);
+            FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().executeCommand(event.getSender(), newCommand);
         }
     }
 }
