@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.DimensionType;
@@ -16,7 +17,7 @@ public class DimensionSyncPacket
     private ByteBuf buffer = Unpooled.buffer();
     private List<DimensionConfigEntry> dimensions = new ArrayList<DimensionConfigEntry>();
 
-    public void addDimensionData(List<DimensionConfigEntry> entries)
+    public void addDimensionData(Collection<DimensionConfigEntry> entries)
     {
         this.buffer.writeInt(entries.size());
 

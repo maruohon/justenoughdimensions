@@ -5,14 +5,15 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
-import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -70,9 +71,16 @@ public class DimensionConfig
         return instance;
     }
 
-    public List<DimensionConfigEntry> getRegisteredDimensions()
+    public Collection<DimensionConfigEntry> getRegisteredDimensions()
     {
-        return ImmutableList.<DimensionConfigEntry>copyOf(this.dimensions.values());
+        List<DimensionConfigEntry> list = new ArrayList<>();
+
+        for (int dim : this.registeredDimensions)
+        {
+            list.add(this.dimensions.get(dim));
+        }
+
+        return list;
     }
 
     @Nullable
@@ -269,7 +277,7 @@ public class DimensionConfig
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
-            if (Configs.enableReplacingRegisteredDimensions == false || entry.getOverride() == false)
+            if (DimensionManager.isDimensionRegistered(entry.getDimension()) == false)
             {
                 this.registerDimension(entry.getDimension(), entry);
             }
@@ -278,21 +286,21 @@ public class DimensionConfig
         PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
     }
 
-    public void registerOverriddenDimensions()
+    public void doDimensionOverridesAndUnregistering()
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
-            if (Configs.enableUnregisteringDimensions && entry.getUnregister() &&
-                DimensionManager.isDimensionRegistered(entry.getDimension()))
+            if (DimensionManager.isDimensionRegistered(entry.getDimension()))
             {
-                JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getDimension());
-                DimensionManager.unregisterDimension(entry.getDimension());
-            }
-            else if (entry.getOverride() &&
-                        (Configs.enableReplacingRegisteredDimensions ||
-                         DimensionManager.isDimensionRegistered(entry.getDimension()) == false))
-            {
-                this.registerDimension(entry.getDimension(), entry);
+                if (Configs.enableUnregisteringDimensions && entry.getUnregister())
+                {
+                    JustEnoughDimensions.logInfo("Unregistering dimension {}...", entry.getDimension());
+                    DimensionManager.unregisterDimension(entry.getDimension());
+                }
+                else if (Configs.enableReplacingRegisteredDimensions && entry.getOverride())
+                {
+                    this.registerDimension(entry.getDimension(), entry);
+                }
             }
         }
     }
@@ -402,19 +410,19 @@ public class DimensionConfig
 
     public void unregisterCustomDimensions()
     {
-        Set<Integer> toRemove = new HashSet<Integer>();
+        Iterator<Integer> iter = this.registeredDimensions.iterator();
 
-        for (int dimension : this.registeredDimensions)
+        while (iter.hasNext())
         {
+            int dimension = iter.next();
+
             if (dimension != 0 && DimensionManager.isDimensionRegistered(dimension) && DimensionManager.getWorld(dimension) == null)
             {
                 JustEnoughDimensions.logInfo("Unregistering dimension {}...", dimension);
                 DimensionManager.unregisterDimension(dimension);
-                toRemove.add(dimension);
+                iter.remove();
             }
         }
-
-        this.registeredDimensions.removeAll(toRemove);
     }
 
     public void removeDimensionAndSaveConfig(int dimension)
@@ -433,7 +441,7 @@ public class DimensionConfig
 
     private void saveConfig()
     {
-        List<DimensionConfigEntry> dims = new ArrayList<DimensionConfigEntry>(this.getRegisteredDimensions());
+        List<DimensionConfigEntry> dims = new ArrayList<>(this.dimensions.values());
         Collections.sort(dims);
 
         JsonObject root = new JsonObject();
