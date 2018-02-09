@@ -28,6 +28,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     private String dimensionTypeName;
     private boolean forceRegister;
     private boolean allowDifferentId = true;
+    private boolean requireExactMatch;
     private static final Field field_DimensionType_clazz = ReflectionHelper.findField(DimensionType.class, "field_186077_g", "clazz");
 
     @SuppressWarnings("unchecked")
@@ -84,6 +85,21 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         return this;
     }
 
+    /**
+     * Set whether or not an "exact" match of an existing DimensionType is required
+     * to avoid registering a new entry.
+     * Currently this means that the values of WorldProvider class, shouldLoadSpawn,
+     * dimTypeID and suffix must match.
+     * The name is not checked because that makes little difference.
+     * @param requireExactMatch
+     * @return
+     */
+    public DimensionTypeEntry setRequireExactMatch(boolean requireExactMatch)
+    {
+        this.requireExactMatch = requireExactMatch;
+        return this;
+    }
+
     public int getDimensionTypeId()
     {
         return this.dimensionTypeId;
@@ -119,16 +135,25 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             // to try to avoid modifying the DimensionType enum unnecessarily.
             for (DimensionType tmp : DimensionType.values())
             {
-                if (tmp.shouldLoadSpawn() == this.keepLoaded &&
-                    getProviderClassFrom(tmp) == this.providerClass && 
-                    (tmp.getId() == this.dimensionTypeId || this.allowDifferentId))
+                if (tmp.shouldLoadSpawn() == this.keepLoaded && getProviderClassFrom(tmp) == this.providerClass)
                 {
-                    type = tmp;
-
-                    // "Exact"/best match, stop searching
-                    if (tmp.getId() == this.dimensionTypeId)
+                    if (this.requireExactMatch)
                     {
-                        break;
+                        if (tmp.getId() == this.dimensionTypeId && tmp.getSuffix().equals(this.suffix))
+                        {
+                            type = tmp;
+                            break;
+                        }
+                    }
+                    else if ((tmp.getId() == this.dimensionTypeId || this.allowDifferentId))
+                    {
+                        type = tmp;
+
+                        // "Exact"/best match, stop searching
+                        if (tmp.getId() == this.dimensionTypeId)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -183,6 +208,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             buf.writeInt(this.dimensionTypeId);
             buf.writeBoolean(this.forceRegister);
             buf.writeBoolean(this.allowDifferentId);
+            buf.writeBoolean(this.requireExactMatch);
             ByteBufUtils.writeUTF8String(buf, this.name);
             ByteBufUtils.writeUTF8String(buf, this.suffix);
             ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
@@ -203,6 +229,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             final int dimTypeId = buf.readInt();
             boolean forceRegister = buf.readBoolean();
             boolean allowDifferentId = buf.readBoolean();
+            boolean requireExactMatch = buf.readBoolean();
             String name = ByteBufUtils.readUTF8String(buf);
             String suffix = ByteBufUtils.readUTF8String(buf);
             String providerClassName = ByteBufUtils.readUTF8String(buf);
@@ -212,7 +239,9 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
                 @SuppressWarnings("unchecked")
                 Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
                 DimensionTypeEntry entry = new DimensionTypeEntry(dimTypeId, name, suffix, false, providerClass);
-                entry.setForceRegister(forceRegister).setAllowDifferentId(allowDifferentId);
+                entry.setForceRegister(forceRegister);
+                entry.setAllowDifferentId(allowDifferentId);
+                entry.setRequireExactMatch(requireExactMatch);
                 return entry;
             }
             catch (Exception e)
@@ -243,6 +272,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         boolean keepLoaded =        JEDJsonUtils.getBooleanOrDefault(objDimType, "keeploaded", false);
         boolean forceRegister =     JEDJsonUtils.getBooleanOrDefault(objDimType, "force_register", false);
         boolean allowDifferentId =  JEDJsonUtils.getBooleanOrDefault(objDimType, "allow_different_id", true);
+        boolean requireExactMatch = JEDJsonUtils.getBooleanOrDefault(objDimType, "require_exact_match", false);
 
         Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
         String providerName = "";
@@ -282,6 +312,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         DimensionTypeEntry entry = new DimensionTypeEntry(dimensionTypeId, name, suffix, keepLoaded, providerClass);
         entry.setForceRegister(forceRegister);
         entry.setAllowDifferentId(allowDifferentId);
+        entry.setRequireExactMatch(requireExactMatch);
 
         return entry;
     }
@@ -311,6 +342,11 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             if (this.allowDifferentId == false)
             {
                 dimensionType.addProperty("allow_different_id", this.allowDifferentId);
+            }
+
+            if (this.requireExactMatch)
+            {
+                dimensionType.addProperty("require_exact_match", this.requireExactMatch);
             }
         }
 
