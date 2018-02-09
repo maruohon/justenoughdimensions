@@ -271,11 +271,22 @@ public class WorldUtils
         NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
         BlockPos pos = world.getSpawnPoint();
 
-        if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnY") && nbt.hasKey("SpawnZ"))
+        if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnZ"))
         {
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Spawn point defined in dimension config " +
-                                         "for dimension {}, skipping the search", provider.getDimension());
-            pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
+            if (nbt.hasKey("SpawnY"))
+            {
+                pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
+                JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: An exact spawn point {} defined in the " +
+                                             "dimension config for dimension {}, skipping the search", pos, provider.getDimension());
+            }
+            else
+            {
+                pos = new BlockPos(nbt.getInteger("SpawnX"), 72, nbt.getInteger("SpawnZ"));
+                JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: A spawn point XZ-location 'x = {}, z = {}' defined in the " +
+                                             "dimension config for dimension {}, searching for a suitable y-location",
+                                             pos.getX(), pos.getZ(), provider.getDimension());
+                pos = getSuitableSpawnBlockInColumn(world, pos, true);
+            }
         }
         else
         {
@@ -310,7 +321,7 @@ public class WorldUtils
 
             if (pos == null)
             {
-                pos = getSuitableSpawnBlockInColumn(world, BlockPos.ORIGIN);
+                pos = getSuitableSpawnBlockInColumn(world, new BlockPos(0, 72, 0), true);
             }
         }
         // Likely nether type dimensions
@@ -346,7 +357,14 @@ public class WorldUtils
         {
             while (pos.getY() >= 30)
             {
-                if (world.isAirBlock(pos) && world.isAirBlock(pos.down(1)) && world.getBlockState(pos.down(2)).getMaterial().blocksMovement())
+                Chunk chunk = world.getChunkFromChunkCoords(pos.getX() >> 4, pos.getZ() >> 4);
+                IBlockState stateBelow = chunk.getBlockState(pos.down(2));
+                IBlockState state1 = chunk.getBlockState(pos.down(1));
+                IBlockState state2 = chunk.getBlockState(pos);
+
+                if (state1.getBlock().isAir(state1, world, pos) &&
+                    state2.getBlock().isAir(state2, world, pos) &&
+                    stateBelow.getMaterial().blocksMovement())
                 {
                     return pos.down();
                 }
@@ -357,12 +375,13 @@ public class WorldUtils
             x += random.nextInt(32) - random.nextInt(32);
             z += random.nextInt(32) - random.nextInt(32);
             pos = new BlockPos(x, 120, z);
+
             iterations++;
         }
 
-        JustEnoughDimensions.logger.warn("Unable to find a nether spawn point for dimension {}", world.provider.getDimension());
+        JustEnoughDimensions.logger.warn("Unable to find a nether spawn point for dimension {}, defaulting to 0,72,0", world.provider.getDimension());
 
-        return new BlockPos(0, 70, 0);
+        return new BlockPos(0, 72, 0);
     }
 
     @Nonnull
@@ -394,36 +413,43 @@ public class WorldUtils
         // still end up inside a tree or something, since decoration hasn't necessarily been done yet.
         while (iterations < 1000)
         {
-            Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
-            pos = new BlockPos(x, chunk.getTopFilledSegment() + 15, z);
-
-            while (pos.getY() >= 0)
+            if (provider.canCoordinateBeSpawn(x, z))
             {
-                if (isSuitableSpawnBlock(world, pos))
-                {
-                    return pos.up();
-                }
+                Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
+                pos = new BlockPos(x, chunk.getTopFilledSegment() + 15 + 1, z);
 
-                pos = pos.down();
+                while (pos.getY() >= 0)
+                {
+                    if (isSuitableSpawnPosition(world, chunk, pos, false))
+                    {
+                        return pos;
+                    }
+
+                    pos = pos.down();
+                }
             }
 
             x += random.nextInt(32) - random.nextInt(32);
             z += random.nextInt(32) - random.nextInt(32);
+
             iterations++;
         }
 
-        return getSuitableSpawnBlockInColumn(world, new BlockPos(x, 70, z)).up();
+        pos = new BlockPos(x, 72, z);
+
+        return getSuitableSpawnBlockInColumn(world, pos, true);
     }
 
     @Nonnull
-    private static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos posIn)
+    public static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos originalPos, boolean leanient)
     {
-        Chunk chunk = world.getChunkFromBlockCoords(posIn);
-        BlockPos pos = new BlockPos(posIn.getX(), chunk.getTopFilledSegment() + 15, posIn.getZ());
+        Chunk chunk = world.getChunkFromBlockCoords(originalPos);
+        BlockPos posTop = new BlockPos(originalPos.getX(), chunk.getTopFilledSegment() + 15 + 1, originalPos.getZ());
+        BlockPos pos = posTop;
 
         while (pos.getY() >= 0)
         {
-            if (isSuitableSpawnBlock(world, pos))
+            if (isSuitableSpawnPosition(world, chunk, pos, leanient))
             {
                 return pos;
             }
@@ -431,19 +457,20 @@ public class WorldUtils
             pos = pos.down();
         }
 
-        return posIn;
+        return originalPos;
     }
 
-    private static boolean isSuitableSpawnBlock(World world, BlockPos pos)
+    public static boolean isSuitableSpawnPosition(World world, Chunk chunk, BlockPos pos, boolean leanient)
     {
-        IBlockState state = world.getBlockState(pos);
-        Material materialUp1 = world.getBlockState(pos.up(1)).getMaterial();
-        Material materialUp2 = world.getBlockState(pos.up(2)).getMaterial();
+        IBlockState state =    chunk.getBlockState(pos.down(1));
+        Material materialUp1 = chunk.getBlockState(pos).getMaterial();
+        Material materialUp2 = chunk.getBlockState(pos.up(1)).getMaterial();
 
         return state.getMaterial().blocksMovement() &&
-               state.getBlock().isLeaves(state, world, pos) == false && state.getBlock().isFoliage(world, pos) == false &&
-               materialUp1.blocksMovement() == false && materialUp1.isLiquid() == false &&
-               materialUp2.blocksMovement() == false && materialUp2.isLiquid() == false;
+               (leanient || state.getBlock().isLeaves(state, world, pos) == false) &&
+               (leanient || state.getBlock().isFoliage(world, pos) == false) &&
+               materialUp1.blocksMovement() == false && (leanient || materialUp1.isLiquid() == false) &&
+               materialUp2.blocksMovement() == false && (leanient || materialUp2.isLiquid() == false);
     }
 
     public static void createBonusChest(World world)
