@@ -1,5 +1,7 @@
 package fi.dy.masa.justenoughdimensions.util;
 
+import java.io.File;
+import java.io.FileReader;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -311,5 +313,26 @@ public class JEDJsonUtils
     {
         JsonParser parser = new JsonParser();
         return parser.parse(input);
+    }
+
+    @Nullable
+    public static JsonElement parseJsonFile(File file)
+    {
+        if (file != null && file.exists() && file.isFile() && file.canRead())
+        {
+            String fileName = file.getAbsolutePath();
+
+            try
+            {
+                JsonParser parser = new JsonParser();
+                return parser.parse(new FileReader(file));
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("Failed to parse the JSON file '{}'", fileName, e);
+            }
+        }
+
+        return null;
     }
 }

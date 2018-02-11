@@ -51,19 +51,21 @@ public class JustEnoughDimensions
     {
         instance = this;
 
-        Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
+        Configs.loadConfigsFromMainConfigFile(event.getModConfigurationDirectory());
         PacketHandler.init();
         proxy.registerEventHandlers();
         channels = NetworkRegistry.INSTANCE.newChannel("JEDChannel", DimensionSyncChannelHandler.instance);
 
-        DimensionConfig.create(new File(event.getModConfigurationDirectory(), Reference.MOD_ID));
+        DimensionConfig.init(event.getModConfigurationDirectory());
     }
 
     @Mod.EventHandler
     public void onServerAboutToStart(FMLServerAboutToStartEvent event)
     {
         File worldDir = new File(((AnvilSaveConverter) event.getServer().getActiveAnvilConverter()).savesDirectory, event.getServer().getFolderName());
+        Configs.loadConfigsFromPerWorldConfigIfEnabled(worldDir);
         DimensionConfig.instance().readDimensionConfig(worldDir);
+        GameModeTracker.getInstance().readFromDisk(worldDir);
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.
@@ -89,8 +91,6 @@ public class JustEnoughDimensions
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
         DimensionConfig.instance().registerNonOverrideDimensions();
-
-        GameModeTracker.getInstance().readFromDisk();
     }
 
     @Mod.EventHandler
@@ -99,6 +99,8 @@ public class JustEnoughDimensions
         // Unregister custom dimensions. This is only useful in single player,
         // so that all the dimensions won't immediately load when joining a world again.
         DimensionConfig.instance().unregisterCustomDimensions();
+        // (Re-)read the global configs after closing a world
+        Configs.loadConfigsFromGlobalConfigFile();
     }
 
     public static void logInfo(String message, Object... params)

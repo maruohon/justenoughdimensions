@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.proxy;
 
 import net.minecraftforge.common.MinecraftForge;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.event.JEDEventHandlerClient;
 
@@ -22,6 +23,7 @@ public class ClientProxy extends CommonProxy
     {
         if (registered == false)
         {
+            JustEnoughDimensions.logInfo("Registering the client event handler (for Grass/Foliage/Water colors)");
             MinecraftForge.EVENT_BUS.register(clientEventHandler);
             registered = true;
         }
@@ -32,6 +34,7 @@ public class ClientProxy extends CommonProxy
     {
         if (registered)
         {
+            JustEnoughDimensions.logInfo("Un-registering the client event handler (for Grass/Foliage/Water colors)");
             MinecraftForge.EVENT_BUS.unregister(clientEventHandler);
             registered = false;
         }

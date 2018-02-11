@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
@@ -92,31 +93,27 @@ public class GameModeTracker
         player.sendMessage(new TextComponentTranslation("jed.info.gamemode.changed", type.toString()));
     }
 
-    public void readFromDisk()
+    public void readFromDisk(@Nullable File worldDir)
     {
         // Clear the data structures when reading the data for a world/save, so that data
         // from another world won't carry over to a world/save that doesn't have the file yet.
         this.gameModes.clear();
 
-        try
+        if (worldDir != null)
         {
-            File saveDir = DimensionManager.getCurrentSaveRootDirectory();
-
-            if (saveDir == null)
+            try
             {
-                return;
+                File file = new File(new File(worldDir, Reference.MOD_ID), "gamemodetracker.dat");
+
+                if (file.exists() && file.isFile() && file.canRead())
+                {
+                    this.readFromNBT(CompressedStreamTools.readCompressed(new FileInputStream(file)));
+                }
             }
-
-            File file = new File(new File(saveDir, Reference.MOD_ID), "gamemodetracker.dat");
-
-            if (file.exists() && file.isFile())
+            catch (Exception e)
             {
-                this.readFromNBT(CompressedStreamTools.readCompressed(new FileInputStream(file)));
+                JustEnoughDimensions.logger.warn("Failed to read GamemodeTracker data from file");
             }
-        }
-        catch (Exception e)
-        {
-            JustEnoughDimensions.logger.warn("Failed to read GamemodeTracker data from file");
         }
     }
 

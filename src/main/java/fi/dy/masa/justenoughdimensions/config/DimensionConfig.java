@@ -1,7 +1,6 @@
 package fi.dy.masa.justenoughdimensions.config;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,12 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -35,6 +34,9 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncDimensions;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
+import fi.dy.masa.justenoughdimensions.util.ConfigFileUtils;
+import fi.dy.masa.justenoughdimensions.util.ConfigFileUtils.ConfigComparator;
+import fi.dy.masa.justenoughdimensions.util.ConfigFileUtils.FileAction;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -42,28 +44,33 @@ import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 public class DimensionConfig
 {
     private static DimensionConfig instance;
-    private final File configDirConfigs;
-    private final File dimensionConfigsFile;
+    private final File configDirJED;
+    private final File dimensionConfigFileGlobal;
     private final Set<Integer> registeredDimensions = new HashSet<Integer>();
     private final Map<Integer, DimensionConfigEntry> dimensions = new HashMap<Integer, DimensionConfigEntry>();
-    private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
-    private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>(8);
+    private final Map<Integer, NBTTagCompound> customWorldInfo = new HashMap<Integer, NBTTagCompound>();
+    private final Map<Integer, NBTTagCompound> onetimeWorldInfo = new HashMap<Integer, NBTTagCompound>();
     private final Map<String, Integer> worldInfoKeys = new HashMap<String, Integer>();
     private final Map<String, Integer> jedKeys = new HashMap<String, Integer>();
     private final Map<String, Integer> jedKeysListTypes = new HashMap<String, Integer>();
     private JsonObject dimBuilderData = new JsonObject();
+    private File currentDimensionConfigFile;
+    private String currentConfigId = "__default";
+    private int currentConfigVersion;
 
-    private DimensionConfig(File configDir)
+    private DimensionConfig(File configDirCommon)
     {
         instance = this;
-        this.configDirConfigs = configDir;
-        this.dimensionConfigsFile = new File(configDir, "dimensions.json");
+
+        this.configDirJED = new File(configDirCommon, Reference.MOD_ID);
+        this.dimensionConfigFileGlobal = new File(this.configDirJED, "dimensions.json");
+
         this.initWorldInfoKeys();
     }
 
-    public static DimensionConfig create(File configDir)
+    public static DimensionConfig init(File configDirCommon)
     {
-        return new DimensionConfig(configDir);
+        return new DimensionConfig(configDirCommon);
     }
 
     public static DimensionConfig instance()
@@ -171,23 +178,6 @@ public class DimensionConfig
         }
     }
 
-    private File getConfigFile(File worldDir)
-    {
-        File file = null;
-
-        if (worldDir != null)
-        {
-            file = new File(new File(worldDir, Reference.MOD_ID), "dimensions.json");
-        }
-
-        if (file == null || file.exists() == false || file.isFile() == false || file.canRead() == false)
-        {
-            file = this.dimensionConfigsFile;
-        }
-
-        return file;
-    }
-
     /**
      * Only call this method after the overworld has been loaded
      */
@@ -198,40 +188,57 @@ public class DimensionConfig
 
     public void readDimensionConfig(File worldDir)
     {
+        if (worldDir != null)
+        {
+            File configDir = new File(new File(worldDir, "data"), Reference.MOD_ID);
+            File configFile = new File(configDir, "dimensions.json");
+
+            if (Configs.copyDimensionConfigToWorld)
+            {
+                ConfigFileUtils.createDirIfNotExists(configDir);
+                ConfigFileUtils.tryCopyOrMoveConfigIfMissingOrOlder(configFile, this.dimensionConfigFileGlobal,
+                        FileAction.COPY, new ConfigComparatorDimensionConfig());
+            }
+
+            if (Configs.usePerWorldDimensionConfig && configFile.exists() && configFile.isFile() && configFile.canRead())
+            {
+                this.currentDimensionConfigFile = configFile;
+                this.readDimensionConfigFromFile(this.currentDimensionConfigFile);
+                return;
+            }
+        }
+
+        this.currentDimensionConfigFile = this.dimensionConfigFileGlobal;
+        this.readDimensionConfigFromFile(this.currentDimensionConfigFile);
+    }
+
+    private void readDimensionConfigFromFile(File configFile)
+    {
         this.customWorldInfo.clear();
         this.onetimeWorldInfo.clear();
         this.dimensions.clear();
+        this.currentConfigId = "__default";
+        this.currentConfigVersion = 0;
         JEDWorldProperties.clearWorldProperties();
 
-        File file = this.getConfigFile(worldDir);
-
-        if (file.exists() && file.isFile() && file.canRead())
+        if (configFile != null)
         {
-            String fileName = file.getAbsolutePath();
+            String fileName = configFile.getAbsolutePath();
+            JsonElement rootElement = JEDJsonUtils.parseJsonFile(configFile);
 
-            try
+            if (rootElement != null)
             {
-                JsonParser parser = new JsonParser();
-                JsonElement rootElement = parser.parse(new FileReader(file));
-
-                if (rootElement != null)
-                {
-                    JustEnoughDimensions.logInfo("Reading the dimension config from file '{}'", fileName);
-                    this.parseDimensionConfig(rootElement);
-                }
-                else
-                {
-                    JustEnoughDimensions.logger.warn("The dimension config in file '{}' was empty", fileName);
-                }
+                JustEnoughDimensions.logInfo("Reading the dimension config from file '{}'", fileName);
+                this.parseDimensionConfig(rootElement);
             }
-            catch (Exception e)
+            else
             {
-                JustEnoughDimensions.logger.error("Failed to parse the config file '{}'", fileName, e);
+                JustEnoughDimensions.logger.warn("The dimension config in file '{}' was empty or invalid", fileName);
             }
         }
-        else if (this.configDirConfigs.isDirectory() == false)
+        else
         {
-            this.configDirConfigs.mkdirs();
+            JustEnoughDimensions.logInfo("No 'dimensions.json' file found; neither global nor per-world");
         }
 
         this.restoreMissingVanillaDimensions();
@@ -314,7 +321,7 @@ public class DimensionConfig
 
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
-            JustEnoughDimensions.logInfo("Registering a dimension with ID {}...", dimension);
+            JustEnoughDimensions.logInfo("Registering a dimension with ID {}", dimension);
             DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
             this.registeredDimensions.add(dimension);
             return true;
@@ -323,7 +330,7 @@ public class DimensionConfig
         {
             if (DimensionManager.getWorld(dimension) == null)
             {
-                JustEnoughDimensions.logInfo("Overriding dimension {}...", dimension);
+                JustEnoughDimensions.logInfo("Overriding dimension {}", dimension);
                 DimensionManager.unregisterDimension(dimension);
                 DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
                 this.registeredDimensions.add(dimension);
@@ -331,12 +338,12 @@ public class DimensionConfig
             }
             else
             {
-                JustEnoughDimensions.logger.warn("Dimension {} is already registered and currently loaded, can't override it...", dimension);
+                JustEnoughDimensions.logger.warn("Dimension {} is already registered and currently loaded, can't override it", dimension);
             }
         }
         else
         {
-            JustEnoughDimensions.logger.warn("Dimension {} is already registered, skipping it...", dimension);
+            JustEnoughDimensions.logger.warn("Dimension {} is already registered, skipping it", dimension);
         }
 
         return false;
@@ -418,7 +425,7 @@ public class DimensionConfig
 
             if (dimension != 0 && DimensionManager.isDimensionRegistered(dimension) && DimensionManager.getWorld(dimension) == null)
             {
-                JustEnoughDimensions.logInfo("Unregistering dimension {}...", dimension);
+                JustEnoughDimensions.logInfo("Unregistering dimension {}", dimension);
                 DimensionManager.unregisterDimension(dimension);
                 iter.remove();
             }
@@ -452,47 +459,83 @@ public class DimensionConfig
             array.add(dimEntry.toJson());
         }
 
+        JsonObject objVersion = new JsonObject();
+        objVersion.add("id", new JsonPrimitive(this.currentConfigId));
+        objVersion.add("version", new JsonPrimitive(this.currentConfigVersion));
+
+        root.add("config_version", objVersion);
         root.add("dimensions", array);
 
         try
         {
-            FileWriter writer = new FileWriter(this.getConfigFile(DimensionManager.getCurrentSaveRootDirectory()));
+            FileWriter writer = new FileWriter(this.currentDimensionConfigFile);
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             writer.write(gson.toJson(root));
             writer.close();
         }
         catch (IOException e)
         {
-            JustEnoughDimensions.logger.warn("Failed to write dimensions.json", e);
+            JustEnoughDimensions.logger.warn("Failed to write dimension config to file '{}'",
+                    this.currentDimensionConfigFile.getAbsolutePath(), e);
         }
+    }
+
+    @Nullable
+    private static Pair<String, Integer> getConfigVersion(JsonElement rootElement)
+    {
+        if (rootElement != null && rootElement.isJsonObject())
+        {
+            JsonObject root = rootElement.getAsJsonObject();
+            JsonObject objVersion = JEDJsonUtils.getNestedObject(root, "config_version", false);
+
+            if (objVersion != null)
+            {
+                String id = JEDJsonUtils.getStringOrDefault(objVersion, "id", "__default", true);
+                int ver = JEDJsonUtils.getIntegerOrDefault(objVersion, "version", 0);
+
+                return Pair.of(id, ver);
+            }
+        }
+
+        return null;
     }
 
     private void parseDimensionConfig(JsonElement rootElement) throws IllegalStateException
     {
-        if (rootElement == null || rootElement.isJsonObject() == false ||
-            rootElement.getAsJsonObject().has("dimensions") == false ||
-            rootElement.getAsJsonObject().get("dimensions").isJsonArray() == false)
+        if (rootElement == null || rootElement.isJsonObject() == false)
         {
-            JustEnoughDimensions.logger.warn("The dimension config is missing some of the required top level elements!");
+            JustEnoughDimensions.logger.warn("The dimension config is missing the root object!");
             return;
         }
 
-        JsonArray array = rootElement.getAsJsonObject().get("dimensions").getAsJsonArray();
-        JsonObject object;
-        int count = 0;
+        JsonObject root = rootElement.getAsJsonObject();
+        Pair<String, Integer> version = getConfigVersion(rootElement);
 
-        for (JsonElement el : array)
+        if (version != null)
         {
-            object = el.getAsJsonObject();
-
-            if (object.has("dim") && object.get("dim").isJsonPrimitive())
-            {
-                this.parseDimensionConfigEntry(object.get("dim").getAsInt(), object);
-                count++;
-            }
+            this.currentConfigId = version.getLeft();
+            this.currentConfigVersion = version.getRight();
         }
 
-        JustEnoughDimensions.logInfo("Read {} dimension entries from the config", count);
+        if (root.has("dimensions") && root.get("dimensions").isJsonArray())
+        {
+            JsonArray array = rootElement.getAsJsonObject().get("dimensions").getAsJsonArray();
+            JsonObject object;
+            int count = 0;
+
+            for (JsonElement el : array)
+            {
+                object = el.getAsJsonObject();
+
+                if (object.has("dim") && object.get("dim").isJsonPrimitive())
+                {
+                    this.parseDimensionConfigEntry(object.get("dim").getAsInt(), object);
+                    count++;
+                }
+            }
+
+            JustEnoughDimensions.logInfo("Read {} dimension entries from the config", count);
+        }
     }
 
     private void parseDimensionConfigEntry(int dimension, final JsonObject object)
@@ -885,6 +928,35 @@ public class DimensionConfig
         }
 
         return null;
+    }
+
+    private static class ConfigComparatorDimensionConfig extends ConfigComparator
+    {
+        @Override
+        public boolean shouldReplace(File fileToReplace, File replacementFile)
+        {
+            if (fileToReplace.exists() == false)
+            {
+                return true;
+            }
+
+            if ((fileToReplace.exists() && fileToReplace.isFile() && fileToReplace.canRead() &&
+                replacementFile.exists() && replacementFile.isFile() && replacementFile.canRead()))
+            {
+                JsonElement rootElementOld = JEDJsonUtils.parseJsonFile(fileToReplace);
+                JsonElement rootElementNew = JEDJsonUtils.parseJsonFile(replacementFile);
+                Pair<String, Integer> versionOld = rootElementOld != null ? getConfigVersion(rootElementOld) : null;
+                Pair<String, Integer> versionNew = rootElementNew != null ? getConfigVersion(rootElementNew) : null;
+
+                if (versionOld != null && versionNew != null)
+                {
+                    return versionNew.getLeft().equals(versionOld.getLeft()) &&
+                           versionNew.getRight() > versionOld.getRight();
+                }
+            }
+
+            return false;
+        }
     }
 
     public enum WorldInfoType
