@@ -74,7 +74,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
     /**
      * Set whether or not an existing DimensionType with identical other values,
-     * (except for the name, which is not checked) but a different ID can be used
+     * (except for the name and suffix, which are not checked) but a different ID can be used
      * instead of registering a new entry.
      * @param allowDifferentId
      * @return
@@ -86,11 +86,8 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     }
 
     /**
-     * Set whether or not an "exact" match of an existing DimensionType is required
+     * Set whether or not an exact match of an existing DimensionType is required
      * to avoid registering a new entry.
-     * Currently this means that the values of WorldProvider class, shouldLoadSpawn,
-     * dimTypeID and suffix must match.
-     * The name is not checked because that makes little difference.
      * @param requireExactMatch
      * @return
      */
@@ -139,7 +136,9 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
                 {
                     if (this.requireExactMatch)
                     {
-                        if (tmp.getId() == this.dimensionTypeId && tmp.getSuffix().equals(this.suffix))
+                        if (tmp.getId() == this.dimensionTypeId &&
+                            tmp.getSuffix().equals(this.suffix) &&
+                            tmp.getName().equals(this.name))
                         {
                             type = tmp;
                             break;
