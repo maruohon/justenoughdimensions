@@ -21,7 +21,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
-import fi.dy.masa.justenoughdimensions.event.GameModeTracker;
+import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
@@ -65,7 +65,7 @@ public class JustEnoughDimensions
         File worldDir = new File(((AnvilSaveConverter) event.getServer().getActiveAnvilConverter()).savesDirectory, event.getServer().getFolderName());
         Configs.loadConfigsFromPerWorldConfigIfEnabled(worldDir);
         DimensionConfig.instance().readDimensionConfig(worldDir);
-        GameModeTracker.getInstance().readFromDisk(worldDir);
+        DataTracker.getInstance().readFromDisk(worldDir);
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.

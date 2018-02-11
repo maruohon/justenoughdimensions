@@ -25,7 +25,7 @@ public class Configs
 
     public static boolean enableColorOverrides;
     public static boolean enableCommandRedirecting;
-    public static boolean enableForcedGamemodes;
+    public static boolean enableForcedGameModes;
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
@@ -181,8 +181,8 @@ public class Configs
         enableCommandRedirecting = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableForcedGameModes", false).setRequiresMcRestart(false);
-        prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGamemode option set to true");
-        enableForcedGamemodes = prop.getBoolean();
+        prop.setComment("Enables switching players' gamemode when they enter a dimension which has the ForceGameMode option set to true");
+        enableForcedGameModes = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableInitialSpawnDimensionOverride", false).setRequiresMcRestart(false);
         prop.setComment("Enables overriding the initial spawning dimension to something other than dim 0 (overworld).");

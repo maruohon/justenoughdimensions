@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.DerivedWorldInfo;
@@ -126,9 +125,9 @@ public class JEDEventHandler
     {
         WorldFileUtils.saveCustomWorldInfoToFile(event.getWorld());
 
-        if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
+        if (Configs.enableForcedGameModes && event.getWorld().provider.getDimension() == 0)
         {
-            GameModeTracker.getInstance().writeToDisk();
+            DataTracker.getInstance().writeToDisk();
         }
     }
 
@@ -137,13 +136,16 @@ public class JEDEventHandler
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerLoggedInEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
+        DataTracker.getInstance().playerLoginOrRespawn(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
-        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}, death?: {}",
+                event.player.getEntityWorld().provider.getDimension(), event.isEndConquered() == false);
         this.syncAndSetPlayerData(event.player);
+        DataTracker.getInstance().playerLoginOrRespawn(event.player);
     }
 
     @SubscribeEvent
@@ -151,11 +153,7 @@ public class JEDEventHandler
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerChangedDimensionEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
-
-        if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
-        {
-            GameModeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, event.fromDim, event.toDim);
-        }
+        DataTracker.getInstance().playerChangedDimension(event.player, event.fromDim, event.toDim);
     }
 
     private void syncAndSetPlayerData(EntityPlayer player)
