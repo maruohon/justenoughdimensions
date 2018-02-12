@@ -505,31 +505,28 @@ public class WorldUtils
     }
 
     /**
-     * This will set the spawnDimension field on the player, if the WorldInfo on the current
-     * world is WorldInfoJED, and it says that respawning there should be allowed, but the
-     * WorldProvider says it's not. This should support respawning even without a JED WorldProvider.
+     * This will set the spawnDimension field on the player, if the current world has
+     * JED world properties, and they say that respawning there should be allowed, but the
+     * WorldProvider says it's not. This should support respawning in the same,
+     * normally not respawnable dimension, even without a JED WorldProvider.
      * @param player
      */
     public static void setupRespawnDimension(EntityPlayer player)
     {
         World world = player.getEntityWorld();
-        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
+        final int dim = world.provider.getDimension();
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dim);
 
-        if (props != null)
+        if (world.provider.canRespawnHere() == false &&
+            props != null &&
+            props.canRespawnHere() != null &&
+            props.canRespawnHere().booleanValue())
         {
-            Boolean canRespawnHere = props.canRespawnHere();
-
-            if (canRespawnHere != null && canRespawnHere.booleanValue() && world.provider.canRespawnHere() == false)
-            {
-                final int dim = world.provider.getDimension();
-                JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Setting the respawn dimension of player '{}' to: {}", player.getName(), dim);
-                player.setSpawnDimension(dim);
-                player.addTag(JED_RESPAWN_DIM_TAG);
-                return;
-            }
+            JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Setting the respawn dimension of player '{}' to: {}", player.getName(), dim);
+            player.setSpawnDimension(dim);
+            player.addTag(JED_RESPAWN_DIM_TAG);
         }
-
-        if (player.getTags().contains(JED_RESPAWN_DIM_TAG))
+        else if (player.getTags().contains(JED_RESPAWN_DIM_TAG))
         {
             JustEnoughDimensions.logInfo("WorldUtils.setupRespawnDimension: Removing the respawn dimension data from player '{}'", player.getName());
             player.setSpawnDimension(null);
