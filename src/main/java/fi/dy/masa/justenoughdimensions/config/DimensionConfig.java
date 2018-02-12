@@ -824,7 +824,8 @@ public class DimensionConfig
             }
             catch (NumberFormatException e)
             {
-                return new NBTTagLong(element.getAsString().hashCode());
+                String seedStr = element.getAsString();
+                return new NBTTagLong(seedStr.isEmpty() ? JustEnoughDimensions.RAND.nextLong() : seedStr.hashCode());
             }
         }
         else if (element.isJsonObject())

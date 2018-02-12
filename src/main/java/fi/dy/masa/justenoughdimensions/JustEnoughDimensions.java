@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions;
 
 import java.io.File;
 import java.util.EnumMap;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.minecraft.world.DimensionType;
@@ -43,6 +44,7 @@ public class JustEnoughDimensions
     @SidedProxy(clientSide = Reference.PROXY_CLIENT, serverSide = Reference.PROXY_SERVER)
     public static CommonProxy proxy;
 
+    public static final Random RAND = new Random();
     public static final Logger logger = LogManager.getLogger(Reference.MOD_ID);
     public static EnumMap<Side, FMLEmbeddedChannel> channels;
 
