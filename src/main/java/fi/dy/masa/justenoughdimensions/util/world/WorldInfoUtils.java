@@ -157,12 +157,9 @@ public class WorldInfoUtils
 
     private static void applyChangesFromNewWorldInfo(World world, boolean generatorChanged)
     {
-        if (world.provider instanceof IWorldProviderJED)
-        {
-            // This sets the WorldType (the terrainType field) and the generatorSettings field
-            // from the newly overridden or updated WorldInfo
-            world.provider.setWorld(world);
-        }
+        // This sets the WorldType (the terrainType field) and the generatorSettings field
+        // from the newly overridden or updated WorldInfo
+        world.provider.setWorld(world);
 
         WorldBorderUtils.setWorldBorderValues(world);
 

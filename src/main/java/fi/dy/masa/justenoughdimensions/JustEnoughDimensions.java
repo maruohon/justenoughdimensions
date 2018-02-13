@@ -28,6 +28,7 @@ import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -74,6 +75,9 @@ public class JustEnoughDimensions
         // But on the other hand we don't want to register the rest of the dimensions yet,
         // otherwise they would be considered 'static dimensions' and get loaded on server start.
         DimensionConfig.instance().doDimensionOverridesAndUnregistering();
+
+        // Handle template world copying for the overworld before the server starts
+        WorldFileUtils.copyTemplateWorldIfApplicable(0, worldDir);
     }
 
     @Mod.EventHandler

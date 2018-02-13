@@ -14,6 +14,7 @@ import fi.dy.masa.justenoughdimensions.util.ConfigFileUtils.FileAction;
 
 public class Configs
 {
+    private static File configDirGlobal;
     private static File configFileGlobal;
     public static String configurationFileName;
     public static Configuration config;
@@ -50,10 +51,16 @@ public class Configs
         }
     }
 
+    public static File getConfigDir()
+    {
+        return configDirGlobal;
+    }
+
     public static void loadConfigsFromMainConfigFile(File configDirCommon)
     {
         File configDir = new File(configDirCommon, Reference.MOD_ID);
         File configFile = new File(configDir, Reference.MOD_ID + ".cfg");
+        configDirGlobal = configDir;
         configFileGlobal = configFile;
 
         ConfigFileUtils.createDirIfNotExists(configDir);

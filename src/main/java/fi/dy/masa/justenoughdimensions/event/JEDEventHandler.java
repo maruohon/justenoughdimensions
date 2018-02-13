@@ -109,6 +109,10 @@ public class JEDEventHandler
 
     private static void overrideWorldInfoAndBiomeProvider(World world)
     {
+        // Copying/handling template worlds needs to happen before WorldInfo overrides,
+        // in case we need to apply custom values from the dimension config on top of any existing values.
+        WorldFileUtils.copyTemplateWorldIfApplicable(world);
+
         if (Configs.enableSeparateWorldInfo)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world);
