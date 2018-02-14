@@ -14,6 +14,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean unregister;
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
+    private boolean isTemporaryDimension = false;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
     private String worldTemplate;
     private JsonObject jedTag;
@@ -49,6 +50,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public boolean getDisableTeleportingTo()
     {
         return this.disableTeleportingTo;
+    }
+
+    public boolean isTemporaryDimension()
+    {
+        return this.isTemporaryDimension;
     }
 
     @Nullable
@@ -141,6 +147,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false);
         entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
         entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
+        entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
         entry.biome = JEDJsonUtils.getStringOrDefault(obj, "biome", null, false);
         entry.worldTemplate = JEDJsonUtils.getStringOrDefault(obj, "world_template", null, false);
 
@@ -192,6 +199,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("disable_teleporting_to", true);
         }
 
+        if (this.isTemporaryDimension)
+        {
+            jsonEntry.addProperty("temporary_dimension", true);
+        }
+
         if (this.biome != null)
         {
             jsonEntry.addProperty("biome", this.biome);
@@ -217,9 +229,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public String getDescription()
     {
         return String.format("{id=%d,override=%s,unregister=%s,biome=%s,world_template=%s," +
-                             "disable_teleporting_from=%s,disable_teleporting_to=%s,DimensionTypeEntry:[%s]}",
+                             "disable_teleporting_from=%s,disable_teleporting_to=%s,temporary_dimension=%s,DimensionTypeEntry:[%s]}",
                 this.dimension, this.override, this.unregister, this.biome, this.worldTemplate,
-                this.disableTeleportingFrom, this.disableTeleportingTo,
+                this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
 

@@ -1,9 +1,12 @@
 package fi.dy.masa.justenoughdimensions.util.world;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import org.apache.commons.io.FileUtils;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -36,6 +39,8 @@ import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldExcep
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
+import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
@@ -154,6 +159,45 @@ public class WorldUtils
         }
 
         return count;
+    }
+
+    public static boolean removeTemporaryWorldIfApplicable(World world)
+    {
+        final int dimension = world.provider.getDimension();
+        File worldDir = WorldFileUtils.getWorldDirectory(world);
+        return removeTemporaryWorldIfApplicable(dimension, world, worldDir, false);
+    }
+
+    public static boolean removeTemporaryWorldIfApplicable(int dimension, @Nullable World world, File worldDir, boolean isServerStop)
+    {
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
+
+        if (entry != null && entry.isTemporaryDimension() &&
+            (dimension != 0 || isServerStop) &&
+            worldDir != null && worldDir.exists() &&
+            DataTracker.getInstance().getPlayerCountInDimension(dimension) == 0)
+        {
+            JustEnoughDimensions.logInfo("Trying to remove a temporary dimension (DIM {}) from '{}'",
+                    dimension, worldDir.getAbsolutePath());
+
+            try
+            {
+                if (world != null && (world instanceof WorldServer))
+                {
+                    ((WorldServer) world).flush();
+                }
+
+                FileUtils.deleteDirectory(worldDir);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.warn("Exception while trying to remove a temporary dimension {}", dimension, e);
+            }
+        }
+
+        return false;
     }
 
     public static void syncWorldProviderProperties(EntityPlayer player)

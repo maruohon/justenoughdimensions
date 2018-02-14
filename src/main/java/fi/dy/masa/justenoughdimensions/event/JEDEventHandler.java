@@ -81,6 +81,16 @@ public class JEDEventHandler
         }
     }
 
+    @SubscribeEvent
+    public void onWorldUnload(WorldEvent.Unload event)
+    {
+        if (event.getWorld().isRemote == false)
+        {
+            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", event.getWorld().provider.getDimension());
+            WorldUtils.removeTemporaryWorldIfApplicable(event.getWorld());
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
     {

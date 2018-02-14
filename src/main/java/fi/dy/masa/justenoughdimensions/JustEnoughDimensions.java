@@ -29,6 +29,7 @@ import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -48,6 +49,8 @@ public class JustEnoughDimensions
     public static final Random RAND = new Random();
     public static final Logger logger = LogManager.getLogger(Reference.MOD_ID);
     public static EnumMap<Side, FMLEmbeddedChannel> channels;
+
+    private static File lastWorldDir;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event)
@@ -69,6 +72,7 @@ public class JustEnoughDimensions
         Configs.loadConfigsFromPerWorldConfigIfEnabled(worldDir);
         DimensionConfig.instance().readDimensionConfig(worldDir);
         DataTracker.getInstance().readFromDisk(worldDir);
+        lastWorldDir = worldDir;
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.
@@ -102,9 +106,13 @@ public class JustEnoughDimensions
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event)
     {
+        WorldUtils.removeTemporaryWorldIfApplicable(0, null, lastWorldDir, true);
+        lastWorldDir = null;
+
         // Unregister custom dimensions. This is only useful in single player,
         // so that all the dimensions won't immediately load when joining a world again.
         DimensionConfig.instance().unregisterCustomDimensions();
+
         // (Re-)read the global configs after closing a world
         Configs.loadConfigsFromGlobalConfigFile();
     }

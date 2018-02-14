@@ -141,6 +141,21 @@ public class DataTracker
         return this.playerDimensions.get(player.getUniqueID());
     }
 
+    public int getPlayerCountInDimension(int dimension)
+    {
+        int count = 0;
+
+        for (Integer dim : this.playerDimensions.values())
+        {
+            if (dim == dimension)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     public void readFromDisk(@Nullable File worldDir)
     {
         // Clear the data structures when reading the data for a world/save, so that data
