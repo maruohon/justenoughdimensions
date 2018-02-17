@@ -300,7 +300,8 @@ public class WorldUtils
 
             if ((dimension != 0 &&
                 infoOverWorld.getTerrainType() == info.getTerrainType() &&
-                infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()))
+                infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()) &&
+                infoOverWorld.getSeed() == info.getSeed())
                 ||
                 (dimension == 0 && generatorChangedForOverworld == false))
             {
@@ -308,7 +309,7 @@ public class WorldUtils
                 return;
             }
 
-            // This sets the new WorldType and generatorOptions to the WorldProvider
+            // This sets the new WorldType, generatorOptions and creates the BiomeProvider based on the seed for the WorldProvider
             world.provider.setWorld(world);
 
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
@@ -320,12 +321,13 @@ public class WorldUtils
                 return;
             }
 
-            JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Attempting to override/re-create the ChunkProvider (of type {}) in dimension {} with {}",
-                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
-
             try
             {
                 field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkGenerator);
+
+                JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Re-created/overwrote the ChunkProvider " +
+                                             "(of type '{}') in dimension {} with '{}'",
+                        chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
             }
             catch (Exception e)
             {

@@ -157,8 +157,8 @@ public class WorldInfoUtils
 
     private static void applyChangesFromNewWorldInfo(World world, boolean generatorChanged)
     {
-        // This sets the WorldType (the terrainType field) and the generatorSettings field
-        // from the newly overridden or updated WorldInfo
+        // This sets the WorldType (the terrainType field) and the generatorSettings field,
+        // and creates the BiomeProvider based on the world seed from the newly overridden or updated WorldInfo
         world.provider.setWorld(world);
 
         WorldBorderUtils.setWorldBorderValues(world);
@@ -170,9 +170,9 @@ public class WorldInfoUtils
         // the world has been constructed and the ChunkProvider set.
 
         // However, for JED WorldProviders the WorldInfo, and more importantly,
-        // the terrainType and generatorSettings in the WorldProvider get set/overridden earlier
+        // the terrainType, generatorSettings and the world seed in the WorldProvider get set/overridden earlier
         // than WorldEvent.Load, via the WorldProvider#setDimension() method, which gets called from
-        // the WorldServer constructor. Therefore the ChunkProvider for JED WorldProviders
+        // the WorldServer constructor. Therefore the ChunkGenerator for JED WorldProviders
         // already has the correct settings available to it when it gets created in the first place.
         if ((world.provider instanceof IWorldProviderJED) == false)
         {
@@ -194,7 +194,7 @@ public class WorldInfoUtils
         WorldInfo info = world.getWorldInfo();
         final boolean hasGeneratorOptions = nbt.hasKey("generatorOptions", Constants.NBT.TAG_STRING);
         final boolean hasSeed = nbt.hasKey("RandomSeed", Constants.NBT.TAG_LONG);
-        boolean generatorChanged = hasGeneratorOptions;
+        boolean generatorChanged = hasGeneratorOptions || hasSeed;
 
         // These don't have setters, so they need to be smuggled in via WorldSettings
         if (hasSeed || hasGeneratorOptions)
