@@ -23,6 +23,7 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
+import fi.dy.masa.justenoughdimensions.reference.Reference;
 
 public class WorldFileUtils
 {
@@ -176,6 +177,48 @@ public class WorldFileUtils
                         templateWorld.getAbsolutePath());
             }
         }
+    }
+
+    public static void createTemporaryWorldMarkerIfApplicable(World world)
+    {
+        final int dimension = world.provider.getDimension();
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
+
+        if (entry != null && entry.isTemporaryDimension())
+        {
+            File worldDir = getWorldDirectoryDirectly(world, false);
+
+            if (isNewWorld(worldDir))
+            {
+                File jedDataDir = getWorldJEDDataDirectory(worldDir);
+                File markerFile = getTemporaryDimensionMarkerFile(jedDataDir);
+
+                if (markerFile.exists() == false)
+                {
+                    try
+                    {
+                        JustEnoughDimensions.logInfo("Creating a temporary dimension marker file '{}'", markerFile.getAbsolutePath());
+                        jedDataDir.mkdirs();
+                        markerFile.createNewFile();
+                    }
+                    catch (Exception e)
+                    {
+                        JustEnoughDimensions.logger.warn("Failed to create a temporary dimension marker file '{}'",
+                                markerFile.getAbsolutePath(), e);
+                    }
+                }
+            }
+        }
+    }
+
+    public static File getWorldJEDDataDirectory(File worldDir)
+    {
+        return new File(new File(worldDir, "data"), Reference.MOD_ID);
+    }
+
+    public static File getTemporaryDimensionMarkerFile(File jedDataDir)
+    {
+        return new File(jedDataDir, "jed_temporary_dimension.txt");
     }
 
     /**

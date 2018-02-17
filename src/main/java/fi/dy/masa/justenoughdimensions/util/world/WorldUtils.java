@@ -177,23 +177,36 @@ public class WorldUtils
             worldDir != null && worldDir.exists() &&
             DataTracker.getInstance().getPlayerCountInDimension(dimension) == 0)
         {
-            JustEnoughDimensions.logInfo("Trying to remove a temporary dimension (DIM {}) from '{}'",
-                    dimension, worldDir.getAbsolutePath());
+            File jedDataDir = WorldFileUtils.getWorldJEDDataDirectory(worldDir);
+            File markerFile = WorldFileUtils.getTemporaryDimensionMarkerFile(jedDataDir);
 
-            try
+            if (markerFile.exists())
             {
-                if (world != null && (world instanceof WorldServer))
+                if (dimension == 0)
                 {
-                    ((WorldServer) world).flush();
+                    JustEnoughDimensions.logInfo("Trying to remove a temporary world '{}'", worldDir.getAbsolutePath());
+                }
+                else
+                {
+                    JustEnoughDimensions.logInfo("Trying to remove a temporary dimension (DIM {}) from '{}'",
+                            dimension, worldDir.getAbsolutePath());
                 }
 
-                FileUtils.deleteDirectory(worldDir);
+                try
+                {
+                    if (world != null && (world instanceof WorldServer))
+                    {
+                        ((WorldServer) world).flush();
+                    }
 
-                return true;
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.warn("Exception while trying to remove a temporary dimension {}", dimension, e);
+                    FileUtils.deleteDirectory(worldDir);
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.warn("Exception while trying to remove a temporary dimension {}", dimension, e);
+                }
             }
         }
 

@@ -71,6 +71,7 @@ public class JEDEventHandler
             JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
 
             overrideWorldInfoAndBiomeProvider(world);
+            WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
             WorldUtils.findAndSetWorldSpawnIfApplicable(world);
 
             if (Configs.enableSeparateWorldBorders)
@@ -98,6 +99,7 @@ public class JEDEventHandler
         JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - DIM: {}", world.provider.getDimension());
 
         overrideWorldInfoAndBiomeProvider(world);
+        WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
 
         // Find a proper spawn point for the overworld that isn't inside ground...
         // For other dimensions than the regular overworld, this is done after
