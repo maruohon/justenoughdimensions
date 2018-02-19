@@ -269,7 +269,7 @@ public class CommandTeleportJED extends CommandBase
             World worldOld = player.getEntityWorld();
             TeleporterJED teleporter = new TeleporterJED(worldDst, data);
 
-            player.setLocationAndAngles(x, y, z, player.rotationYaw, player.rotationPitch);
+            player.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
             server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), teleporter);
 
             // See PlayerList#transferEntityToWorld()
@@ -460,6 +460,13 @@ public class CommandTeleportJED extends CommandBase
         public Vec3d getPosition(World world)
         {
             return getClampedDestinationPosition(this.posX, this.posY, this.posZ, world);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("TeleportData:{dim=%d,x=%.2f,y=%.2f,z=%.2f,yaw=%.2f,pitch=%.2f,entity=%s}\n",
+                    this.dimension, this.posX, this.posY, this.posZ, this.yaw, this.pitch, this.entity.getName());
         }
     }
 
