@@ -139,11 +139,22 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
+    public void setWorldTime(long time)
+    {
+        time = WorldProviderJED.getNewWorldTime(time, this.getWorldTime(), this.properties);
+        super.setWorldTime(time);
+    }
+
+    @Override
     public float calculateCelestialAngle(long worldTime, float partialTicks)
     {
         if (this.properties.getUseCustomDayCycle())
         {
             return WorldProviderJED.calculateCelestialAngle(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
+        }
+        else if (this.properties.getUseCustomCelestialAngleRange())
+        {
+            return WorldProviderJED.getCustomCelestialAngleValue(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
         }
 
         return super.calculateCelestialAngle(worldTime, partialTicks);

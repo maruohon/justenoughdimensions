@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -24,6 +25,12 @@ public class JEDWorldProperties
     private JsonObject colorData;
     private boolean forceGameMode;
     private boolean useCustomDayCycle;
+    private boolean useCustomCelestialAngleRange;
+    private boolean useCustomDayTimeRange;
+    private float celestialAngleMin = 0.0f;
+    private float celestialAngleMax = 1.0f;
+    private int dayTimeMin = 0;
+    private int dayTimeMax = 24000 - 1;
     private int dayLength = 12000;
     private int nightLength = 12000;
     private int cloudHeight = 128;
@@ -159,6 +166,20 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "FogColor"))   { this.fogColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
         if (JEDJsonUtils.hasString(obj, "CloudColor")) { this.cloudColor = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
 
+        if (JEDJsonUtils.hasDouble(obj, "CustomCelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CustomCelestialAngleMax"))
+        {
+            this.celestialAngleMin = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CustomCelestialAngleMin"), 0f, 1f);
+            this.celestialAngleMax = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CustomCelestialAngleMax"), 0f, 1f);
+            this.useCustomCelestialAngleRange = true;
+        }
+
+        if (JEDJsonUtils.hasInteger(obj, "CustomDayMin") && JEDJsonUtils.hasInteger(obj, "CustomDayMax"))
+        {
+            this.dayTimeMin = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "CustomDayMin"), 0, 24000 - 1);
+            this.dayTimeMax = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "CustomDayMax"), 0, 24000 - 1);
+            this.useCustomDayTimeRange = true;
+        }
+
         JsonElement el = obj.get("LightBrightness");
 
         if (el != null && el.isJsonArray())
@@ -214,6 +235,18 @@ public class JEDWorldProperties
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
         if (this.sunBrightnessFactor != null)   { obj.add("SunBrightnessFactor",    new JsonPrimitive(this.sunBrightnessFactor)); }
         if (this.sunBrightness != null)         { obj.add("SunBrightness",          new JsonPrimitive(this.sunBrightness)); }
+
+        if (this.useCustomCelestialAngleRange)
+        {
+            obj.add("CustomCelestialAngleMin", new JsonPrimitive(this.celestialAngleMin));
+            obj.add("CustomCelestialAngleMax", new JsonPrimitive(this.celestialAngleMax));
+        }
+
+        if (this.useCustomDayTimeRange)
+        {
+            obj.add("CustomDayMin", new JsonPrimitive(this.dayTimeMin));
+            obj.add("CustomDayMax", new JsonPrimitive(this.dayTimeMax));
+        }
 
         if (this.colorData != null)
         {
@@ -275,6 +308,16 @@ public class JEDWorldProperties
         return this.useCustomDayCycle;
     }
 
+    public boolean getUseCustomCelestialAngleRange()
+    {
+        return this.useCustomCelestialAngleRange;
+    }
+
+    public boolean getUseCustomDayTimeRange()
+    {
+        return this.useCustomDayTimeRange;
+    }
+
     public int getDayLength()
     {
         return this.dayLength;
@@ -283,6 +326,26 @@ public class JEDWorldProperties
     public int getNightLength()
     {
         return this.nightLength;
+    }
+
+    public int getCustomDayRangeMin()
+    {
+        return this.dayTimeMin;
+    }
+
+    public int getCustomDayRangeMax()
+    {
+        return this.dayTimeMax;
+    }
+
+    public float getCustomCelestialAngleMin()
+    {
+        return this.celestialAngleMin;
+    }
+
+    public float getCustomCelestialAngleMax()
+    {
+        return this.celestialAngleMax;
     }
 
     public float[] getCustomLightBrightnessTable()

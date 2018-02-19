@@ -195,6 +195,31 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
+    public void setWorldTime(long time)
+    {
+        time = getNewWorldTime(time, this.getWorldTime(), this.properties);
+        super.setWorldTime(time);
+    }
+
+    public static long getNewWorldTime(long nextTime, long currentTime, JEDWorldProperties properties)
+    {
+        // The time is incremented normally (ie. not using '/time set' etc.)
+        if (properties.getUseCustomDayTimeRange() && (currentTime + 1) == nextTime)
+        {
+            int min = properties.getCustomDayRangeMin();
+            int max = properties.getCustomDayRangeMax();
+            int dayCycleLength = max - min + 1;
+
+            if ((nextTime % dayCycleLength) == 0)
+            {
+                nextTime += 24000L - dayCycleLength;
+            }
+        }
+
+        return nextTime;
+    }
+
+    @Override
     public int getMoonPhase(long worldTime)
     {
         long cycleLength = this.getDayCycleLength();
@@ -208,13 +233,17 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         {
             return calculateCelestialAngle(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
         }
+        else if (this.properties.getUseCustomCelestialAngleRange())
+        {
+            return getCustomCelestialAngleValue(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
+        }
 
         return super.calculateCelestialAngle(worldTime, partialTicks);
     }
 
     public static float calculateCelestialAngle(World world, JEDWorldProperties properties, int dayCycleLength, long worldTime, float partialTicks)
     {
-        int dayTicks = (int) (worldTime % dayCycleLength);
+        long dayTicks = worldTime % dayCycleLength;
         int duskOrDawnLength = (int) (0.075f * dayCycleLength);
         int dayLength = properties.getDayLength();
         int nightLength = properties.getNightLength();
@@ -261,6 +290,23 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         angle = angle + (f1 - angle) / 3.0F;
 
         return angle;
+    }
+
+    public static float getCustomCelestialAngleValue(World world, JEDWorldProperties properties, int dayCycleLength, long worldTime, float partialTicks)
+    {
+        long dayTicks = worldTime % dayCycleLength;
+
+        // This check fixes the sun/moon spazzing out in-place noticeably
+        // with short day cycles if the daylight cycle has been disabled.
+        if (world.getGameRules().getBoolean("doDaylightCycle") == false)
+        {
+            partialTicks = 0f;
+        }
+
+        float min = properties.getCustomCelestialAngleMin();
+        float max = properties.getCustomCelestialAngleMax();
+
+        return min + ((max - min) * (((float) dayTicks + partialTicks) / (float) dayCycleLength));
     }
 
     @Override

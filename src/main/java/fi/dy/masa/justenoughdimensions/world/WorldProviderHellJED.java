@@ -40,6 +40,10 @@ public class WorldProviderHellJED extends WorldProviderJED
         {
             return super.calculateCelestialAngle(worldTime, partialTicks);
         }
+        else if (this.properties.getUseCustomCelestialAngleRange())
+        {
+            return getCustomCelestialAngleValue(this.world, this.properties, this.getDayCycleLength(), worldTime, partialTicks);
+        }
 
         return 0.5F;
     }
