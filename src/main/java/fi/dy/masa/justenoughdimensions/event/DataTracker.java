@@ -18,7 +18,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
-import fi.dy.masa.justenoughdimensions.reference.Reference;
+import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class DataTracker
@@ -164,18 +164,21 @@ public class DataTracker
 
         if (worldDir != null)
         {
-            try
-            {
-                File file = new File(new File(new File(worldDir, "data"), Reference.MOD_ID), "data_tracker.dat");
+            File jedDataDir = WorldFileUtils.getWorldJEDDataDirectory(worldDir);
+            File file = new File(jedDataDir, "data_tracker.dat");
 
-                if (file.exists() && file.isFile() && file.canRead())
-                {
-                    this.readFromNBT(CompressedStreamTools.readCompressed(new FileInputStream(file)));
-                }
-            }
-            catch (Exception e)
+            if (file.exists() && file.isFile() && file.canRead())
             {
-                JustEnoughDimensions.logger.warn("Failed to read DataTracker data from file");
+                try
+                {
+                    FileInputStream is = new FileInputStream(file);
+                    this.readFromNBT(CompressedStreamTools.readCompressed(is));
+                    is.close();
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.warn("Failed to read DataTracker data from file '{}'", file.getAbsolutePath());
+                }
             }
         }
     }
@@ -193,17 +196,19 @@ public class DataTracker
                     return;
                 }
 
-                saveDir = new File(new File(saveDir, "data"), Reference.MOD_ID);
+                File jedDataDir = WorldFileUtils.getWorldJEDDataDirectory(saveDir);
 
-                if (saveDir.exists() == false && saveDir.mkdirs() == false)
+                if (jedDataDir.exists() == false && jedDataDir.mkdirs() == false)
                 {
-                    JustEnoughDimensions.logger.warn("Failed to create the save directory '{}'", saveDir.toString());
+                    JustEnoughDimensions.logger.warn("Failed to create the save directory '{}'", jedDataDir.getAbsolutePath());
                     return;
                 }
 
-                File fileTmp = new File(saveDir, "data_tracker.dat.tmp");
-                File fileReal = new File(saveDir, "data_tracker.dat");
-                CompressedStreamTools.writeCompressed(this.writeToNBT(new NBTTagCompound()), new FileOutputStream(fileTmp));
+                File fileTmp = new File(jedDataDir, "data_tracker.dat.tmp");
+                File fileReal = new File(jedDataDir, "data_tracker.dat");
+                FileOutputStream os = new FileOutputStream(fileTmp);
+                CompressedStreamTools.writeCompressed(this.writeToNBT(new NBTTagCompound()), os);
+                os.close();
 
                 if (fileReal.exists())
                 {
@@ -215,7 +220,7 @@ public class DataTracker
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.warn("Failed to write GameModeTracker data to file", e);
+                JustEnoughDimensions.logger.warn("Failed to write DataTracker data to file", e);
             }
         }
     }
