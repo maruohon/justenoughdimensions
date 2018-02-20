@@ -31,6 +31,7 @@ public class JEDWorldProperties
     private float celestialAngleMax = 1.0f;
     private int dayTimeMin = 0;
     private int dayTimeMax = 24000 - 1;
+    private int dayCycleIncrement = 24000;
     private int dayLength = 12000;
     private int nightLength = 12000;
     private int cloudHeight = 128;
@@ -144,6 +145,7 @@ public class JEDWorldProperties
         
         if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
         if (JEDJsonUtils.hasInteger(obj, "NightLength"))        { this.nightLength          = JEDJsonUtils.getInteger(obj, "NightLength"); }
+        if (JEDJsonUtils.hasInteger(obj, "DayCycleIncrement"))  { this.dayCycleIncrement    = JEDJsonUtils.getInteger(obj, "DayCycleIncrement"); }
         if (JEDJsonUtils.hasInteger(obj, "CloudHeight"))        { this.cloudHeight          = JEDJsonUtils.getInteger(obj, "CloudHeight"); }
         if (JEDJsonUtils.hasInteger(obj, "SkyRenderType"))      { this.skyRenderType        = JEDJsonUtils.getInteger(obj, "SkyRenderType"); }
         if (JEDJsonUtils.hasInteger(obj, "SkyDisableFlags"))    { this.skyDisableFlags      = JEDJsonUtils.getInteger(obj, "SkyDisableFlags"); }
@@ -166,17 +168,17 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "FogColor"))   { this.fogColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
         if (JEDJsonUtils.hasString(obj, "CloudColor")) { this.cloudColor = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
 
-        if (JEDJsonUtils.hasDouble(obj, "CustomCelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CustomCelestialAngleMax"))
+        if (JEDJsonUtils.hasDouble(obj, "CelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CelestialAngleMax"))
         {
-            this.celestialAngleMin = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CustomCelestialAngleMin"), 0f, 1f);
-            this.celestialAngleMax = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CustomCelestialAngleMax"), 0f, 1f);
+            this.celestialAngleMin = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CelestialAngleMin"), 0f, 1f);
+            this.celestialAngleMax = MathHelper.clamp(JEDJsonUtils.getFloat(obj, "CelestialAngleMax"), 0f, 1f);
             this.useCustomCelestialAngleRange = true;
         }
 
-        if (JEDJsonUtils.hasInteger(obj, "CustomDayMin") && JEDJsonUtils.hasInteger(obj, "CustomDayMax"))
+        if (JEDJsonUtils.hasInteger(obj, "DayTimeMin") && JEDJsonUtils.hasInteger(obj, "DayTimeMax"))
         {
-            this.dayTimeMin = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "CustomDayMin"), 0, 24000 - 1);
-            this.dayTimeMax = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "CustomDayMax"), 0, 24000 - 1);
+            this.dayTimeMin = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "DayTimeMin"), 0, 24000 - 1);
+            this.dayTimeMax = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "DayTimeMax"), 0, 24000 - 1);
             this.useCustomDayTimeRange = true;
         }
 
@@ -214,22 +216,23 @@ public class JEDWorldProperties
     {
         JsonObject obj = new JsonObject();
 
-        if (this.dayLength != 12000)    { obj.add("DayLength",          new JsonPrimitive(this.dayLength)); }
-        if (this.nightLength != 12000)  { obj.add("NightLength",        new JsonPrimitive(this.nightLength)); }
-        if (this.cloudHeight != 128)    { obj.add("CloudHeight",        new JsonPrimitive(this.cloudHeight)); }
-        if (this.skyRenderer != null)   { obj.add("SkyRenderer",        new JsonPrimitive(this.skyRenderer)); }
-        if (this.cloudRenderer != null) { obj.add("CloudRenderer",      new JsonPrimitive(this.cloudRenderer)); }
-        if (this.weatherRenderer != null){ obj.add("WeatherRenderer",   new JsonPrimitive(this.weatherRenderer)); }
-        if (this.skyRenderType != 0)    { obj.add("SkyRenderType",      new JsonPrimitive(this.skyRenderType)); }
-        if (this.skyDisableFlags != 0)  { obj.add("SkyDisableFlags",    new JsonPrimitive(this.skyDisableFlags)); }
-        if (this.useCustomDayCycle)     { obj.add("CustomDayCycle",     new JsonPrimitive(this.useCustomDayCycle)); }
-        if (this.skyColor != null)      { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
-        if (this.cloudColor != null)    { obj.add("CloudColor",         new JsonPrimitive(JEDStringUtils.colorToHexString(this.cloudColor))); }
-        if (this.fogColor != null)      { obj.add("FogColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.fogColor))); }
-        if (this.hasSkyLight != null)   { obj.add("HasSkyLight",        new JsonPrimitive(this.hasSkyLight)); }
-        if (this.hasXZFog != null)      { obj.add("HasXZFog",           new JsonPrimitive(this.hasXZFog)); }
-        if (this.horizon != null)       { obj.add("Horizon",            new JsonPrimitive(this.horizon)); }
-        if (this.musicType != null)     { obj.add("MusicType",          new JsonPrimitive(this.musicType)); }
+        if (this.dayLength != 12000)        { obj.add("DayLength",          new JsonPrimitive(this.dayLength)); }
+        if (this.nightLength != 12000)      { obj.add("NightLength",        new JsonPrimitive(this.nightLength)); }
+        if (this.dayCycleIncrement != 24000){ obj.add("DayCycleIncrement",  new JsonPrimitive(this.dayCycleIncrement)); }
+        if (this.cloudHeight != 128)        { obj.add("CloudHeight",        new JsonPrimitive(this.cloudHeight)); }
+        if (this.skyRenderer != null)       { obj.add("SkyRenderer",        new JsonPrimitive(this.skyRenderer)); }
+        if (this.cloudRenderer != null)     { obj.add("CloudRenderer",      new JsonPrimitive(this.cloudRenderer)); }
+        if (this.weatherRenderer != null)   { obj.add("WeatherRenderer",    new JsonPrimitive(this.weatherRenderer)); }
+        if (this.skyRenderType != 0)        { obj.add("SkyRenderType",      new JsonPrimitive(this.skyRenderType)); }
+        if (this.skyDisableFlags != 0)      { obj.add("SkyDisableFlags",    new JsonPrimitive(this.skyDisableFlags)); }
+        if (this.useCustomDayCycle)         { obj.add("CustomDayCycle",     new JsonPrimitive(this.useCustomDayCycle)); }
+        if (this.skyColor != null)          { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
+        if (this.cloudColor != null)        { obj.add("CloudColor",         new JsonPrimitive(JEDStringUtils.colorToHexString(this.cloudColor))); }
+        if (this.fogColor != null)          { obj.add("FogColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.fogColor))); }
+        if (this.hasSkyLight != null)       { obj.add("HasSkyLight",        new JsonPrimitive(this.hasSkyLight)); }
+        if (this.hasXZFog != null)          { obj.add("HasXZFog",           new JsonPrimitive(this.hasXZFog)); }
+        if (this.horizon != null)           { obj.add("Horizon",            new JsonPrimitive(this.horizon)); }
+        if (this.musicType != null)         { obj.add("MusicType",          new JsonPrimitive(this.musicType)); }
 
         if (this.isSurfaceWorld != null)        { obj.add("IsSurfaceWorld",         new JsonPrimitive(this.isSurfaceWorld)); }
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
@@ -238,14 +241,14 @@ public class JEDWorldProperties
 
         if (this.useCustomCelestialAngleRange)
         {
-            obj.add("CustomCelestialAngleMin", new JsonPrimitive(this.celestialAngleMin));
-            obj.add("CustomCelestialAngleMax", new JsonPrimitive(this.celestialAngleMax));
+            obj.add("CelestialAngleMin", new JsonPrimitive(this.celestialAngleMin));
+            obj.add("CelestialAngleMax", new JsonPrimitive(this.celestialAngleMax));
         }
 
         if (this.useCustomDayTimeRange)
         {
-            obj.add("CustomDayMin", new JsonPrimitive(this.dayTimeMin));
-            obj.add("CustomDayMax", new JsonPrimitive(this.dayTimeMax));
+            obj.add("DayTimeMin", new JsonPrimitive(this.dayTimeMin));
+            obj.add("DayTimeMax", new JsonPrimitive(this.dayTimeMax));
         }
 
         if (this.colorData != null)
@@ -328,22 +331,27 @@ public class JEDWorldProperties
         return this.nightLength;
     }
 
-    public int getCustomDayRangeMin()
+    public int getDayCycleIncrement()
+    {
+        return this.dayCycleIncrement;
+    }
+
+    public int getDayTimeMin()
     {
         return this.dayTimeMin;
     }
 
-    public int getCustomDayRangeMax()
+    public int getDayTimeMax()
     {
         return this.dayTimeMax;
     }
 
-    public float getCustomCelestialAngleMin()
+    public float getCelestialAngleMin()
     {
         return this.celestialAngleMin;
     }
 
-    public float getCustomCelestialAngleMax()
+    public float getCelestialAngleMax()
     {
         return this.celestialAngleMax;
     }

@@ -206,13 +206,13 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
         // The time is incremented normally (ie. not using '/time set' etc.)
         if (properties.getUseCustomDayTimeRange() && (currentTime + 1) == nextTime)
         {
-            int min = properties.getCustomDayRangeMin();
-            int max = properties.getCustomDayRangeMax();
+            int min = properties.getDayTimeMin();
+            int max = properties.getDayTimeMax();
             int dayCycleLength = max - min + 1;
 
             if ((nextTime % dayCycleLength) == 0)
             {
-                nextTime += 24000L - dayCycleLength;
+                nextTime += properties.getDayCycleIncrement() - dayCycleLength;
             }
         }
 
@@ -303,8 +303,8 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
             partialTicks = 0f;
         }
 
-        float min = properties.getCustomCelestialAngleMin();
-        float max = properties.getCustomCelestialAngleMax();
+        float min = properties.getCelestialAngleMin();
+        float max = properties.getCelestialAngleMax();
 
         return min + ((max - min) * (((float) dayTicks + partialTicks) / (float) dayCycleLength));
     }
