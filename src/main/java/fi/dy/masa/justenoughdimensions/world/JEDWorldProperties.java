@@ -60,6 +60,8 @@ public class JEDWorldProperties
     private Boolean canDoRainSnowIce = null;
     private String musicType = null;
     private Boolean shouldClientCheckLight = null;
+    private Boolean canSpawnHostiles = null;
+    private Boolean canSpawnPeacefulMobs = null;
 
     @Nullable
     public static JEDWorldProperties getPropertiesIfExists(World world)
@@ -135,6 +137,8 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))          { this.forceGameMode            = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
         if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))         { this.useCustomDayCycle        = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanRespawnHere"))         { this.canRespawnHere           = JEDJsonUtils.getBoolean(obj, "CanRespawnHere"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnPeacefulMobs"))   { this.canSpawnPeacefulMobs     = JEDJsonUtils.getBoolean(obj, "CanSpawnPeacefulMobs"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnHostiles"))       { this.canSpawnHostiles         = JEDJsonUtils.getBoolean(obj, "CanSpawnHostiles"); }
         if (JEDJsonUtils.hasBoolean(obj, "HasSkyLight"))            { this.hasSkyLight              = JEDJsonUtils.getBoolean(obj, "HasSkyLight"); }
         if (JEDJsonUtils.hasBoolean(obj, "IsSurfaceWorld"))         { this.isSurfaceWorld           = JEDJsonUtils.getBoolean(obj, "IsSurfaceWorld"); }
         if (JEDJsonUtils.hasBoolean(obj, "IgnoreSpawnSuitability")) { this.ignoreSpawnSuitability   = JEDJsonUtils.getBoolean(obj, "IgnoreSpawnSuitability"); }
@@ -403,6 +407,18 @@ public class JEDWorldProperties
     public Boolean canRespawnHere()
     {
         return this.canRespawnHere;
+    }
+
+    @Nullable
+    public Boolean canSpawnPeacefulMobs()
+    {
+        return this.canSpawnPeacefulMobs;
+    }
+
+    @Nullable
+    public Boolean canSpawnHostiles()
+    {
+        return this.canSpawnHostiles;
     }
 
     @Nullable

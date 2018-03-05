@@ -147,12 +147,33 @@ public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
     }
 
     @Override
-    public void setAllowedSpawnTypes(boolean allowHostile, boolean allowPeaceful)
+    public void setAllowedSpawnTypes(final boolean allowHostileIn, final boolean allowPeacefulIn)
     {
         // This fixes the custom dimensions being unable to spawn hostile mobs if the overworld is set to Peaceful
         // See Minecraft#runTick(), the call to this.world.setAllowedSpawnTypes(),
         // and also MinecraftServer#setDifficultyForAllWorlds()
-        super.setAllowedSpawnTypes(this.world.getWorldInfo().getDifficulty() != EnumDifficulty.PEACEFUL, allowPeaceful);
+        boolean allowHostile = this.world.getWorldInfo().getDifficulty() != EnumDifficulty.PEACEFUL;
+        boolean allowPeaceful = allowPeacefulIn;
+
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(this.getDimension());
+
+        if (props != null)
+        {
+            Boolean hostiles = props.canSpawnHostiles();
+            Boolean peaceful = props.canSpawnPeacefulMobs();
+
+            if (hostiles != null)
+            {
+                allowHostile = hostiles.booleanValue();
+            }
+
+            if (peaceful != null)
+            {
+                allowPeaceful = peaceful.booleanValue();
+            }
+        }
+
+        super.setAllowedSpawnTypes(allowHostile, allowPeaceful);
     }
 
     @Override
