@@ -37,8 +37,6 @@ public class Configs
 
     public static boolean copyDimensionConfigToWorld;
     public static boolean copyMainConfigToWorld;
-    public static boolean usePerWorldDimensionConfig;
-    public static boolean usePerWorldMainConfig;
 
     public static int initialSpawnDimensionId;
 
@@ -85,7 +83,7 @@ public class Configs
                 ConfigFileUtils.tryCopyOrMoveConfigIfMissingOrOlder(configFile, configFileGlobal, FileAction.COPY, new ConfigComparatorMainConfig());
             }
 
-            if (usePerWorldMainConfig && configFile.exists() && configFile.isFile() && configFile.canRead())
+            if (configFile.exists() && configFile.isFile() && configFile.canRead())
             {
                 loadConfigsFromFile(configFile);
                 return;
@@ -170,18 +168,6 @@ public class Configs
                         "global/pack config from breaking the saves due to possibly differing settings between worlds.\n" +
                         "NOTE: This option ONLY affects whether or not the config is automatically _copied to_ each world.");
         copyMainConfigToWorld = prop.getBoolean();
-
-        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldDimensionConfig", true).setRequiresWorldRestart(true).setRequiresMcRestart(false);
-        prop.setComment("If enabled, then the dimension config ('dimensions.json')\n" +
-                        "will read from within each world/save, if it exists there.\n" +
-                        "Also see the option 'copyDimensionConfigToWorld' to enable automatically copying it there.");
-        usePerWorldDimensionConfig = prop.getBoolean();
-
-        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldMainConfig", true).setRequiresWorldRestart(true).setRequiresMcRestart(false);
-        prop.setComment("If enabled, then the \"main config\" ('justenoughdimensions.cfg')\n" +
-                        "will read from within each world/save, if it exists there.\n" +
-                        "Also see the option 'copyMainConfigToWorld' to enable automatically copying it there.");
-        usePerWorldMainConfig = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableCommandRedirecting", true).setRequiresMcRestart(false);
         prop.setComment("Enables redirecting the vanilla /time, /weather etc. commands to the JED variants in WorldInfo-overridden dimensions");

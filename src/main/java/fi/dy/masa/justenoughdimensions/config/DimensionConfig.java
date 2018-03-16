@@ -200,7 +200,7 @@ public class DimensionConfig
                         FileAction.COPY, new ConfigComparatorDimensionConfig());
             }
 
-            if (Configs.usePerWorldDimensionConfig && configFile.exists() && configFile.isFile() && configFile.canRead())
+            if (configFile.exists() && configFile.isFile() && configFile.canRead())
             {
                 this.currentDimensionConfigFile = configFile;
                 this.readDimensionConfigFromFile(this.currentDimensionConfigFile);
