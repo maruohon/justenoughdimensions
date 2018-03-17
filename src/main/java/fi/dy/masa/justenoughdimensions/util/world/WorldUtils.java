@@ -7,15 +7,19 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
@@ -591,5 +595,46 @@ public class WorldUtils
             player.setSpawnDimension(null);
             player.removeTag(JED_RESPAWN_DIM_TAG);
         }
+    }
+
+    public static boolean canBlockFreeze(World world, BlockPos pos, boolean noWaterAdj)
+    {
+        if (pos.getY() >= 0 && pos.getY() < 256 && world.getLightFor(EnumSkyBlock.BLOCK, pos) < 10)
+        {
+            IBlockState state = world.getBlockState(pos);
+            Block block = state.getBlock();
+
+            if ((block == Blocks.WATER || block == Blocks.FLOWING_WATER) && state.getValue(BlockLiquid.LEVEL).intValue() == 0)
+            {
+                if (noWaterAdj == false)
+                {
+                    return true;
+                }
+
+                return isWater(world, pos.west()) == false ||
+                       isWater(world, pos.east()) == false ||
+                       isWater(world, pos.north()) == false ||
+                       isWater(world, pos.south()) == false;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isWater(World world, BlockPos pos)
+    {
+        return world.getBlockState(pos).getMaterial() == Material.WATER;
+    }
+
+    public static boolean canSnowAt(World world, BlockPos pos)
+    {
+        if (pos.getY() >= 0 && pos.getY() < 256 && world.getLightFor(EnumSkyBlock.BLOCK, pos) < 10)
+        {
+            IBlockState state = world.getBlockState(pos);
+
+            return state.getBlock().isAir(state, world, pos) && Blocks.SNOW_LAYER.canPlaceBlockAt(world, pos);
+        }
+
+        return false;
     }
 }

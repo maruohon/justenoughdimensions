@@ -18,6 +18,7 @@ import fi.dy.masa.justenoughdimensions.util.ClientUtils;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
@@ -219,6 +220,28 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     public boolean canDoRainSnowIce(net.minecraft.world.chunk.Chunk chunk)
     {
         return this.properties.canDoRainSnowIce() != null ? this.properties.canDoRainSnowIce().booleanValue() : false;
+    }
+
+    @Override
+    public boolean canBlockFreeze(BlockPos pos, boolean noWaterAdj)
+    {
+        if (this.properties.canDoRainSnowIce() != null)
+        {
+            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canBlockFreeze(this.world, pos, noWaterAdj);
+        }
+
+        return super.canBlockFreeze(pos, noWaterAdj);
+    }
+
+    @Override
+    public boolean canSnowAt(BlockPos pos, boolean checkLight)
+    {
+        if (this.properties.canDoRainSnowIce() != null)
+        {
+            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canSnowAt(this.world, pos);
+        }
+
+        return super.canSnowAt(pos, checkLight);
     }
 
     @Override
