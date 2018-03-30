@@ -12,7 +12,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldProvider;
+import net.minecraft.world.WorldProviderSurface;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraftforge.common.DimensionManager;
@@ -26,7 +26,7 @@ import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
-public class WorldProviderJED extends WorldProvider implements IWorldProviderJED
+public class WorldProviderJED extends WorldProviderSurface implements IWorldProviderJED
 {
     protected JEDWorldProperties properties;
     private boolean worldInfoSet;
