@@ -171,13 +171,13 @@ public class Configs
                         "NOTE: This option ONLY affects whether or not the config is automatically _copied to_ each world.");
         copyMainConfigToWorld = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldDimensionConfig", true).setRequiresWorldRestart(true).setRequiresMcRestart(false);
+        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldDimensionConfig", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
         prop.setComment("If enabled, then the dimension config ('dimensions.json')\n" +
                         "will read from within each world/save, if it exists there.\n" +
                         "Also see the option 'copyDimensionConfigToWorld' to enable automatically copying it there.");
         usePerWorldDimensionConfig = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldMainConfig", true).setRequiresWorldRestart(true).setRequiresMcRestart(false);
+        prop = conf.get(CATEGORY_CONFIG_HANDLING, "usePerWorldMainConfig", false).setRequiresWorldRestart(true).setRequiresMcRestart(false);
         prop.setComment("If enabled, then the \"main config\" ('justenoughdimensions.cfg')\n" +
                         "will read from within each world/save, if it exists there.\n" +
                         "Also see the option 'copyMainConfigToWorld' to enable automatically copying it there.");
