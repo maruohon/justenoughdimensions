@@ -205,7 +205,7 @@ public class DimensionConfig
                 }
             }
 
-            if (configFile.exists() && configFile.isFile() && configFile.canRead())
+            if (Configs.usePerWorldDimensionConfig && configFile.exists() && configFile.isFile() && configFile.canRead())
             {
                 this.currentDimensionConfigFile = configFile;
                 this.readDimensionConfigFromFile(this.currentDimensionConfigFile);
