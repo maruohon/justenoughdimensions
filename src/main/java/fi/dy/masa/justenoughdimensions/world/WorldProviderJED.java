@@ -95,6 +95,32 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
                 this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
                 this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
             }
+
+            // This is to fix the allowHostiles and allowPeacefulMobs options not
+            // taking effect in single player after first loading a world,
+            // before some other dimension gets loaded and the setDifficultyForAllWorlds() getting called... >_>
+            // See at the end of IntegratedServer#loadAllWorlds(), the null check prevents setDifficultyForAllWorlds()
+            // from getting called >_>
+            if (this.world.isRemote == false)
+            {
+                boolean allowHostiles = true;
+                boolean allowPeaceful = true;
+
+                if (this.world.getWorldInfo().isHardcoreModeEnabled() == false)
+                {
+                    if (this.world.getMinecraftServer().isSinglePlayer())
+                    {
+                        allowHostiles = this.world.getDifficulty() != EnumDifficulty.PEACEFUL;
+                    }
+                    else
+                    {
+                        allowHostiles = this.world.getMinecraftServer().allowSpawnMonsters();
+                        allowPeaceful = this.world.getMinecraftServer().getCanSpawnAnimals();
+                    }
+                }
+
+                this.world.setAllowedSpawnTypes(allowHostiles, allowPeaceful);
+            }
         }
     }
 
