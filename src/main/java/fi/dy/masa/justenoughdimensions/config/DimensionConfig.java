@@ -196,8 +196,13 @@ public class DimensionConfig
             if (Configs.copyDimensionConfigToWorld)
             {
                 ConfigFileUtils.createDirIfNotExists(configDir);
-                ConfigFileUtils.tryCopyOrMoveConfigIfMissingOrOlder(configFile, this.dimensionConfigFileGlobal,
-                        FileAction.COPY, new ConfigComparatorDimensionConfig());
+                File configGlobal = this.dimensionConfigFileGlobal;
+
+                if (configGlobal.exists() && configGlobal.isFile() && configGlobal.canRead())
+                {
+                    ConfigFileUtils.tryCopyOrMoveConfigIfMissingOrOlder(configFile, configGlobal,
+                            FileAction.COPY, new ConfigComparatorDimensionConfig());
+                }
             }
 
             if (configFile.exists() && configFile.isFile() && configFile.canRead())
@@ -221,7 +226,7 @@ public class DimensionConfig
         this.currentConfigVersion = 0;
         JEDWorldProperties.clearWorldProperties();
 
-        if (configFile != null)
+        if (configFile != null && configFile.exists() && configFile.isFile() && configFile.canRead())
         {
             String fileName = configFile.getAbsolutePath();
             JsonElement rootElement = JEDJsonUtils.parseJsonFile(configFile);
@@ -238,7 +243,7 @@ public class DimensionConfig
         }
         else
         {
-            JustEnoughDimensions.logInfo("No 'dimensions.json' file found; neither global nor per-world");
+            JustEnoughDimensions.logger.warn("No 'dimensions.json' file found; neither global nor per-world");
         }
 
         this.restoreMissingVanillaDimensions();
