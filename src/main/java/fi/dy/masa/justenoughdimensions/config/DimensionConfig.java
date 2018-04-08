@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -474,8 +472,7 @@ public class DimensionConfig
         try
         {
             FileWriter writer = new FileWriter(this.currentDimensionConfigFile);
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            writer.write(gson.toJson(root));
+            writer.write(JEDJsonUtils.GSON_PRETTY.toJson(root));
             writer.close();
         }
         catch (IOException e)
@@ -701,9 +698,8 @@ public class DimensionConfig
         }
         else
         {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JustEnoughDimensions.logger.info("==== Dim Builder list start ====");
-            JustEnoughDimensions.logger.info("\n" + gson.toJson(this.dimBuilderData));
+            JustEnoughDimensions.logger.info("\n" + JEDJsonUtils.GSON_PRETTY.toJson(this.dimBuilderData));
             JustEnoughDimensions.logger.info("==== Dim Builder list end ====");
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
         }

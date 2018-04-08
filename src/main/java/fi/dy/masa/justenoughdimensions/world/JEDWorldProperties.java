@@ -129,7 +129,7 @@ public class JEDWorldProperties
     {
     }
 
-    private JEDWorldProperties(JsonObject obj)
+    private JEDWorldProperties(@Nonnull JsonObject obj)
     {
         this.fullJEDTag = JEDJsonUtils.deepCopy(obj);
         this.colorData = JEDJsonUtils.getNestedObject(obj, "Colors", false);
@@ -275,9 +275,10 @@ public class JEDWorldProperties
         return obj;
     }
 
+    @Nullable
     public JsonObject getFullJEDPropertiesObject()
     {
-        return JEDJsonUtils.deepCopy(this.fullJEDTag);
+        return this.fullJEDTag != null ? JEDJsonUtils.deepCopy(this.fullJEDTag) : null;
     }
 
     @Nullable

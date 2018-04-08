@@ -20,6 +20,7 @@ import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 public class JEDJsonUtils
 {
     public static final Gson GSON = new GsonBuilder().create();
+    public static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
 
     public static boolean hasBoolean(JsonObject obj, String name)
     {
@@ -251,17 +252,22 @@ public class JEDJsonUtils
     }
 
     // https://stackoverflow.com/questions/29786197/gson-jsonobject-copy-value-affected-others-jsonobject-instance
-    @Nonnull
-    public static JsonObject deepCopy(@Nonnull JsonObject jsonObject)
+    @Nullable
+    public static JsonObject deepCopy(@Nullable JsonObject jsonObject)
     {
-        JsonObject result = new JsonObject();
-
-        for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet())
+        if (jsonObject != null)
         {
-            result.add(entry.getKey(), deepCopy(entry.getValue()));
+            JsonObject result = new JsonObject();
+
+            for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet())
+            {
+                result.add(entry.getKey(), deepCopy(entry.getValue()));
+            }
+
+            return result;
         }
 
-        return result;
+        return null;
     }
 
     @Nonnull

@@ -219,9 +219,20 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
-        jsonEntry.add("jed",                JEDJsonUtils.deepCopy(this.jedTag));
-        jsonEntry.add("worldinfo",          JEDJsonUtils.deepCopy(this.worldInfoJson));
-        jsonEntry.add("worldinfo_onetime",  JEDJsonUtils.deepCopy(this.oneTimeWorldInfoJson));
+        if (this.jedTag != null)
+        {
+            jsonEntry.add("jed",                JEDJsonUtils.deepCopy(this.jedTag));
+        }
+
+        if (this.worldInfoJson != null)
+        {
+            jsonEntry.add("worldinfo",          JEDJsonUtils.deepCopy(this.worldInfoJson));
+        }
+
+        if (this.oneTimeWorldInfoJson != null)
+        {
+            jsonEntry.add("worldinfo_onetime",  JEDJsonUtils.deepCopy(this.oneTimeWorldInfoJson));
+        }
 
         return jsonEntry;
     }
