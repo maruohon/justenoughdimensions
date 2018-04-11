@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions.config;
 
 import java.io.File;
 import javax.annotation.Nullable;
+import net.minecraft.world.GameType;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
@@ -41,6 +42,7 @@ public class Configs
     public static boolean usePerWorldMainConfig;
 
     public static int initialSpawnDimensionId;
+    public static GameType normalGameMode = GameType.SURVIVAL;
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
@@ -232,6 +234,12 @@ public class Configs
         prop.setComment("If enabled with the enableInitialSpawnDimensionOverride option, this will be used as the initial spawn dimension ID");
         initialSpawnDimensionId = prop.getInt();
 
+        prop = conf.get(CATEGORY_GENERIC, "normalGameMode", "survival");
+        prop.setComment("If the players first join into a ForceGameMode dimension, then this option sets the \"normal\"\n" +
+                        "game mode they should get when they leave that dimension for a non-ForceGameMode dimension.\n" +
+                        "Valid values are: adventure, creative, spectator and survival");
+        setNormalGameMode(prop.getString());
+
         prop = conf.get(CATEGORY_VERSION, "configId", "__default").setRequiresMcRestart(false);
         prop.setComment("For the config file copying/replacement to happen, this id\n" +
                         "in the old per-world config must match the id in the current global/common config,\n" +
@@ -264,6 +272,31 @@ public class Configs
         if (conf.hasChanged())
         {
             conf.save();
+        }
+    }
+
+    private static void setNormalGameMode(String name)
+    {
+        if (name.equalsIgnoreCase("adventure"))
+        {
+            normalGameMode = GameType.ADVENTURE;
+        }
+        else if (name.equalsIgnoreCase("creative"))
+        {
+            normalGameMode = GameType.CREATIVE;
+        }
+        else if (name.equalsIgnoreCase("spectator"))
+        {
+            normalGameMode = GameType.SPECTATOR;
+        }
+        else if (name.equalsIgnoreCase("survival"))
+        {
+            normalGameMode = GameType.SURVIVAL;
+        }
+        else
+        {
+            JustEnoughDimensions.logger.warn("Configs: Invalid normalGameMode value '{}', falling back to 'survival'", name);
+            normalGameMode = GameType.SURVIVAL;
         }
     }
 }

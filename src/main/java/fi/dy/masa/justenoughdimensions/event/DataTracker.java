@@ -57,6 +57,25 @@ public class DataTracker
         }
     }
 
+    public void playerInitialSpawn(EntityPlayer player)
+    {
+        UUID uuid = player.getUniqueID();
+
+        // If players first join into a ForceGameMode dimension, set a "normal game mode"
+        // for them from the main configuration.
+        if (player.getClass() == EntityPlayerMP.class &&
+            this.dimensionHasForcedGameMode(player.dimension) &&
+            this.normalGameModes.containsKey(uuid) == false &&
+            this.playerDimensions.containsKey(uuid) == false)
+        {
+            this.normalGameModes.put(uuid, Configs.normalGameMode);
+            this.dirty = true;
+
+            JustEnoughDimensions.logInfo("DataTracker: Set the \"normal game mode\" of player '{}' to '{}' after their initial join to a ForceGameMode dimension {}",
+                    player.getName(), Configs.normalGameMode, player.dimension);
+        }
+    }
+
     /**
      * The basic idea here is to store the "normal" gamemode of a player in a non-forced-gamemode
      * dimension, so that we know what to set the player's gamemode to when they leave a forced-gamemode-dimension.
@@ -109,6 +128,9 @@ public class DataTracker
     {
         this.normalGameModes.put(player.getUniqueID(), player.interactionManager.getGameType());
         this.dirty = true;
+
+        JustEnoughDimensions.logInfo("DataTracker: Stored a non-forced gamemode '{}' for player '{}'",
+                player.interactionManager.getGameType(), player.getName());
     }
 
     private void restoreStoredGameMode(EntityPlayerMP player)
@@ -116,6 +138,9 @@ public class DataTracker
         this.setPlayerGameMode(player, this.normalGameModes.get(player.getUniqueID()));
         this.normalGameModes.remove(player.getUniqueID());
         this.dirty = true;
+
+        JustEnoughDimensions.logInfo("DataTracker: Restored gamemode '{}' for player '{}'",
+                player.interactionManager.getGameType(), player.getName());
     }
 
     private void setPlayerGameMode(EntityPlayerMP player, GameType type)
@@ -133,6 +158,8 @@ public class DataTracker
     {
         this.playerDimensions.put(player.getUniqueID(), dimension);
         this.dirty = true;
+
+        JustEnoughDimensions.logInfo("DataTracker: Stored dimension '{}' for player '{}'", dimension, player.getName());
     }
 
     @Nullable

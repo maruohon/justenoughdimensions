@@ -240,6 +240,8 @@ public class JEDEventHandler
                         player.getName(), Configs.initialSpawnDimensionId, pos);
 
                 player.moveToBlockPosAndAngles(pos, 0f, 0f);
+
+                DataTracker.getInstance().playerInitialSpawn(player);
             }
             else
             {
