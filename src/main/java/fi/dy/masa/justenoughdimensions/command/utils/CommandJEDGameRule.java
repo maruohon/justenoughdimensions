@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 
@@ -52,6 +53,11 @@ public class CommandJEDGameRule
                 rules.setOrCreateGameRule(key, value);
                 notifyGameRuleChange(rules, key, world);
                 CommandBase.notifyCommandListener(sender, cmd, "jed.commands.gamerule.success", Integer.valueOf(dimension), key, value);
+
+                if (world.getWorldInfo() instanceof DerivedWorldInfo)
+                {
+                    CommandJED.throwCommand("command_in_derived_world_info_dimension.gamerule");
+                }
             }
         }
         else

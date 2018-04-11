@@ -5,6 +5,7 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
@@ -58,6 +59,14 @@ public class CommandJEDWeather
                 worldinfo.setRaining(true);
                 worldinfo.setThundering(true);
                 CommandBase.notifyCommandListener(sender, cmd, "jed.commands.weather.thunder", Integer.valueOf(dimension));
+            }
+
+            if (cmdName.equals("clear") || cmdName.equals("rain") || cmdName.equals("thunder"))
+            {
+                if (world.getWorldInfo() instanceof DerivedWorldInfo)
+                {
+                    CommandJED.throwCommand("command_in_derived_world_info_dimension");
+                }
             }
             else
             {

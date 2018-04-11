@@ -5,6 +5,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 
@@ -73,6 +74,11 @@ public class CommandJEDTime
                 {
                     CommandJED.throwUsage("time");
                 }
+            }
+
+            if ((cmdName.equals("set") || cmdName.equals("add")) && world.getWorldInfo() instanceof DerivedWorldInfo)
+            {
+                CommandJED.throwCommand("command_in_derived_world_info_dimension");
             }
         }
         else
