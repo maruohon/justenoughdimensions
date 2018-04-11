@@ -200,7 +200,7 @@ public class JEDWorldProperties
 
                     for (int i = 0; i < 16; i++)
                     {
-                        this.customLightBrightnessTable[i] = arr.get(i).getAsFloat();
+                        light[i] = arr.get(i).getAsFloat();
                     }
 
                     this.customLightBrightnessTable = light;
