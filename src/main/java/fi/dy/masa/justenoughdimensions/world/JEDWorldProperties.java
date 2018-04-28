@@ -16,6 +16,7 @@ import net.minecraft.world.World;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
+import fi.dy.masa.justenoughdimensions.util.SpawnPointSearch;
 
 public class JEDWorldProperties
 {
@@ -62,6 +63,7 @@ public class JEDWorldProperties
     private Boolean shouldClientCheckLight = null;
     private Boolean canSpawnHostiles = null;
     private Boolean canSpawnPeacefulMobs = null;
+    private SpawnPointSearch spawnPointSearchType = null;
 
     @Nullable
     public static JEDWorldProperties getPropertiesIfExists(World world)
@@ -184,6 +186,11 @@ public class JEDWorldProperties
             this.dayTimeMin = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "DayTimeMin"), 0, 24000 - 1);
             this.dayTimeMax = MathHelper.clamp(JEDJsonUtils.getInteger(obj, "DayTimeMax"), 0, 24000 - 1);
             this.useCustomDayTimeRange = true;
+        }
+
+        if (JEDJsonUtils.hasObject(obj, "SpawnPointSearchType"))
+        {
+            this.spawnPointSearchType = SpawnPointSearch.fromJson(obj.get("SpawnPointSearchType").getAsJsonObject());
         }
 
         JsonElement el = obj.get("LightBrightness");
@@ -504,5 +511,11 @@ public class JEDWorldProperties
     public String getMusicType()
     {
         return this.musicType;
+    }
+
+    @Nullable
+    public SpawnPointSearch getSpawnPointSearchType()
+    {
+        return this.spawnPointSearchType;
     }
 }

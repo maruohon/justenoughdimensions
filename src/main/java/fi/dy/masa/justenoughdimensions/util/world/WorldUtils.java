@@ -18,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.MinecraftException;
@@ -47,6 +48,7 @@ import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
+import fi.dy.masa.justenoughdimensions.util.SpawnPointSearch;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -386,8 +388,25 @@ public class WorldUtils
     @Nonnull
     public static BlockPos findSuitableSpawnpoint(World world)
     {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
+        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         WorldProvider provider = world.provider;
         BlockPos pos;
+
+        if (searchType != null)
+        {
+            JustEnoughDimensions.logInfo("WordlUtils.findSuitableSpawnpoint: Using a customized spawn point search type '{}' for DIM {}",
+                    searchType.toString(), world.provider.getDimension());
+
+            if (searchType.getType() == SpawnPointSearch.Type.OVERWORLD)
+            {
+                return findOverworldSpawnpoint(world);
+            }
+            else if (searchType.getType() == SpawnPointSearch.Type.CAVERN)
+            {
+                return findCavernSpawnpoint(world);
+            }
+        }
 
         // Likely end type dimensions
         if (provider.getDimensionType() == DimensionType.THE_END ||
@@ -402,10 +421,11 @@ public class WorldUtils
         }
         // Likely nether type dimensions
         else if (provider.getDimensionType() == DimensionType.NETHER ||
+                 provider.isNether() ||
                  provider instanceof WorldProviderHell ||
                  provider instanceof WorldProviderHellJED)
         {
-            pos = findNetherSpawnpoint(world);
+            pos = findCavernSpawnpoint(world);
         }
         else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
         {
@@ -421,19 +441,31 @@ public class WorldUtils
     }
 
     @Nonnull
-    private static BlockPos findNetherSpawnpoint(World world)
+    private static BlockPos findCavernSpawnpoint(World world)
     {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
+        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
+        @Nullable final Integer yRangeMax = searchType != null ? searchType.getMaxY() : null;
+        final int minY = searchType != null && searchType.getMinY() != null ? Math.max(1, searchType.getMinY()) : 30;
         Random random = new Random(world.getSeed());
         int x = 0;
         int z = 0;
         int iterations = 0;
-        BlockPos pos = new BlockPos(x, 120, z);
 
-        while (iterations < 100)
+        while (iterations < 200)
         {
-            while (pos.getY() >= 30)
+            Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
+            int maxY = 120;
+
+            if (yRangeMax != null)
             {
-                Chunk chunk = world.getChunkFromChunkCoords(pos.getX() >> 4, pos.getZ() >> 4);
+                maxY = yRangeMax.intValue();
+            }
+
+            BlockPos pos = new BlockPos(x, maxY, z);
+
+            while (pos.getY() >= minY)
+            {
                 IBlockState stateBelow = chunk.getBlockState(pos.down(2));
                 IBlockState state1 = chunk.getBlockState(pos.down(1));
                 IBlockState state2 = chunk.getBlockState(pos);
@@ -450,12 +482,10 @@ public class WorldUtils
 
             x += random.nextInt(32) - random.nextInt(32);
             z += random.nextInt(32) - random.nextInt(32);
-            pos = new BlockPos(x, 120, z);
-
             iterations++;
         }
 
-        JustEnoughDimensions.logger.warn("Unable to find a nether spawn point for dimension {}, defaulting to 0,72,0", world.provider.getDimension());
+        JustEnoughDimensions.logger.warn("Unable to find a cavern type spawn point for dimension {}, defaulting to 0,72,0", world.provider.getDimension());
 
         return new BlockPos(0, 72, 0);
     }
@@ -467,8 +497,12 @@ public class WorldUtils
         BiomeProvider biomeProvider = provider.getBiomeProvider();
         List<Biome> list = biomeProvider.getBiomesToSpawnIn();
         Random random = new Random(world.getSeed());
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(provider.getDimension());
+        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         int x = 8;
         int z = 8;
+        final int minY = searchType != null && searchType.getMinY() != null ? Math.max(1, searchType.getMinY()) : 1;
+        @Nullable final Integer yRangeMax = searchType != null ? searchType.getMaxY() : null;
 
         // This will not generate chunks, but only check the biome ID from the genBiomes.getInts() output
         BlockPos pos = biomeProvider.findBiomePosition(0, 0, 512, list, random);
@@ -492,9 +526,16 @@ public class WorldUtils
             if (provider.canCoordinateBeSpawn(x, z))
             {
                 Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
-                pos = new BlockPos(x, chunk.getTopFilledSegment() + 15 + 1, z);
+                int maxY = chunk.getTopFilledSegment() + 15 + 1;
 
-                while (pos.getY() >= 0)
+                if (yRangeMax != null)
+                {
+                    maxY = Math.min(yRangeMax.intValue(), maxY);
+                }
+
+                pos = new BlockPos(x, maxY, z);
+
+                while (pos.getY() >= minY)
                 {
                     if (isSuitableSpawnPosition(world, chunk, pos, false))
                     {
@@ -516,14 +557,34 @@ public class WorldUtils
         return getSuitableSpawnBlockInColumn(world, pos, true);
     }
 
+    /**
+     * Tries to find a suitable spawn position in the given XZ-column. If none are found, then the
+     * original input position is returned.
+     * @param world
+     * @param originalPos
+     * @param leanient if true, then leaves and foliage are allowed for the block below,
+     * and fluids are allowed for the two blocks at the spawn location
+     * @return
+     */
     @Nonnull
     public static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos originalPos, boolean leanient)
     {
         Chunk chunk = world.getChunkFromBlockCoords(originalPos);
-        BlockPos posTop = new BlockPos(originalPos.getX(), chunk.getTopFilledSegment() + 15 + 1, originalPos.getZ());
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
+        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
+        @Nullable final Integer yRangeMax = searchType != null ? searchType.getMaxY() : null;
+        final int minY = searchType != null && searchType.getMinY() != null ? Math.max(1, searchType.getMinY()) : 1;
+        int maxY = chunk.getTopFilledSegment() + 15 + 1;
+
+        if (yRangeMax != null)
+        {
+            maxY = MathHelper.clamp(maxY, minY, yRangeMax.intValue());
+        }
+
+        BlockPos posTop = new BlockPos(originalPos.getX(), maxY, originalPos.getZ());
         BlockPos pos = posTop;
 
-        while (pos.getY() >= 0)
+        while (pos.getY() >= minY)
         {
             if (isSuitableSpawnPosition(world, chunk, pos, leanient))
             {
@@ -533,10 +594,25 @@ public class WorldUtils
             pos = pos.down();
         }
 
+        // Fallback - avoid falling to the void
+        if (leanient && world.isAirBlock(originalPos.down()))
+        {
+            world.setBlockState(originalPos.down(), Blocks.GLASS.getDefaultState(), 2);
+        }
+
         return originalPos;
     }
 
-    public static boolean isSuitableSpawnPosition(World world, Chunk chunk, BlockPos pos, boolean leanient)
+    /**
+     * Check if the given position is suitable for the spawn point.
+     * @param world
+     * @param chunk
+     * @param pos
+     * @param leanient if true, then leaves and foliage are allowed for the block below,
+     * and fluids are allowed for the two blocks at the spawn location
+     * @return
+     */
+    private static boolean isSuitableSpawnPosition(World world, Chunk chunk, BlockPos pos, boolean leanient)
     {
         IBlockState state =    chunk.getBlockState(pos.down(1));
         Material materialUp1 = chunk.getBlockState(pos).getMaterial();
