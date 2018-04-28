@@ -48,7 +48,7 @@ public class SpawnPointSearch
             {
                 type = Type.CAVERN;
             }
-            if (str.equals("overworld") == false)
+            else if (str.equals("overworld") == false)
             {
                 JustEnoughDimensions.logger.warn("SpawnPointSearch: Unknown type '{}' specified, falling back to 'overworld'", str);
             }
