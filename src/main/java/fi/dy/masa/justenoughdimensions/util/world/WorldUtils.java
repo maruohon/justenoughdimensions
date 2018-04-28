@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
@@ -15,6 +16,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -39,6 +41,7 @@ import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -214,6 +217,73 @@ public class WorldUtils
                     JustEnoughDimensions.logger.warn("Exception while trying to remove a temporary dimension {}", dimension, e);
                 }
             }
+        }
+
+        return false;
+    }
+
+    public static boolean tryDeleteDimension(int dimension)
+    {
+        if (dimension != 0)
+        {
+            MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+            World world = server != null ? server.getWorld(dimension) : null;
+
+            if (world == null)
+            {
+                JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Could not load dimension {} (to get the directory)", dimension);
+                return false;
+            }
+
+            if (world.playerEntities.size() > 0)
+            {
+                JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: There are currently players in dimension {}, can't delete it", dimension);
+                return false;
+            }
+
+            File dir = WorldFileUtils.getWorldDirectory(world);
+
+            if (dir.exists() == false || dir.isDirectory() == false)
+            {
+                JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Failed to get the directory for dimension {}", dimension);
+                return false;
+            }
+
+            if (world instanceof WorldServer)
+            {
+                WorldServer worldServer = (WorldServer) world;
+
+                try
+                {
+                    worldServer.getChunkProvider().queueUnloadAll();
+                    worldServer.saveAllChunks(true, null);
+                    worldServer.flush();
+
+                    DimensionManager.setWorld(dimension, null, worldServer.getMinecraftServer());
+                    FileUtils.deleteDirectory(dir);
+
+                    JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Successfully deleted dimension {}", dimension);
+
+                    return true;
+                }
+                catch (MinecraftException e)
+                {
+                    JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Exception while trying to unload dimension {}", dimension, e);
+                }
+                catch (IOException e)
+                {
+                    JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Exception while trying to delete the directory of dimension {}", dimension, e);
+                }
+            }
+            else
+            {
+                JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Not a server world?!");
+                return false;
+            }
+        }
+        else
+        {
+            JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Can't delete dimension 0, it would delete the entire save");
         }
 
         return false;

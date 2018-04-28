@@ -1,6 +1,8 @@
 package fi.dy.masa.justenoughdimensions.command;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -39,6 +41,7 @@ import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class CommandJED extends CommandBase
 {
+    private final Map<ICommandSender, String> commandConfirmations = new HashMap<>();
 
     @Override
     public String getName()
@@ -66,6 +69,7 @@ public class CommandJED extends CommandBase
             return getListOfStringsMatchingLastWord(args,
                     "debug",
                     "defaultgamemode",
+                    "delete-dimension",
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
@@ -106,7 +110,12 @@ public class CommandJED extends CommandBase
             try
             {
                 parseInt(args[0]); // dimension
-                args = dropFirstStrings(args, 1);
+
+                // Bleh hacky check here to not mess up the tab completion ;_;
+                if (cmd.equals("delete-dimension") == false)
+                {
+                    args = dropFirstStrings(args, 1);
+                }
             }
             catch (NumberInvalidException e)
             {
@@ -138,6 +147,10 @@ public class CommandJED extends CommandBase
             else if (cmd.equals("defaultgamemode") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
+            }
+            else if (cmd.equals("delete-dimension") && args.length == 2)
+            {
+                return getListOfStringsMatchingLastWord(args, "confirm");
             }
             else if (cmd.equals("difficulty") && args.length == 1)
             {
@@ -284,6 +297,46 @@ public class CommandJED extends CommandBase
             {
                 throw new WrongUsageException("/jed unregister-remove <dimension id>");
             }
+        }
+        else if (cmd.equals("delete-dimension"))
+        {
+            if (args.length == 1)
+            {
+                int dimension = parseInt(args[0]);
+
+                if (dimension == 0)
+                {
+                    throwCommand("delete_dimension.cant_delete_overworld");
+                }
+
+                String str = cmd + String.join(" ", args);
+                this.commandConfirmations.put(sender, str);
+                notifyCommandListener(sender, this, "jed.commands.generic.confirmation_command_cached");
+                return;
+            }
+            else if (args.length == 2)
+            {
+                if (args[1].equals("confirm"))
+                {
+                    int dimension = parseInt(args[0]);
+                    String cached = this.commandConfirmations.remove(sender);
+
+                    if (cached != null && cached.equals(cmd + args[0]))
+                    {
+                        if (WorldUtils.tryDeleteDimension(dimension))
+                        {
+                            notifyCommandListener(sender, this, "jed.commands.delete_dimension.success", Integer.valueOf(dimension));
+                            return;
+                        }
+                        else
+                        {
+                            throwCommand("delete_dimension.failed", dimension);
+                        }
+                    }
+                }
+            }
+
+            throw new WrongUsageException("/jed delete-dimension <dimension id> [confirm]");
         }
         else if (cmd.equals("debug"))
         {
