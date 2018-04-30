@@ -128,11 +128,6 @@ public class JEDEventHandler
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerLoggedInEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
-        
-        if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
-        {
-            GamemodeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, Integer.MIN_VALUE, event.player.getEntityWorld().provider.getDimension());
-        }
     }
 
     @SubscribeEvent
