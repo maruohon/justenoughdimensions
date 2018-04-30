@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions.command;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -22,6 +23,7 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
@@ -323,7 +325,7 @@ public class CommandJED extends CommandBase
 
                     if (cached != null && cached.equals(cmd + args[0]))
                     {
-                        if (WorldUtils.tryDeleteDimension(dimension))
+                        if (WorldUtils.tryDeleteDimension(dimension, sender))
                         {
                             notifyCommandListener(sender, this, "jed.commands.delete_dimension.success", Integer.valueOf(dimension));
                             return;
@@ -337,6 +339,12 @@ public class CommandJED extends CommandBase
             }
 
             throw new WrongUsageException("/jed delete-dimension <dimension id> [confirm]");
+        }
+        else if (cmd.equals("broadcast"))
+        {
+            // NO-OP - This is a dummy command used by other mods (at least World Primer)
+            // to get a notification of certain JED events, via the CommandEvent (just to avoid
+            // adding an actual API and dependencies just for this...)
         }
         else if (cmd.equals("debug"))
         {
@@ -712,5 +720,20 @@ public class CommandJED extends CommandBase
     public static void throwCommand(String type, Object... params) throws CommandException
     {
         throw new CommandException("jed.commands.error." + type, params);
+    }
+
+    public static void runBroadcastCommand(ICommandSender sender, String commandType, Object... args)
+    {
+        String fullCommand = "jed broadcast " + commandType + " " + StringUtils.join(args, ' ');
+
+        try
+        {
+            JustEnoughDimensions.logInfo("Running a broadcast command '{}'", fullCommand);
+            FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().executeCommand(sender, fullCommand);
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Exception while executing a broadcast command '{}'", fullCommand, e);
+        }
     }
 }

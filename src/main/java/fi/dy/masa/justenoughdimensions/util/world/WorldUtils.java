@@ -12,6 +12,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
@@ -45,6 +46,7 @@ import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
@@ -222,7 +224,7 @@ public class WorldUtils
         return false;
     }
 
-    public static boolean tryDeleteDimension(int dimension)
+    public static boolean tryDeleteDimension(int dimension, ICommandSender sender)
     {
         if (dimension != 0)
         {
@@ -261,6 +263,7 @@ public class WorldUtils
 
                     DimensionManager.setWorld(dimension, null, worldServer.getMinecraftServer());
                     FileUtils.deleteDirectory(dir);
+                    CommandJED.runBroadcastCommand(sender, "delete-dimension", Integer.valueOf(dimension));
 
                     JustEnoughDimensions.logger.warn("WorldUtils.tryDeleteDimension: Successfully deleted dimension {}", dimension);
 
