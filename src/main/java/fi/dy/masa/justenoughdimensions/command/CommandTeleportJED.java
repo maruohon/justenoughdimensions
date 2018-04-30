@@ -33,6 +33,7 @@ import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 public class CommandTeleportJED extends CommandBase
 {
     private MethodHandle methodHandle_Entity_copyDataFromOld;
+    private static CommandTeleportJED instance;
 
     public CommandTeleportJED()
     {
@@ -45,6 +46,13 @@ public class CommandTeleportJED extends CommandBase
         {
             JustEnoughDimensions.logger.error("CommandTeleportJED: Failed to get MethodHandle for Entity#copyDataFromOld()", e);
         }
+
+        instance = this;
+    }
+
+    public static CommandTeleportJED instance()
+    {
+        return instance;
     }
 
     @Override
@@ -210,7 +218,7 @@ public class CommandTeleportJED extends CommandBase
         return new TeleportData(target, dimension, true, server);
     }
 
-    private Entity teleportEntityToLocation(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
+    public Entity teleportEntityToLocation(Entity entity, TeleportData data, MinecraftServer server) throws CommandException
     {
         // TODO hook up the mounted entity TP code from Ender Utilities?
         entity.dismountRidingEntity();
@@ -261,7 +269,7 @@ public class CommandTeleportJED extends CommandBase
             World worldOld = player.getEntityWorld();
             TeleporterJED teleporter = new TeleporterJED(worldDst, data);
 
-            player.setLocationAndAngles(x, y, z, player.rotationYaw, player.rotationPitch);
+            player.setLocationAndAngles(x, y, z, data.getYaw(), data.getPitch());
             server.getPlayerList().transferPlayerToDimension(player, data.getDimension(), teleporter);
 
             // See PlayerList#transferEntityToWorld()
@@ -452,6 +460,13 @@ public class CommandTeleportJED extends CommandBase
         public Vec3d getPosition(World world)
         {
             return getClampedDestinationPosition(this.posX, this.posY, this.posZ, world);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("TeleportData:{dim=%d,x=%.2f,y=%.2f,z=%.2f,yaw=%.2f,pitch=%.2f,entity=%s}\n",
+                    this.dimension, this.posX, this.posY, this.posZ, this.yaw, this.pitch, this.entity.getName());
         }
     }
 

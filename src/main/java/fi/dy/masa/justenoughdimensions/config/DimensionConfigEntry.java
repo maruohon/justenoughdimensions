@@ -1,32 +1,35 @@
 package fi.dy.masa.justenoughdimensions.config;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import io.netty.buffer.ByteBuf;
 
 public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 {
-    private final int id;
+    private final int dimension;
     private boolean override;
     private boolean unregister;
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
+    private boolean isTemporaryDimension = false;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
+    private String worldTemplate;
     private JsonObject jedTag;
-    private JsonObject colorJson;
     private JsonObject worldInfoJson;
     private JsonObject oneTimeWorldInfoJson;
     private DimensionTypeEntry dimensionTypeEntry;
 
     public DimensionConfigEntry(int id)
     {
-        this.id = id;
+        this.dimension = id;
     }
 
-    public int getId()
+    public int getDimension()
     {
-        return this.id;
+        return this.dimension;
     }
 
     public boolean getOverride()
@@ -49,9 +52,21 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.disableTeleportingTo;
     }
 
+    public boolean isTemporaryDimension()
+    {
+        return this.isTemporaryDimension;
+    }
+
+    @Nullable
     public String getBiome()
     {
         return this.biome;
+    }
+
+    @Nullable
+    public String getWorldTemplate()
+    {
+        return this.worldTemplate;
     }
 
     public void setOverride(boolean override)
@@ -62,22 +77,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public void setUnregister(boolean unregister)
     {
         // Don't allow unregistering the overworld, or bad things will happen!
-        this.unregister = unregister && this.id != 0;
-    }
-
-    public void setDisableTeleportingFrom(boolean disable)
-    {
-        this.disableTeleportingFrom = disable;
-    }
-
-    public void setDisableTeleportingTo(boolean disable)
-    {
-        this.disableTeleportingTo = disable;
-    }
-
-    public void setBiome(String biome)
-    {
-        this.biome = biome;
+        this.unregister = unregister && this.dimension != 0;
     }
 
     public boolean hasDimensionTypeEntry()
@@ -95,33 +95,21 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         this.dimensionTypeEntry = entry;
     }
 
-    public DimensionConfigEntry setWorldInfoJson(JsonObject obj)
+    @Nullable
+    public JsonObject getWorldInfoJson()
     {
-        this.worldInfoJson = obj;
-        return this;
+        return this.worldInfoJson;
     }
 
-    public DimensionConfigEntry setOneTimeWorldInfoJson(JsonObject obj)
+    @Nullable
+    public JsonObject getOneTimeWorldInfoJson()
     {
-        this.oneTimeWorldInfoJson = obj;
-        return this;
-    }
-
-    public DimensionConfigEntry setJEDTag(JsonObject obj)
-    {
-        this.jedTag = obj;
-
-        if (obj != null && obj.has("Colors") && obj.get("Colors").isJsonObject())
-        {
-            this.colorJson = obj.get("Colors").getAsJsonObject();
-        }
-
-        return this;
+        return this.oneTimeWorldInfoJson;
     }
 
     public void writeToByteBuf(ByteBuf buf)
     {
-        buf.writeInt(this.id);
+        buf.writeInt(this.dimension);
         buf.writeBoolean(this.unregister);
         buf.writeBoolean(this.override);
 
@@ -150,16 +138,46 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return entry;
     }
 
-    @Nullable
-    public JsonObject getColorData()
+    @Nonnull
+    public static DimensionConfigEntry fromJson(int dimension, @Nonnull JsonObject obj)
     {
-        return this.colorJson;
+        DimensionConfigEntry entry = new DimensionConfigEntry(dimension);
+
+        entry.override =   JEDJsonUtils.getBooleanOrDefault(obj, "override", false);
+        entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false);
+        entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
+        entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
+        entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
+        entry.biome = JEDJsonUtils.getStringOrDefault(obj, "biome", null, false);
+        entry.worldTemplate = JEDJsonUtils.getStringOrDefault(obj, "world_template", null, false);
+
+        if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
+        {
+            JsonObject objDimType = obj.get("dimensiontype").getAsJsonObject();
+            entry.setDimensionTypeEntry(DimensionTypeEntry.fromJson(dimension, objDimType));
+        }
+
+        entry.worldInfoJson =        JEDJsonUtils.getNestedObject(obj, "worldinfo", false);
+        entry.oneTimeWorldInfoJson = JEDJsonUtils.getNestedObject(obj, "worldinfo_onetime", false);
+
+        if (obj.has("jed") && obj.get("jed").isJsonObject())
+        {
+            JsonObject objJed = obj.get("jed").getAsJsonObject();
+
+            if (objJed.size() > 0)
+            {
+                entry.jedTag = objJed;
+                JEDWorldProperties.createAndSetPropertiesForDimension(dimension, objJed);
+            }
+        }
+
+        return entry;
     }
 
     public JsonObject toJson()
     {
         JsonObject jsonEntry = new JsonObject();
-        jsonEntry.addProperty("dim", this.getId());
+        jsonEntry.addProperty("dim", this.getDimension());
 
         if (this.override)
         {
@@ -181,9 +199,19 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("disable_teleporting_to", true);
         }
 
+        if (this.isTemporaryDimension)
+        {
+            jsonEntry.addProperty("temporary_dimension", true);
+        }
+
         if (this.biome != null)
         {
             jsonEntry.addProperty("biome", this.biome);
+        }
+
+        if (this.worldTemplate != null)
+        {
+            jsonEntry.addProperty("world_template", this.worldTemplate);
         }
 
         if (this.dimensionTypeEntry != null)
@@ -191,30 +219,42 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("dimensiontype", this.dimensionTypeEntry.toJson());
         }
 
-        JEDJsonUtils.copyJsonObject(jsonEntry, "jed",               this.jedTag);
-        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo",         this.worldInfoJson);
-        JEDJsonUtils.copyJsonObject(jsonEntry, "worldinfo_onetime", this.oneTimeWorldInfoJson);
+        if (this.jedTag != null)
+        {
+            jsonEntry.add("jed",                JEDJsonUtils.deepCopy(this.jedTag));
+        }
+
+        if (this.worldInfoJson != null)
+        {
+            jsonEntry.add("worldinfo",          JEDJsonUtils.deepCopy(this.worldInfoJson));
+        }
+
+        if (this.oneTimeWorldInfoJson != null)
+        {
+            jsonEntry.add("worldinfo_onetime",  JEDJsonUtils.deepCopy(this.oneTimeWorldInfoJson));
+        }
 
         return jsonEntry;
     }
 
     public String getDescription()
     {
-        return String.format("{id=%d,override=%s,unregister=%s,biome=%s," +
-                             "disable_teleporting_from=%s,disable_teleporting_to=%s,DimensionTypeEntry:[%s]}",
-                this.id, this.override, this.unregister, this.biome, this.disableTeleportingFrom, this.disableTeleportingTo,
+        return String.format("{id=%d,override=%s,unregister=%s,biome=%s,world_template=%s," +
+                             "disable_teleporting_from=%s,disable_teleporting_to=%s,temporary_dimension=%s,DimensionTypeEntry:[%s]}",
+                this.dimension, this.override, this.unregister, this.biome, this.worldTemplate,
+                this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
 
     @Override
     public int compareTo(DimensionConfigEntry other)
     {
-        if (this.getId() == other.getId())
+        if (this.getDimension() == other.getDimension())
         {
             return 0;
         }
 
-        return this.getId() > other.getId() ? 1 : -1;
+        return this.getDimension() > other.getDimension() ? 1 : -1;
     }
 
     @Override
@@ -222,7 +262,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + id;
+        result = prime * result + dimension;
         return result;
     }
 
@@ -233,6 +273,6 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         if (other == null) { return false; }
         if (getClass() != other.getClass()) { return false; }
 
-        return this.getId() == ((DimensionConfigEntry) other).getId();
+        return this.getDimension() == ((DimensionConfigEntry) other).getDimension();
     }
 }

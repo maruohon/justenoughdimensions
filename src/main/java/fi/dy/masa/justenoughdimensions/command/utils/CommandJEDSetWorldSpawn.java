@@ -7,6 +7,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 
@@ -41,6 +42,11 @@ public class CommandJEDSetWorldSpawn
                 world.setSpawnPoint(pos);
                 CommandBase.notifyCommandListener(sender, cmd, "jed.commands.setworldspawn.success",
                         Integer.valueOf(dimension), Integer.valueOf(pos.getX()), Integer.valueOf(pos.getY()), Integer.valueOf(pos.getZ()));
+
+                if (world.getWorldInfo() instanceof DerivedWorldInfo)
+                {
+                    CommandJED.throwCommand("command_in_derived_world_info_dimension");
+                }
             }
             else
             {

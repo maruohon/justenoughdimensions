@@ -1,6 +1,8 @@
 package fi.dy.masa.justenoughdimensions.config;
 
+import java.lang.reflect.Field;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.WorldProvider;
@@ -8,7 +10,9 @@ import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldProviderSurface;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
@@ -16,36 +20,101 @@ import io.netty.buffer.ByteBuf;
 
 public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 {
-    private final int id;
-    private final String name;
-    private final String suffix;
-    private final boolean keepLoaded;
-    private final Class<? extends WorldProvider> providerClass;
-    private final String dimensionTypeName;
+    private int dimensionTypeId;
+    private String name;
+    private String suffix;
+    private boolean keepLoaded;
+    private Class<? extends WorldProvider> providerClass;
+    private String dimensionTypeName;
+    private boolean forceRegister;
+    private boolean allowDifferentId = true;
+    private boolean requireExactMatch;
+    private static final Field field_DimensionType_clazz = ReflectionHelper.findField(DimensionType.class, "field_186077_g", "clazz");
 
-    public DimensionTypeEntry(int dimTypeId, String vanillaDimensionTypeName)
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static Class<? extends WorldProvider> getProviderClassFrom(DimensionType type)
     {
-        this.id = dimTypeId;
-        this.dimensionTypeName = vanillaDimensionTypeName;
-        this.name = null;
-        this.suffix = null;
-        this.keepLoaded = false;
-        this.providerClass = null;
+        try
+        {
+            return (Class<? extends WorldProvider>) field_DimensionType_clazz.get(type);
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
-    public DimensionTypeEntry(int id, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
+    public DimensionTypeEntry(String existingDimensionTypeName)
     {
-        this.id = id;
+        this.dimensionTypeName = existingDimensionTypeName;
+    }
+
+    public DimensionTypeEntry(int dimTypeId, String name, String suffix, boolean keepLoaded, @Nonnull Class<? extends WorldProvider> providerClass)
+    {
+        this.dimensionTypeId = dimTypeId;
         this.name = name;
         this.suffix = suffix;
-        this.keepLoaded = id == 0 ? true : keepLoaded;
+        this.keepLoaded = dimTypeId == 0 ? true : keepLoaded;
         this.providerClass = providerClass;
         this.dimensionTypeName = null;
     }
 
-    public int getId()
+    /**
+     * Set whether or not a new DimensionType should always be registered,
+     * or can an existing similar DimensionType be used.
+     * @param forceRegister
+     * @return
+     */
+    public DimensionTypeEntry setForceRegister(boolean forceRegister)
     {
-        return this.id;
+        this.forceRegister = forceRegister;
+        return this;
+    }
+
+    /**
+     * Set whether or not an existing DimensionType with identical other values,
+     * (except for the name and suffix, which are not checked) but a different ID can be used
+     * instead of registering a new entry.
+     * @param allowDifferentId
+     * @return
+     */
+    public DimensionTypeEntry setAllowDifferentId(boolean allowDifferentId)
+    {
+        this.allowDifferentId = allowDifferentId;
+        return this;
+    }
+
+    /**
+     * Set whether or not an exact match of an existing DimensionType is required
+     * to avoid registering a new entry.
+     * @param requireExactMatch
+     * @return
+     */
+    public DimensionTypeEntry setRequireExactMatch(boolean requireExactMatch)
+    {
+        this.requireExactMatch = requireExactMatch;
+        return this;
+    }
+
+    public int getDimensionTypeId()
+    {
+        return this.dimensionTypeId;
+    }
+
+    public String getDimensionTypeName()
+    {
+        return this.name;
+    }
+
+    public String getDimensionTypeSuffix()
+    {
+        return this.suffix;
+    }
+
+    public boolean getDimensionTypeKeepLoaded()
+    {
+        return this.keepLoaded;
     }
 
     public Class<? extends WorldProvider> getProviderClass()
@@ -53,38 +122,80 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         return this.providerClass;
     }
 
-    public DimensionType registerDimensionType()
+    public DimensionType getOrRegisterDimensionType(int dimension)
+    {
+        if (this.forceRegister == false)
+        {
+            DimensionType type = null;
+
+            // Try to find a suitable existing entry,
+            // to try to avoid modifying the DimensionType enum unnecessarily.
+            for (DimensionType tmp : DimensionType.values())
+            {
+                if (tmp.shouldLoadSpawn() == this.keepLoaded && getProviderClassFrom(tmp) == this.providerClass)
+                {
+                    if (this.requireExactMatch)
+                    {
+                        if (tmp.getId() == this.dimensionTypeId &&
+                            tmp.getSuffix().equals(this.suffix) &&
+                            tmp.getName().equals(this.name))
+                        {
+                            type = tmp;
+                            break;
+                        }
+                    }
+                    else if ((tmp.getId() == this.dimensionTypeId || this.allowDifferentId))
+                    {
+                        type = tmp;
+
+                        // "Exact"/best match, stop searching
+                        if (tmp.getId() == this.dimensionTypeId)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (type != null)
+            {
+                JustEnoughDimensions.logInfo("Using an existing DimensionType '{}', for dimension {}", type, dimension);
+                return type;
+            }
+        }
+
+        return this.registerDimensionType(dimension);
+    }
+
+    private DimensionType registerDimensionType(int dimension)
     {
         if (this.dimensionTypeName != null)
         {
             DimensionType type = null;
+
             try
             {
-                type = DimensionType.valueOf(this.dimensionTypeName);
-                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dim {}", type, this.id);
+                type = DimensionType.byName(this.dimensionTypeName);
+                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", type, dimension);
             }
-            catch (Exception e) { }
-
-            if (type == null)
+            catch (IllegalArgumentException e)
             {
                 type = DimensionType.OVERWORLD;
-                JustEnoughDimensions.logger.warn("Failed to get a DimensionType by the name '{}' for dim {}, falling back to DimensionType.OVERWORLD",
-                        this.dimensionTypeName, this.id);
+                JustEnoughDimensions.logger.warn("Failed to get a DimensionType by the name '{}' for dimension {}, falling back to {}",
+                        this.dimensionTypeName, dimension, type);
             }
 
             return type;
         }
         else
         {
-            JustEnoughDimensions.logInfo("Registering a DimensionType with values: {}", this.getDescription());
-            return DimensionType.register(this.name, this.suffix, this.id, this.providerClass, this.keepLoaded);
+            JustEnoughDimensions.logInfo("Registering a new DimensionType with values '{}' for dimension {}", this.getDescription(), dimension);
+            return DimensionType.register(this.name, this.suffix, this.dimensionTypeId, this.providerClass, this.keepLoaded);
         }
     }
 
     public void writeToByteBuf(ByteBuf buf)
     {
-        buf.writeInt(this.id);
-
         if (this.dimensionTypeName != null)
         {
             buf.writeByte(1);
@@ -93,6 +204,10 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         else
         {
             buf.writeByte(0);
+            buf.writeInt(this.dimensionTypeId);
+            buf.writeBoolean(this.forceRegister);
+            buf.writeBoolean(this.allowDifferentId);
+            buf.writeBoolean(this.requireExactMatch);
             ByteBufUtils.writeUTF8String(buf, this.name);
             ByteBufUtils.writeUTF8String(buf, this.suffix);
             ByteBufUtils.writeUTF8String(buf, this.providerClass.getName());
@@ -101,16 +216,19 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
     public static DimensionTypeEntry fromByteBuf(ByteBuf buf)
     {
-        int id = buf.readInt();
-        byte type = buf.readByte();
+        final byte type = buf.readByte();
 
         if (type == (byte) 1)
         {
-            DimensionTypeEntry entry = new DimensionTypeEntry(id, ByteBufUtils.readUTF8String(buf));
+            DimensionTypeEntry entry = new DimensionTypeEntry(ByteBufUtils.readUTF8String(buf));
             return entry;
         }
         else
         {
+            final int dimTypeId = buf.readInt();
+            boolean forceRegister = buf.readBoolean();
+            boolean allowDifferentId = buf.readBoolean();
+            boolean requireExactMatch = buf.readBoolean();
             String name = ByteBufUtils.readUTF8String(buf);
             String suffix = ByteBufUtils.readUTF8String(buf);
             String providerClassName = ByteBufUtils.readUTF8String(buf);
@@ -119,17 +237,83 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             {
                 @SuppressWarnings("unchecked")
                 Class<? extends WorldProvider> providerClass = (Class<? extends WorldProvider>) Class.forName(providerClassName);
-                DimensionTypeEntry entry = new DimensionTypeEntry(id, name, suffix, false, providerClass);
+                DimensionTypeEntry entry = new DimensionTypeEntry(dimTypeId, name, suffix, false, providerClass);
+                entry.setForceRegister(forceRegister);
+                entry.setAllowDifferentId(allowDifferentId);
+                entry.setRequireExactMatch(requireExactMatch);
                 return entry;
             }
             catch (Exception e)
             {
                 JustEnoughDimensions.logger.error("Failed to read dimension info from packet for dimension {}" +
-                    " - WorldProvider class {} not found", id, providerClassName);
+                    " - WorldProvider class {} not found", dimTypeId, providerClassName);
                 return null;
             }
         }
 
+    }
+
+    @Nonnull
+    public static DimensionTypeEntry fromJson(int dimension, @Nonnull JsonObject objDimType)
+    {
+        String existing = JEDJsonUtils.getStringOrDefault(objDimType, "existing_dimensiontype", null, false);
+
+        if (existing != null)
+        {
+            JustEnoughDimensions.logInfo("Using an existing DimensionType '{}' for dimension {}", existing, dimension);
+            return new DimensionTypeEntry(existing);
+        }
+
+        int dimensionTypeId = JEDJsonUtils.getIntegerOrDefault(objDimType, "id", dimension);
+        String name =   JEDJsonUtils.getStringOrDefault(objDimType, "name", "DIM" + dimension, false);
+        String suffix = JEDJsonUtils.getStringOrDefault(objDimType, "suffix", "_dim" + dimension, false);
+
+        boolean keepLoaded =        JEDJsonUtils.getBooleanOrDefault(objDimType, "keeploaded", false);
+        boolean forceRegister =     JEDJsonUtils.getBooleanOrDefault(objDimType, "force_register", false);
+        boolean allowDifferentId =  JEDJsonUtils.getBooleanOrDefault(objDimType, "allow_different_id", true);
+        boolean requireExactMatch = JEDJsonUtils.getBooleanOrDefault(objDimType, "require_exact_match", false);
+
+        Class<? extends WorldProvider> providerClass = WorldProviderSurfaceJED.class;
+        String providerName = "";
+
+        if (objDimType.has("worldprovider") && objDimType.get("worldprovider").isJsonPrimitive())
+        {
+            providerName = objDimType.get("worldprovider").getAsString();
+
+            // Don't allow using the vanilla surface or hell providers for the vanilla end dimension,
+            // because that will lead to a crash in the teleport code (null returned from getSpawnCoordinate() for
+            // other vanilla providers than the End).
+            if (dimension == 1)
+            {
+                if (providerName.equals("WorldProviderSurface") || providerName.equals("net.minecraft.world.WorldProviderSurface"))
+                {
+                    providerName = WorldProviderSurfaceJED.class.getSimpleName();
+                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
+                }
+                else if (providerName.equals("WorldProviderHell") || providerName.equals("net.minecraft.world.WorldProviderHell"))
+                {
+                    providerName = WorldProviderHellJED.class.getSimpleName();
+                    JustEnoughDimensions.logger.warn("Changing the provider for DIM1 to {} to prevent a vanilla crash", providerName);
+                }
+            }
+
+            providerClass = getProviderClass(providerName);
+        }
+
+        if (providerClass == null)
+        {
+            providerClass = WorldProviderSurfaceJED.class;
+
+            JustEnoughDimensions.logger.warn("Failed to get a WorldProvider for name '{}', using {} as a fall-back",
+                    providerName, getNameForWorldProvider(providerClass));
+        }
+
+        DimensionTypeEntry entry = new DimensionTypeEntry(dimensionTypeId, name, suffix, keepLoaded, providerClass);
+        entry.setForceRegister(forceRegister);
+        entry.setAllowDifferentId(allowDifferentId);
+        entry.setRequireExactMatch(requireExactMatch);
+
+        return entry;
     }
 
     public JsonObject toJson()
@@ -138,15 +322,31 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
         if (this.dimensionTypeName != null)
         {
-            dimensionType.addProperty("vanilla_dimensiontype", this.dimensionTypeName);
+            dimensionType.addProperty("existing_dimensiontype", this.dimensionTypeName);
         }
         else
         {
-            dimensionType.addProperty("id", this.id);
+            dimensionType.addProperty("id", this.dimensionTypeId);
             dimensionType.addProperty("name", this.name);
             dimensionType.addProperty("suffix", this.suffix);
             dimensionType.addProperty("keeploaded", this.keepLoaded);
             dimensionType.addProperty("worldprovider", getNameForWorldProvider(this.providerClass));
+
+            // only include these when they are not at the default value
+            if (this.forceRegister)
+            {
+                dimensionType.addProperty("force_register", this.forceRegister);
+            }
+
+            if (this.allowDifferentId == false)
+            {
+                dimensionType.addProperty("allow_different_id", this.allowDifferentId);
+            }
+
+            if (this.requireExactMatch)
+            {
+                dimensionType.addProperty("require_exact_match", this.requireExactMatch);
+            }
         }
 
         return dimensionType;
@@ -154,19 +354,27 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 
     public String getDescription()
     {
-        return String.format("{id=%d,name=\"%s\",suffix=\"%s\",keepLoaded=%s,WorldProvider:\"%s\"}",
-                this.id, this.name, this.suffix, this.keepLoaded, getNameForWorldProvider(this.providerClass));
+        if (this.dimensionTypeName != null)
+        {
+            return String.format("{existing_dimensiontype=%s}", this.dimensionTypeName);
+        }
+        else
+        {
+            return String.format("{id=%d,name=\"%s\",suffix=\"%s\",keepLoaded=%s,WorldProvider:\"%s\",force_register=%s,allow_different_id=%s}",
+                    this.dimensionTypeId, this.name, this.suffix, this.keepLoaded,
+                    getNameForWorldProvider(this.providerClass), this.forceRegister, this.allowDifferentId);
+        }
     }
 
     @Override
     public int compareTo(DimensionTypeEntry other)
     {
-        if (this.getId() == other.getId())
+        if (this.providerClass == other.providerClass)
         {
             return 0;
         }
 
-        return this.getId() > other.getId() ? 1 : -1;
+        return this.dimensionTypeId > other.dimensionTypeId ? 1 : -1;
     }
 
     @Override
@@ -174,7 +382,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + id;
+        result = prime * result + this.dimensionTypeId;
         return result;
     }
 
@@ -185,7 +393,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         if (other == null) { return false; }
         if (getClass() != other.getClass()) { return false; }
 
-        return this.getId() == ((DimensionTypeEntry) other).getId();
+        return this.providerClass == ((DimensionTypeEntry) other).providerClass;
     }
 
     public static String getNameForWorldProvider(@Nonnull Class<? extends WorldProvider> clazz)
@@ -241,8 +449,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for '{}'", providerClassName);
-                e.printStackTrace();
+                JustEnoughDimensions.logger.error("Failed to get a WorldProvider class for name '{}'", providerClassName, e);
                 return null;
             }
         }

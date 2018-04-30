@@ -1,4 +1,4 @@
-package fi.dy.masa.justenoughdimensions.world.util;
+package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.lang.reflect.Field;
 import net.minecraft.nbt.NBTTagCompound;
@@ -64,15 +64,19 @@ public class WorldInfoUtils
                 WorldInfoJED info = createCustomWorldInfoFor(world, dimension);
                 setWorldInfo(world, info);
             }
-            // We might be running under Sponge here, so instead of overriding the WorldInfo instance, try to apply
-            // the configured properties to the existing one...
+            // We might be running under Sponge here or this may be for
+            // the overworld (when applying WorldInfo _value_ overrides),
+            // so instead of overriding the WorldInfo instance, try to apply
+            // the configured properties to the existing WorldInfo.
             else if ((world.getWorldInfo() instanceof WorldInfoJED) == false)
             {
                 JustEnoughDimensions.logInfo("WorldInfoUtils.loadAndSetCustomWorldInfo(): Applying WorldInfo properties " +
                         "to an existing WorldInfo instance of type '{}' in dimension {}", world.getWorldInfo().getClass().getName(), dimension);
 
-                applyValuesToExistingWorldInfo(world, dimension);
-                applyChangesFromNewWorldInfo(world);
+                // In case of the overworld, the generator setting changes need to be "detected" here,
+                // because normally they are detected by comparing to the overworld's values.
+                boolean generatorChanged = applyValuesToExistingWorldInfo(world, dimension);
+                applyChangesFromNewWorldInfo(world, generatorChanged);
             }
         }
     }
@@ -139,7 +143,9 @@ public class WorldInfoUtils
             try
             {
                 field_worldInfo.set(world, info);
-                applyChangesFromNewWorldInfo(world);
+                // This setWorldInfo() method is NOT called for the overworld, thus the generator changes
+                // compared to the overworld can be detected without the force option in this case.
+                applyChangesFromNewWorldInfo(world, false);
             }
             catch (Exception e)
             {
@@ -149,14 +155,11 @@ public class WorldInfoUtils
         }
     }
 
-    private static void applyChangesFromNewWorldInfo(World world)
+    private static void applyChangesFromNewWorldInfo(World world, boolean generatorChanged)
     {
-        if (world.provider instanceof IWorldProviderJED)
-        {
-            // This sets the WorldType (the terrainType field) and the generatorSettings field
-            // from the newly overridden or updated WorldInfo
-            world.provider.setWorld(world);
-        }
+        // This sets the WorldType (the terrainType field) and the generatorSettings field,
+        // and creates the BiomeProvider based on the world seed from the newly overridden or updated WorldInfo
+        world.provider.setWorld(world);
 
         WorldBorderUtils.setWorldBorderValues(world);
 
@@ -167,13 +170,13 @@ public class WorldInfoUtils
         // the world has been constructed and the ChunkProvider set.
 
         // However, for JED WorldProviders the WorldInfo, and more importantly,
-        // the terrainType and generatorSettings in the WorldProvider get set/overridden earlier
+        // the terrainType, generatorSettings and the world seed in the WorldProvider get set/overridden earlier
         // than WorldEvent.Load, via the WorldProvider#setDimension() method, which gets called from
-        // the WorldServer constructor. Therefore the ChunkProvider for JED WorldProviders
+        // the WorldServer constructor. Therefore the ChunkGenerator for JED WorldProviders
         // already has the correct settings available to it when it gets created in the first place.
         if ((world.provider instanceof IWorldProviderJED) == false)
         {
-            WorldUtils.reCreateChunkProvider(world);
+            WorldUtils.reCreateChunkGenerator(world, generatorChanged);
         }
     }
 
@@ -182,34 +185,46 @@ public class WorldInfoUtils
      * This is mainly meant for compatibility with Sponge or other mods that have and need their own versions of WorldInfo.
      * @param world
      * @param dimension
+     * @return true if the generatorName or generatorOptions changed, and the ChunkGenerator needs to be re-created
      */
-    private static void applyValuesToExistingWorldInfo(World world, int dimension)
+    private static boolean applyValuesToExistingWorldInfo(World world, int dimension)
     {
         // Get just the values from the config
         NBTTagCompound nbt = getWorldInfoTag(world, dimension, false, false);
         WorldInfo info = world.getWorldInfo();
+        final boolean hasGeneratorOptions = nbt.hasKey("generatorOptions", Constants.NBT.TAG_STRING);
+        final boolean hasSeed = nbt.hasKey("RandomSeed", Constants.NBT.TAG_LONG);
+        boolean generatorChanged = hasGeneratorOptions || hasSeed;
 
         // These don't have setters, so they need to be smuggled in via WorldSettings
-        if (nbt.hasKey("RandomSeed", Constants.NBT.TAG_LONG) || nbt.hasKey("generatorOptions", Constants.NBT.TAG_STRING))
+        if (hasSeed || hasGeneratorOptions)
         {
-            final long seed = nbt.hasKey("RandomSeed", Constants.NBT.TAG_LONG) ? nbt.getLong("RandomSeed") : info.getSeed();
+            final long seed = hasSeed ? nbt.getLong("RandomSeed") : info.getSeed();
             GameType gameType = nbt.hasKey("GameType", Constants.NBT.TAG_INT) ? GameType.getByID(nbt.getInteger("GameType")) : info.getGameType();
             boolean mapFeatures = nbt.hasKey("MapFeatures", Constants.NBT.TAG_BYTE) ? nbt.getBoolean("MapFeatures") : info.isMapFeaturesEnabled();
             boolean hardcore = nbt.hasKey("hardcore", Constants.NBT.TAG_BYTE) ? nbt.getBoolean("hardcore") : info.isHardcoreModeEnabled();
             WorldType worldType = nbt.hasKey("generatorName", Constants.NBT.TAG_STRING) ? getWorldType(nbt) : info.getTerrainType();
 
             WorldSettings settings = new WorldSettings(seed, gameType, mapFeatures, hardcore, worldType);
-            settings.setGeneratorOptions(nbt.getString("generatorOptions"));
+            String generatorOptions = hasGeneratorOptions ? nbt.getString("generatorOptions") : info.getGeneratorOptions();
+            settings.setGeneratorOptions(generatorOptions);
 
-            // Need to cache and restore this, the populateFromWorldSettings() will reset it to false
+            // We need to cache and restore this, the populateFromWorldSettings() call will reset it to false
             boolean allowCommands = info.areCommandsAllowed();
             info.populateFromWorldSettings(settings);
             info.setAllowCommands(allowCommands);
         }
 
-        if (nbt.hasKey("generatorName", Constants.NBT.TAG_STRING) && nbt.hasKey("generatorOptions", Constants.NBT.TAG_STRING) == false)
+        if (nbt.hasKey("generatorName", Constants.NBT.TAG_STRING) && (hasGeneratorOptions == false && hasSeed == false))
         {
-            info.setTerrainType(getWorldType(nbt));
+            WorldType worldTypeOld = info.getTerrainType();
+            WorldType worldTypeNew = getWorldType(nbt);
+
+            if (worldTypeNew.equals(worldTypeOld) == false)
+            {
+                info.setTerrainType(worldTypeNew);
+                generatorChanged = true;
+            }
         }
 
         if (nbt.hasKey("GameType", Constants.NBT.TAG_INT))          { info.setGameType(GameType.getByID(nbt.getInteger("GameType"))); }
@@ -248,6 +263,8 @@ public class WorldInfoUtils
         {
             info.getGameRulesInstance().readFromNBT(nbt.getCompoundTag("GameRules"));
         }
+
+        return generatorChanged;
     }
 
     private static WorldType getWorldType(NBTTagCompound nbt)

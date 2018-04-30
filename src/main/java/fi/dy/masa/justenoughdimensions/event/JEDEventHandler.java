@@ -1,12 +1,14 @@
 package fi.dy.masa.justenoughdimensions.event;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -23,19 +25,27 @@ import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncPacket;
-import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
-import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldFileUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldInfoUtils;
-import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
 {
-    private static final JEDEventHandler INSTANCE = new JEDEventHandler();
+    private static final Set<String> REDIRECTED_COMMANDS = new HashSet<>();
 
-    public static JEDEventHandler instance()
+    public JEDEventHandler()
     {
-        return INSTANCE;
+        REDIRECTED_COMMANDS.clear();
+        REDIRECTED_COMMANDS.add("defaultgamemode");
+        REDIRECTED_COMMANDS.add("difficulty");
+        REDIRECTED_COMMANDS.add("gamerule");
+        REDIRECTED_COMMANDS.add("seed");
+        REDIRECTED_COMMANDS.add("setworldspawn");
+        REDIRECTED_COMMANDS.add("time");
+        REDIRECTED_COMMANDS.add("weather");
+        REDIRECTED_COMMANDS.add("worldborder");
     }
 
     @SubscribeEvent
@@ -61,6 +71,7 @@ public class JEDEventHandler
             JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
 
             overrideWorldInfoAndBiomeProvider(world);
+            WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
             WorldUtils.findAndSetWorldSpawnIfApplicable(world);
 
             if (Configs.enableSeparateWorldBorders)
@@ -71,6 +82,16 @@ public class JEDEventHandler
         }
     }
 
+    @SubscribeEvent
+    public void onWorldUnload(WorldEvent.Unload event)
+    {
+        if (event.getWorld().isRemote == false)
+        {
+            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", event.getWorld().provider.getDimension());
+            WorldUtils.removeTemporaryWorldIfApplicable(event.getWorld());
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
     {
@@ -78,6 +99,7 @@ public class JEDEventHandler
         JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - DIM: {}", world.provider.getDimension());
 
         overrideWorldInfoAndBiomeProvider(world);
+        WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
 
         // Find a proper spawn point for the overworld that isn't inside ground...
         // For other dimensions than the regular overworld, this is done after
@@ -99,12 +121,14 @@ public class JEDEventHandler
 
     private static void overrideWorldInfoAndBiomeProvider(World world)
     {
+        // Copying/handling template worlds needs to happen before WorldInfo overrides,
+        // in case we need to apply custom values from the dimension config on top of any existing values.
+        WorldFileUtils.copyTemplateWorldIfApplicable(world);
+
         if (Configs.enableSeparateWorldInfo)
         {
             WorldInfoUtils.loadAndSetCustomWorldInfo(world);
         }
-
-        JEDWorldProperties.applyJEDWorldPropertiesToWorldProvider(world);
 
         if (Configs.enableOverrideBiomeProvider)
         {
@@ -117,9 +141,9 @@ public class JEDEventHandler
     {
         WorldFileUtils.saveCustomWorldInfoToFile(event.getWorld());
 
-        if (Configs.enableForcedGamemodes && event.getWorld().provider.getDimension() == 0)
+        if (Configs.enableForcedGameModes && event.getWorld().provider.getDimension() == 0)
         {
-            GamemodeTracker.getInstance().writeToDisk();
+            DataTracker.getInstance().writeToDisk();
         }
     }
 
@@ -128,13 +152,16 @@ public class JEDEventHandler
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerLoggedInEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
+        DataTracker.getInstance().playerLoginOrRespawn(event.player);
     }
 
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
-        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}, death?: {}",
+                event.player.getEntityWorld().provider.getDimension(), event.isEndConquered() == false);
         this.syncAndSetPlayerData(event.player);
+        DataTracker.getInstance().playerLoginOrRespawn(event.player);
     }
 
     @SubscribeEvent
@@ -142,11 +169,7 @@ public class JEDEventHandler
     {
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerChangedDimensionEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
-
-        if (Configs.enableForcedGamemodes && event.player instanceof EntityPlayerMP)
-        {
-            GamemodeTracker.getInstance().playerChangedDimension((EntityPlayerMP) event.player, event.fromDim, event.toDim);
-        }
+        DataTracker.getInstance().playerChangedDimension(event.player, event.fromDim, event.toDim);
     }
 
     private void syncAndSetPlayerData(EntityPlayer player)
@@ -217,12 +240,29 @@ public class JEDEventHandler
                         player.getName(), Configs.initialSpawnDimensionId, pos);
 
                 player.moveToBlockPosAndAngles(pos, 0f, 0f);
+
+                DataTracker.getInstance().playerInitialSpawn(player);
             }
             else
             {
                 JustEnoughDimensions.logger.warn("Player {} joined for the first time, but the currently set" +
                         " initial spawn dimension {} didn't exist", event.getEntityPlayer().getName(), Configs.initialSpawnDimensionId);
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onCommand(CommandEvent event)
+    {
+        String command = event.getCommand().getName();
+
+        if (Configs.enableCommandRedirecting && REDIRECTED_COMMANDS.contains(command) &&
+            event.getSender().getEntityWorld().getWorldInfo() instanceof WorldInfoJED)
+        {
+            String newCommand = "jed " + command + " " + String.join(" ", event.getParameters());
+            JustEnoughDimensions.logInfo("Redirecting a vanilla command '/{}' to the JED variant as '/{}'", command, newCommand);
+            event.setCanceled(true);
+            FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().executeCommand(event.getSender(), newCommand);
         }
     }
 }

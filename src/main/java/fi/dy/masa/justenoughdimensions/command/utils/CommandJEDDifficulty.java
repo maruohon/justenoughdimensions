@@ -5,6 +5,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
@@ -43,6 +44,11 @@ public class CommandJEDDifficulty
             world.setAllowedSpawnTypes(diff != EnumDifficulty.PEACEFUL, world.getMinecraftServer().getCanSpawnAnimals());
 
             CommandBase.notifyCommandListener(sender, cmd, "jed.commands.difficulty.success", Integer.valueOf(dimension), diff);
+
+            if (world.getWorldInfo() instanceof DerivedWorldInfo)
+            {
+                CommandJED.throwCommand("command_in_derived_world_info_dimension");
+            }
         }
         else
         {

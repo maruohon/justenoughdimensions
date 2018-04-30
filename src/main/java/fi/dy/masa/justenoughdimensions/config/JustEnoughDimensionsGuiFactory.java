@@ -26,7 +26,9 @@ public class JustEnoughDimensionsGuiFactory extends DefaultGuiFactory
     {
         List<IConfigElement> configElements = new ArrayList<IConfigElement>();
 
-        configElements.addAll(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_GENERIC)).getChildElements());
+        configElements.add(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_GENERIC)));
+        configElements.add(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_CONFIG_HANDLING)));
+        configElements.add(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_CLIENT)));
 
         return configElements;
     }

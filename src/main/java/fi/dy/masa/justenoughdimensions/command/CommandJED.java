@@ -1,6 +1,9 @@
 package fi.dy.masa.justenoughdimensions.command;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -12,12 +15,16 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDifficulty;
@@ -29,12 +36,14 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
+import fi.dy.masa.justenoughdimensions.util.world.DimensionDump;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
-import fi.dy.masa.justenoughdimensions.world.util.DimensionDump;
-import fi.dy.masa.justenoughdimensions.world.util.WorldUtils;
 
 public class CommandJED extends CommandBase
 {
+    private final Map<ICommandSender, String> commandConfirmations = new HashMap<>();
 
     @Override
     public String getName()
@@ -62,6 +71,7 @@ public class CommandJED extends CommandBase
             return getListOfStringsMatchingLastWord(args,
                     "debug",
                     "defaultgamemode",
+                    "delete-dimension",
                     "difficulty",
                     "dimbuilder",
                     "gamerule",
@@ -102,7 +112,12 @@ public class CommandJED extends CommandBase
             try
             {
                 parseInt(args[0]); // dimension
-                args = dropFirstStrings(args, 1);
+
+                // Bleh hacky check here to not mess up the tab completion ;_;
+                if (cmd.equals("delete-dimension") == false)
+                {
+                    args = dropFirstStrings(args, 1);
+                }
             }
             catch (NumberInvalidException e)
             {
@@ -134,6 +149,10 @@ public class CommandJED extends CommandBase
             else if (cmd.equals("defaultgamemode") && args.length == 1)
             {
                 return getListOfStringsMatchingLastWord(args, "survival", "creative", "adventure", "spectator");
+            }
+            else if (cmd.equals("delete-dimension") && args.length == 2)
+            {
+                return getListOfStringsMatchingLastWord(args, "confirm");
             }
             else if (cmd.equals("difficulty") && args.length == 1)
             {
@@ -281,6 +300,52 @@ public class CommandJED extends CommandBase
                 throw new WrongUsageException("/jed unregister-remove <dimension id>");
             }
         }
+        else if (cmd.equals("delete-dimension"))
+        {
+            if (args.length == 1)
+            {
+                int dimension = parseInt(args[0]);
+
+                if (dimension == 0)
+                {
+                    throwCommand("delete_dimension.cant_delete_overworld");
+                }
+
+                String str = cmd + String.join(" ", args);
+                this.commandConfirmations.put(sender, str);
+                notifyCommandListener(sender, this, "jed.commands.generic.confirmation_command_cached");
+                return;
+            }
+            else if (args.length == 2)
+            {
+                if (args[1].equals("confirm"))
+                {
+                    int dimension = parseInt(args[0]);
+                    String cached = this.commandConfirmations.remove(sender);
+
+                    if (cached != null && cached.equals(cmd + args[0]))
+                    {
+                        if (WorldUtils.tryDeleteDimension(dimension, sender))
+                        {
+                            notifyCommandListener(sender, this, "jed.commands.delete_dimension.success", Integer.valueOf(dimension));
+                            return;
+                        }
+                        else
+                        {
+                            throwCommand("delete_dimension.failed", dimension);
+                        }
+                    }
+                }
+            }
+
+            throw new WrongUsageException("/jed delete-dimension <dimension id> [confirm]");
+        }
+        else if (cmd.equals("broadcast"))
+        {
+            // NO-OP - This is a dummy command used by other mods (at least World Primer)
+            // to get a notification of certain JED events, via the CommandEvent (just to avoid
+            // adding an actual API and dependencies just for this...)
+        }
         else if (cmd.equals("debug"))
         {
             World world = null;
@@ -304,26 +369,41 @@ public class CommandJED extends CommandBase
             if (world != null)
             {
                 IChunkProvider cp = world.getChunkProvider();
+                DimensionType dimType = world.provider.getDimensionType();
+
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
-                JustEnoughDimensions.logger.info("DimensionType ID: {}", world.provider.getDimensionType().getId());
-                JustEnoughDimensions.logger.info("DimensionType name: {}", world.provider.getDimensionType().getName());
+
+                String clazzName = "?";
+                try
+                {
+                    Class <? extends WorldProvider > clazz = ReflectionHelper.getPrivateValue(DimensionType.class, dimType, "field_186077_g", "clazz");
+                    clazzName = clazz.getName();
+                }
+                catch (Exception e) {}
+
+                JustEnoughDimensions.logger.info(String.format("DimensionType: ID: %d, name: '%s', suffix: '%s', " +
+                                                  "shouldLoadSpawn: %s, WorldProvider class: '%s'",
+                                                  dimType.getId(), dimType.getName(), dimType.getSuffix(), dimType.shouldLoadSpawn(), clazzName));
+
+                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", world.provider.getDimensionType().toString());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
                 JustEnoughDimensions.logger.info("WorldType: '{}' (class: {})", type.getName(), type.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldInfo class: '{}'", world.getWorldInfo().getClass().getName());
                 JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
                 JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
                         ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
                 JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
 
-                JEDWorldProperties props = JEDWorldProperties.getProperties(world);
+                JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
                 if (props != null)
                 {
                     JustEnoughDimensions.logger.info("Dimension has JED properties");
-                    NBTTagCompound nbt = props.getFullJEDTag();
-                    JustEnoughDimensions.logger.info("JED properties NBT tag: {}", nbt != null ? nbt.toString() : "null");
+                    String str = JEDJsonUtils.serialize(props.getFullJEDPropertiesObject());
+                    JustEnoughDimensions.logger.info("JED properties tag: {}", str);
                 }
                 else
                 {
@@ -640,5 +720,20 @@ public class CommandJED extends CommandBase
     public static void throwCommand(String type, Object... params) throws CommandException
     {
         throw new CommandException("jed.commands.error." + type, params);
+    }
+
+    public static void runBroadcastCommand(ICommandSender sender, String commandType, Object... args)
+    {
+        String fullCommand = "jed broadcast " + commandType + " " + StringUtils.join(args, ' ');
+
+        try
+        {
+            JustEnoughDimensions.logInfo("Running a broadcast command '{}'", fullCommand);
+            FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().executeCommand(sender, fullCommand);
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Exception while executing a broadcast command '{}'", fullCommand, e);
+        }
     }
 }

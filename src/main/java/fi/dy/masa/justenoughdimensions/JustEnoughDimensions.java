@@ -2,8 +2,10 @@ package fi.dy.masa.justenoughdimensions;
 
 import java.io.File;
 import java.util.EnumMap;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.chunk.storage.AnvilSaveConverter;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
@@ -20,12 +22,17 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
-import fi.dy.masa.justenoughdimensions.event.GamemodeTracker;
+import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
-import fi.dy.masa.justenoughdimensions.proxy.IProxy;
+import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
-import fi.dy.masa.justenoughdimensions.world.util.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
+import fi.dy.masa.justenoughdimensions.world.WorldProviderSurfaceJED;
 
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION, certificateFingerprint = Reference.FINGERPRINT,
     guiFactory = "fi.dy.masa.justenoughdimensions.config.JustEnoughDimensionsGuiFactory",
@@ -37,35 +44,44 @@ public class JustEnoughDimensions
     public static JustEnoughDimensions instance;
 
     @SidedProxy(clientSide = Reference.PROXY_CLIENT, serverSide = Reference.PROXY_SERVER)
-    public static IProxy proxy;
+    public static CommonProxy proxy;
 
+    public static final Random RAND = new Random();
     public static final Logger logger = LogManager.getLogger(Reference.MOD_ID);
     public static EnumMap<Side, FMLEmbeddedChannel> channels;
+
+    private static File lastWorldDir;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
         instance = this;
 
-        Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
+        Configs.loadConfigsFromMainConfigFile(event.getModConfigurationDirectory());
         PacketHandler.init();
         proxy.registerEventHandlers();
         channels = NetworkRegistry.INSTANCE.newChannel("JEDChannel", DimensionSyncChannelHandler.instance);
 
-        DimensionConfig.create(new File(event.getModConfigurationDirectory(), Reference.MOD_ID));
+        DimensionConfig.init(event.getModConfigurationDirectory());
     }
 
     @Mod.EventHandler
     public void onServerAboutToStart(FMLServerAboutToStartEvent event)
     {
         File worldDir = new File(((AnvilSaveConverter) event.getServer().getActiveAnvilConverter()).savesDirectory, event.getServer().getFolderName());
+        Configs.loadConfigsFromPerWorldConfigIfEnabled(worldDir);
         DimensionConfig.instance().readDimensionConfig(worldDir);
+        DataTracker.getInstance().readFromDisk(worldDir);
+        lastWorldDir = worldDir;
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.
         // But on the other hand we don't want to register the rest of the dimensions yet,
         // otherwise they would be considered 'static dimensions' and get loaded on server start.
-        DimensionConfig.instance().registerOverriddenDimensions();
+        DimensionConfig.instance().doDimensionOverridesAndUnregistering();
+
+        // Handle template world copying for the overworld before the server starts
+        WorldFileUtils.copyTemplateWorldIfApplicable(0, worldDir);
     }
 
     @Mod.EventHandler
@@ -85,16 +101,20 @@ public class JustEnoughDimensions
         // Register our custom (non-override) dimensions. This is in this event so that our custom dimensions
         // won't get auto-loaded on server start as 'static' dimensions.
         DimensionConfig.instance().registerNonOverrideDimensions();
-
-        GamemodeTracker.getInstance().readFromDisk();
     }
 
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event)
     {
+        WorldUtils.removeTemporaryWorldIfApplicable(0, null, lastWorldDir, true);
+        lastWorldDir = null;
+
         // Unregister custom dimensions. This is only useful in single player,
         // so that all the dimensions won't immediately load when joining a world again.
         DimensionConfig.instance().unregisterCustomDimensions();
+
+        // (Re-)read the global configs after closing a world
+        Configs.loadConfigsFromGlobalConfigFile();
     }
 
     public static void logInfo(String message, Object... params)
@@ -126,5 +146,18 @@ public class JustEnoughDimensions
             logger.warn("*****   that it may contain malware or other unwanted things!                           *****");
             logger.warn("*********************************************************************************************");
         }
+    }
+
+    // Register some default DimensionType entries early on, to try to avoid some issues
+    // with mods that use a switch() with the DimensionType values (Optifine...).
+    // Note that these still have some potential issues, the suffix being one.
+    static
+    {
+        DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false);
+        DimensionType.register("JED Hell",              "_dim7892", 7892, WorldProviderHellJED.class,       false);
+        DimensionType.register("JED End",               "_dim7893", 7893, WorldProviderEndJED.class,        false);
+        DimensionType.register("JED Surface 0",         "_dim7894",    0, WorldProviderSurfaceJED.class,    false);
+        DimensionType.register("JED Surface Loaded",    "_dim7895", 7895, WorldProviderSurfaceJED.class,    true);
+        DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true);
     }
 }

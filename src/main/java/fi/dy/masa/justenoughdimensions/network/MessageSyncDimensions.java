@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.client.FMLClientHandler;
@@ -20,7 +21,7 @@ public class MessageSyncDimensions implements IMessage
     {
     }
 
-    public MessageSyncDimensions(List<DimensionConfigEntry> entries)
+    public MessageSyncDimensions(Collection<DimensionConfigEntry> entries)
     {
         this.dimensions.addAll(entries);
     }

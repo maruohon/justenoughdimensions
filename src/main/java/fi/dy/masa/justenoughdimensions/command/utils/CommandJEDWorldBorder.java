@@ -10,6 +10,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 
@@ -187,6 +188,19 @@ public class CommandJEDWorldBorder
             sender.sendMessage(new TextComponentTranslation("jed.commands.worldborder.get.success",
                     Integer.valueOf(dimension), String.format("%.2f", diameter),
                     String.format("%.1f", centerX), String.format("%.1f", centerZ)));
+        }
+
+        if (cmdName.equals("get") ||
+            cmdName.equals("set") ||
+            cmdName.equals("add") ||
+            cmdName.equals("center") ||
+            cmdName.equals("damage") ||
+            cmdName.equals("warning"))
+        {
+            if (world.getWorldInfo() instanceof DerivedWorldInfo)
+            {
+                CommandJED.throwCommand("command_in_derived_world_info_dimension");
+            }
         }
         else
         {

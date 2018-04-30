@@ -9,6 +9,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
+import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
@@ -37,6 +38,11 @@ public class CommandJEDDefaultGameType
             else
             {
                 world.getWorldInfo().setGameType(type);
+            }
+
+            if (world.getWorldInfo() instanceof DerivedWorldInfo)
+            {
+                CommandJED.throwCommand("command_in_derived_world_info_dimension");
             }
 
             if (server.getForceGamemode())

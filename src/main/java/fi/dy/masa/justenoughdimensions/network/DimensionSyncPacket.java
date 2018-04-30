@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.network;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.DimensionType;
@@ -16,7 +17,7 @@ public class DimensionSyncPacket
     private ByteBuf buffer = Unpooled.buffer();
     private List<DimensionConfigEntry> dimensions = new ArrayList<DimensionConfigEntry>();
 
-    public void addDimensionData(List<DimensionConfigEntry> entries)
+    public void addDimensionData(Collection<DimensionConfigEntry> entries)
     {
         this.buffer.writeInt(entries.size());
 
@@ -83,39 +84,39 @@ public class DimensionSyncPacket
 
         for (DimensionConfigEntry entry : dimensions)
         {
-            registerDimension(entry.getId(), entry);
+            registerDimension(entry.getDimension(), entry);
 
             if (entry.getUnregister() == false && entry.hasDimensionTypeEntry())
             {
-                ids.add(String.valueOf(entry.getId()));
+                ids.add(String.valueOf(entry.getDimension()));
             }
         }
 
         return String.join(", ", ids);
     }
 
-    private static void registerDimension(int id, DimensionConfigEntry entry)
+    private static void registerDimension(int dimension, DimensionConfigEntry entry)
     {
         if (entry.getUnregister() || entry.hasDimensionTypeEntry() == false)
         {
             return;
         }
 
-        if (DimensionManager.isDimensionRegistered(id))
+        if (DimensionManager.isDimensionRegistered(dimension))
         {
-            DimensionType type = DimensionManager.getProviderType(id);
+            DimensionType type = DimensionManager.getProviderType(dimension);
 
             if (type.createDimension().getClass() != entry.getDimensionTypeEntry().getProviderClass())
             {
-                JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Dimension {} already registered, unregistering the old one", id);
-                DimensionManager.unregisterDimension(id);
+                JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Dimension {} already registered, unregistering the old one", dimension);
+                DimensionManager.unregisterDimension(dimension);
             }
         }
 
-        if (DimensionManager.isDimensionRegistered(id) == false)
+        if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
-            JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", id);
-            DimensionManager.registerDimension(id, entry.getDimensionTypeEntry().registerDimensionType());
+            JustEnoughDimensions.logInfo("DimensionSyncPacket.registerDimension: Registering dimension {}", dimension);
+            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
         }
     }
 }
