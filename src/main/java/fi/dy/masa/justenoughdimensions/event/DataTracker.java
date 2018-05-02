@@ -24,8 +24,7 @@ import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 public class DataTracker
 {
     private static DataTracker instance;
-    private Map<UUID, GameType> normalGameModes = new HashMap<>();
-    private Map<UUID, Integer> playerDimensions = new HashMap<>();
+    private Map<UUID, PlayerData> playerData = new HashMap<>();
     private boolean dirty = false;
 
     public static DataTracker getInstance()
@@ -38,13 +37,26 @@ public class DataTracker
         return instance;
     }
 
+    private PlayerData getOrCreatePlayerData(UUID uuid)
+    {
+        PlayerData data = this.playerData.get(uuid);
+
+        if (data == null)
+        {
+            data = new PlayerData();
+            this.playerData.put(uuid, data);
+        }
+
+        return data;
+    }
+
     public void playerLoginOrRespawn(EntityPlayer playerIn)
     {
         if (playerIn.getClass() == EntityPlayerMP.class)
         {
-            if (this.playerDimensions.containsKey(playerIn.getUniqueID()))
+            if (this.playerData.containsKey(playerIn.getUniqueID()))
             {
-                int dimFrom = this.playerDimensions.get(playerIn.getUniqueID());
+                int dimFrom = this.playerData.get(playerIn.getUniqueID()).dimension;
                 int dimTo = playerIn.getEntityWorld().provider.getDimension();
 
                 if (dimFrom != dimTo)
@@ -57,6 +69,15 @@ public class DataTracker
         }
     }
 
+    public void playerDied(EntityPlayer player)
+    {
+        if (player.getEntityWorld().getWorldInfo().isHardcoreModeEnabled())
+        {
+            this.getOrCreatePlayerData(player.getUniqueID()).deadInHardcore = true;
+            this.dirty = true;
+        }
+    }
+
     public void playerInitialSpawn(EntityPlayer player)
     {
         UUID uuid = player.getUniqueID();
@@ -65,10 +86,9 @@ public class DataTracker
         // for them from the main configuration.
         if (player.getClass() == EntityPlayerMP.class &&
             this.dimensionHasForcedGameMode(player.dimension) &&
-            this.normalGameModes.containsKey(uuid) == false &&
-            this.playerDimensions.containsKey(uuid) == false)
+            this.playerData.containsKey(uuid) == false)
         {
-            this.normalGameModes.put(uuid, Configs.normalGameMode);
+            this.getOrCreatePlayerData(uuid).normalGameMode = Configs.normalGameMode;
             this.dirty = true;
 
             JustEnoughDimensions.logInfo("DataTracker: Set the \"normal game mode\" of player '{}' to '{}' after their initial join to a ForceGameMode dimension {}",
@@ -86,8 +106,17 @@ public class DataTracker
     {
         if (playerIn.getClass() == EntityPlayerMP.class)
         {
+            this.storePlayerDimension(playerIn);
+
             if (Configs.enableForcedGameModes)
             {
+                PlayerData data = this.getOrCreatePlayerData(playerIn.getUniqueID());
+
+                if (data.deadInHardcore)
+                {
+                    return;
+                }
+
                 EntityPlayerMP player = (EntityPlayerMP) playerIn;
                 boolean forcedFrom = this.dimensionHasForcedGameMode(dimFrom);
                 boolean forcedTo = this.dimensionHasForcedGameMode(dimTo);
@@ -105,16 +134,17 @@ public class DataTracker
 
                     // The player is in the destination world at this point, so we get the gamemode from there
                     this.setPlayerGameMode(player, player.getEntityWorld().getWorldInfo().getGameType());
+
+                    JustEnoughDimensions.logInfo("DataTracker: Set gamemode '{}' for player '{}'",
+                            player.interactionManager.getGameType(), player.getName());
                 }
                 // When switching to a non-forced-gamemode dimension from a forced-gamemode dimension,
                 // ie. we have a stored gamemode for the player.
-                else if (this.normalGameModes.containsKey(player.getUniqueID()))
+                else
                 {
-                    this.restoreStoredGameMode(player);
+                    this.restoreStoredGameModeIfExists(player);
                 }
             }
-
-            this.storePlayerDimension(playerIn);
         }
     }
 
@@ -126,21 +156,26 @@ public class DataTracker
 
     private void storeNonForcedGameMode(EntityPlayerMP player)
     {
-        this.normalGameModes.put(player.getUniqueID(), player.interactionManager.getGameType());
+        this.getOrCreatePlayerData(player.getUniqueID()).normalGameMode = player.interactionManager.getGameType();
         this.dirty = true;
 
         JustEnoughDimensions.logInfo("DataTracker: Stored a non-forced gamemode '{}' for player '{}'",
                 player.interactionManager.getGameType(), player.getName());
     }
 
-    private void restoreStoredGameMode(EntityPlayerMP player)
+    private void restoreStoredGameModeIfExists(EntityPlayerMP player)
     {
-        this.setPlayerGameMode(player, this.normalGameModes.get(player.getUniqueID()));
-        this.normalGameModes.remove(player.getUniqueID());
-        this.dirty = true;
+        PlayerData data = this.getOrCreatePlayerData(player.getUniqueID());
 
-        JustEnoughDimensions.logInfo("DataTracker: Restored gamemode '{}' for player '{}'",
-                player.interactionManager.getGameType(), player.getName());
+        if (data.normalGameMode != null)
+        {
+            this.setPlayerGameMode(player, data.normalGameMode);
+            data.normalGameMode = null;
+            this.dirty = true;
+
+            JustEnoughDimensions.logInfo("DataTracker: Restored gamemode '{}' for player '{}'",
+                    player.interactionManager.getGameType(), player.getName());
+        }
     }
 
     private void setPlayerGameMode(EntityPlayerMP player, GameType type)
@@ -151,12 +186,8 @@ public class DataTracker
 
     private void storePlayerDimension(EntityPlayer player)
     {
-        this.storePlayerDimension(player, player.getEntityWorld().provider.getDimension());
-    }
-
-    private void storePlayerDimension(EntityPlayer player, int dimension)
-    {
-        this.playerDimensions.put(player.getUniqueID(), dimension);
+        int dimension = player.getEntityWorld().provider.getDimension();
+        this.getOrCreatePlayerData(player.getUniqueID()).dimension = dimension;
         this.dirty = true;
 
         JustEnoughDimensions.logInfo("DataTracker: Stored dimension '{}' for player '{}'", dimension, player.getName());
@@ -165,16 +196,16 @@ public class DataTracker
     @Nullable
     public Integer getPlayersDimension(EntityPlayer player)
     {
-        return this.playerDimensions.get(player.getUniqueID());
+        return this.getOrCreatePlayerData(player.getUniqueID()).dimension;
     }
 
     public int getPlayerCountInDimension(int dimension)
     {
         int count = 0;
 
-        for (Integer dim : this.playerDimensions.values())
+        for (PlayerData data : this.playerData.values())
         {
-            if (dim == dimension)
+            if (data.dimension == dimension)
             {
                 count++;
             }
@@ -187,7 +218,7 @@ public class DataTracker
     {
         // Clear the data structures when reading the data for a world/save, so that data
         // from another world won't carry over to a world/save that doesn't have the file yet.
-        this.normalGameModes.clear();
+        this.playerData.clear();
 
         if (worldDir != null)
         {
@@ -252,7 +283,7 @@ public class DataTracker
         }
     }
 
-    private void readFromNBT(NBTTagCompound nbt)
+    private void readFromNBTOld(NBTTagCompound nbt)
     {
         if (nbt != null)
         {
@@ -273,7 +304,7 @@ public class DataTracker
 
                         if (type != GameType.NOT_SET)
                         {
-                            this.normalGameModes.put(new UUID(tag.getLong("UUIDM"), tag.getLong("UUIDL")), type);
+                            this.getOrCreatePlayerData(new UUID(tag.getLong("UUIDM"), tag.getLong("UUIDL"))).normalGameMode = type;
                         }
                     }
                 }
@@ -292,9 +323,50 @@ public class DataTracker
                         tag.hasKey("UUIDL", Constants.NBT.TAG_LONG) &&
                         tag.hasKey("Dimension", Constants.NBT.TAG_INT))
                     {
-                        this.playerDimensions.put(new UUID(tag.getLong("UUIDM"), tag.getLong("UUIDL")), tag.getInteger("Dimension"));
+                        this.getOrCreatePlayerData(new UUID(tag.getLong("UUIDM"), tag.getLong("UUIDL"))).dimension = tag.getInteger("Dimension");
                     }
                 }
+            }
+        }
+    }
+
+    private void readFromNBT(NBTTagCompound nbt)
+    {
+        if (nbt != null)
+        {
+            if (nbt.hasKey("PlayerData", Constants.NBT.TAG_LIST))
+            {
+                NBTTagList tagList = nbt.getTagList("PlayerData", Constants.NBT.TAG_COMPOUND);
+                final int count = tagList.tagCount();
+
+                for (int i = 0; i < count; ++i)
+                {
+                    NBTTagCompound tag = tagList.getCompoundTagAt(i);
+
+                    if (tag.hasKey("UUIDM", Constants.NBT.TAG_LONG) &&
+                        tag.hasKey("UUIDL", Constants.NBT.TAG_LONG))
+                    {
+                        PlayerData data = new PlayerData();
+                        data.dimension = tag.getInteger("Dimension");
+                        data.deadInHardcore = tag.getBoolean("HardcoreDead");
+
+                        if (tag.hasKey("GameMode", Constants.NBT.TAG_BYTE))
+                        {
+                            GameType type = GameType.getByID(tag.getByte("GameMode"));
+
+                            if (type != GameType.NOT_SET)
+                            {
+                                data.normalGameMode = type;
+                            }
+                        }
+
+                        this.playerData.put(new UUID(tag.getLong("UUIDM"), tag.getLong("UUIDL")), data);
+                    }
+                }
+            }
+            else
+            {
+                this.readFromNBTOld(nbt);
             }
         }
     }
@@ -303,32 +375,33 @@ public class DataTracker
     {
         NBTTagList tagList = new NBTTagList();
 
-        for (Map.Entry<UUID, GameType> entry : this.normalGameModes.entrySet())
+        for (Map.Entry<UUID, PlayerData> entry : this.playerData.entrySet())
         {
+            PlayerData data = entry.getValue();
             NBTTagCompound tag = new NBTTagCompound();
             tag.setLong("UUIDM", entry.getKey().getMostSignificantBits());
             tag.setLong("UUIDL", entry.getKey().getLeastSignificantBits());
-            tag.setByte("GameMode", (byte) entry.getValue().getID());
+            tag.setInteger("Dimension", data.dimension);
+            tag.setBoolean("HardcoreDead", data.deadInHardcore);
+
+            if (data.normalGameMode != null)
+            {
+                tag.setByte("GameMode", (byte) data.normalGameMode.getID());
+            }
 
             tagList.appendTag(tag);
         }
 
-        nbt.setTag("PlayerGameModes", tagList);
-
-        tagList = new NBTTagList();
-
-        for (Map.Entry<UUID, Integer> entry : this.playerDimensions.entrySet())
-        {
-            NBTTagCompound tag = new NBTTagCompound();
-            tag.setLong("UUIDM", entry.getKey().getMostSignificantBits());
-            tag.setLong("UUIDL", entry.getKey().getLeastSignificantBits());
-            tag.setInteger("Dimension", entry.getValue());
-
-            tagList.appendTag(tag);
-        }
-
-        nbt.setTag("PlayerDimensions", tagList);
+        nbt.setTag("PlayerData", tagList);
 
         return nbt;
+    }
+
+    private static class PlayerData
+    {
+        public boolean deadInHardcore;
+        public int dimension;
+        @Nullable
+        public GameType normalGameMode;
     }
 }

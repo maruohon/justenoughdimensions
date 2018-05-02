@@ -4,12 +4,15 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -158,10 +161,14 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event)
     {
-        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}, death?: {}",
-                event.player.getEntityWorld().provider.getDimension(), event.isEndConquered() == false);
-        this.syncAndSetPlayerData(event.player);
-        DataTracker.getInstance().playerLoginOrRespawn(event.player);
+        EntityPlayer player = event.player;
+        World world = player.getEntityWorld();
+        final boolean wasDeath = event.isEndConquered() == false;
+
+        JustEnoughDimensions.logInfo("PlayerEvent.PlayerRespawnEvent - DIM: {}, death?: {}", world.provider.getDimension(), wasDeath);
+
+        this.syncAndSetPlayerData(player);
+        DataTracker.getInstance().playerLoginOrRespawn(player);
     }
 
     @SubscribeEvent
@@ -170,6 +177,25 @@ public class JEDEventHandler
         JustEnoughDimensions.logInfo("PlayerEvent.PlayerChangedDimensionEvent - DIM: {}", event.player.getEntityWorld().provider.getDimension());
         this.syncAndSetPlayerData(event.player);
         DataTracker.getInstance().playerChangedDimension(event.player, event.fromDim, event.toDim);
+    }
+
+    @SubscribeEvent
+    public void onLivingDeath(LivingDeathEvent event)
+    {
+        if (event.getEntityLiving() instanceof EntityPlayerMP)
+        {
+            EntityPlayerMP player = (EntityPlayerMP) event.getEntityLiving();
+
+            // The code in NetHandlerPlayServer#processClientStatus() only checks the server setting for hardcore
+            if (player.getEntityWorld().getWorldInfo().isHardcoreModeEnabled())
+            {
+                int dim = player.getEntityWorld().provider.getDimension();
+                JustEnoughDimensions.logInfo("LivingDeathEvent: Player '{}' died in a hardcore mode dimension {}", player.getName(), dim);
+                player.setGameType(GameType.SPECTATOR);
+                player.getEntityWorld().getGameRules().setOrCreateGameRule("spectatorsGenerateChunks", "false");
+                DataTracker.getInstance().playerDied(player);
+            }
+        }
     }
 
     private void syncAndSetPlayerData(EntityPlayer player)

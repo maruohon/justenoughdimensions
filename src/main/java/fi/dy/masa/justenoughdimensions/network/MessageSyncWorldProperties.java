@@ -31,6 +31,7 @@ public class MessageSyncWorldProperties implements IMessage
 {
     private JsonObject jedProperties;
     private boolean hasJEDTag;
+    private boolean isHardcore;
 
     public MessageSyncWorldProperties()
     {
@@ -38,6 +39,7 @@ public class MessageSyncWorldProperties implements IMessage
 
     public MessageSyncWorldProperties(World world)
     {
+        this.isHardcore = world.getWorldInfo().isHardcoreModeEnabled();
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
 
         if (props != null)
@@ -50,6 +52,7 @@ public class MessageSyncWorldProperties implements IMessage
     @Override
     public void toBytes(ByteBuf buf)
     {
+        buf.writeBoolean(this.isHardcore);
         // Has the JED World Properties object
         buf.writeBoolean(this.hasJEDTag);
 
@@ -71,6 +74,8 @@ public class MessageSyncWorldProperties implements IMessage
     @Override
     public void fromBytes(ByteBuf buf)
     {
+        this.isHardcore = buf.readBoolean();
+
         // Has the JED World Properties object
         if (buf.readBoolean())
         {
@@ -124,6 +129,8 @@ public class MessageSyncWorldProperties implements IMessage
 
         protected void processMessage(final MessageSyncWorldProperties message, final World world)
         {
+            world.getWorldInfo().setHardcore(message.isHardcore);
+
             if (world.provider instanceof IWorldProviderJED)
             {
                 ((IWorldProviderJED) world.provider).setJEDPropertiesFromJson(message.jedProperties);
