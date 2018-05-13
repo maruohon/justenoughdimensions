@@ -64,7 +64,7 @@ public class JEDEventHandler
         channel.writeOutbound(packet);
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public void onWorldLoad(WorldEvent.Load event)
     {
         World world = event.getWorld();
@@ -95,7 +95,7 @@ public class JEDEventHandler
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOW)
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
     {
         World world = event.getWorld();
