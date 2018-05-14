@@ -375,17 +375,24 @@ public class WorldUtils
         {
             final int dimension = world.provider.getDimension();
             WorldInfo info = world.getWorldInfo();
-            WorldInfo infoOverWorld = world.getMinecraftServer().getWorld(0).getWorldInfo();
+            World overworld = DimensionManager.getWorld(0);
 
-            if ((dimension != 0 &&
-                infoOverWorld.getTerrainType() == info.getTerrainType() &&
-                infoOverWorld.getGeneratorOptions().equals(info.getGeneratorOptions()) &&
-                infoOverWorld.getSeed() == info.getSeed())
-                ||
-                (dimension == 0 && generatorChangedForOverworld == false))
+            if (dimension == 0 && generatorChangedForOverworld == false)
             {
                 JustEnoughDimensions.logInfo("No need to re-create the ChunkProvider in dimension {}", dimension);
                 return;
+            }
+            else if (dimension != 0 && overworld != null)
+            {
+                WorldInfo infoOverworld = overworld.getWorldInfo();
+
+                if (infoOverworld.getTerrainType() == info.getTerrainType() &&
+                    infoOverworld.getGeneratorOptions().equals(info.getGeneratorOptions()) &&
+                    infoOverworld.getSeed() == info.getSeed())
+                {
+                    JustEnoughDimensions.logInfo("No need to re-create the ChunkProvider in dimension {}", dimension);
+                    return;
+                }
             }
 
             // This sets the new WorldType, generatorOptions and creates the BiomeProvider based on the seed for the WorldProvider
