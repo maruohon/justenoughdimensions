@@ -444,7 +444,7 @@ public class WorldUtils
                 JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: A spawn point XZ-location 'x = {}, z = {}' defined in the " +
                                              "dimension config for dimension {}, searching for a suitable y-location",
                                              pos.getX(), pos.getZ(), provider.getDimension());
-                pos = getSuitableSpawnBlockInColumn(world, pos, true);
+                pos = getSuitableSpawnBlockInColumn(world, pos, true, true);
             }
         }
         else
@@ -497,7 +497,7 @@ public class WorldUtils
 
             if (pos == null)
             {
-                pos = getSuitableSpawnBlockInColumn(world, new BlockPos(0, 72, 0), true);
+                pos = getSuitableSpawnBlockInColumn(world, new BlockPos(0, 72, 0), true, true);
             }
         }
         // Likely nether type dimensions
@@ -641,7 +641,7 @@ public class WorldUtils
 
         pos = new BlockPos(x, 72, z);
 
-        return getSuitableSpawnBlockInColumn(world, pos, true);
+        return getSuitableSpawnBlockInColumn(world, pos, true, true);
     }
 
     /**
@@ -655,6 +655,12 @@ public class WorldUtils
      */
     @Nonnull
     public static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos originalPos, boolean leanient)
+    {
+        return getSuitableSpawnBlockInColumn(world, originalPos, leanient, false);
+    }
+
+    @Nonnull
+    public static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos originalPos, boolean leanient, boolean generateFallbackBlock)
     {
         Chunk chunk = world.getChunkFromBlockCoords(originalPos);
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
@@ -681,7 +687,10 @@ public class WorldUtils
             pos = pos.down();
         }
 
-        generateFallbackSpawnBlockIfEnabled(world, originalPos);
+        if (generateFallbackBlock)
+        {
+            generateFallbackSpawnBlockIfEnabled(world, originalPos);
+        }
 
         return originalPos;
     }
