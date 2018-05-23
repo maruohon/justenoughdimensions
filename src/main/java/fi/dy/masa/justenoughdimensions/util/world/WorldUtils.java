@@ -436,6 +436,7 @@ public class WorldUtils
                 pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
                 JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: An exact spawn point {} defined in the " +
                                              "dimension config for dimension {}, skipping the search", pos, provider.getDimension());
+                generateFallbackSpawnBlockIfEnabled(world, pos);
             }
             else
             {
@@ -517,6 +518,8 @@ public class WorldUtils
             pos = findOverworldSpawnpoint(world);
         }
 
+        generateFallbackSpawnBlockIfEnabled(world, pos);
+
         return pos;
     }
 
@@ -565,9 +568,13 @@ public class WorldUtils
             iterations++;
         }
 
-        JustEnoughDimensions.logger.warn("Unable to find a cavern type spawn point for dimension {}, defaulting to 0,72,0", world.provider.getDimension());
+        BlockPos pos = new BlockPos(0, 72, 0);
+        JustEnoughDimensions.logger.warn("Unable to find a cavern type spawn point for dimension {}, defaulting to x = {}, y = {}, z = {}",
+                world.provider.getDimension(), pos.getX(), pos.getY(), pos.getZ());
 
-        return new BlockPos(0, 72, 0);
+        generateFallbackSpawnBlockIfEnabled(world, pos);
+
+        return pos;
     }
 
     @Nonnull
@@ -674,11 +681,7 @@ public class WorldUtils
             pos = pos.down();
         }
 
-        // Fallback - avoid falling to the void
-        if (leanient && world.isAirBlock(originalPos.down()))
-        {
-            world.setBlockState(originalPos.down(), Blocks.GLASS.getDefaultState(), 2);
-        }
+        generateFallbackSpawnBlockIfEnabled(world, originalPos);
 
         return originalPos;
     }
@@ -703,6 +706,19 @@ public class WorldUtils
                (leanient || state.getBlock().isFoliage(world, pos) == false) &&
                materialUp1.blocksMovement() == false && (leanient || materialUp1.isLiquid() == false) &&
                materialUp2.blocksMovement() == false && (leanient || materialUp2.isLiquid() == false);
+    }
+
+    private static void generateFallbackSpawnBlockIfEnabled(World world, BlockPos spawnPos)
+    {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
+
+        // Fallback - avoid falling to the void
+        if (props != null && props.generateFallbackSpawnBlock() && world.isAirBlock(spawnPos.down()))
+        {
+            int dim = world.provider.getDimension();
+            JustEnoughDimensions.logInfo("Didn't find suitable spawn location in dim {}, generating a glass block under the spawn point", dim);
+            world.setBlockState(spawnPos.down(), Blocks.GLASS.getDefaultState());
+        }
     }
 
     public static void createBonusChest(World world)

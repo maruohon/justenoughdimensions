@@ -28,6 +28,7 @@ public class JEDWorldProperties
     private boolean useCustomDayCycle;
     private boolean useCustomCelestialAngleRange;
     private boolean useCustomDayTimeRange;
+    private boolean generateFallbackSpawnBlock;
     private float celestialAngleMin = 0.0f;
     private float celestialAngleMax = 1.0f;
     private int dayTimeMin = 0;
@@ -148,6 +149,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "CanDoLightning"))         { this.canDoLightning           = JEDJsonUtils.getBoolean(obj, "CanDoLightning"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanDoRainSnowIce"))       { this.canDoRainSnowIce         = JEDJsonUtils.getBoolean(obj, "CanDoRainSnowIce"); }
         if (JEDJsonUtils.hasBoolean(obj, "ShouldClientCheckLight")) { this.shouldClientCheckLight   = JEDJsonUtils.getBoolean(obj, "ShouldClientCheckLight"); }
+        if (JEDJsonUtils.hasBoolean(obj, "GenerateFallbackSpawnBlock")) { this.generateFallbackSpawnBlock = JEDJsonUtils.getBoolean(obj, "GenerateFallbackSpawnBlock"); }
         
         if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
         if (JEDJsonUtils.hasInteger(obj, "NightLength"))        { this.nightLength          = JEDJsonUtils.getInteger(obj, "NightLength"); }
@@ -505,6 +507,11 @@ public class JEDWorldProperties
     public Boolean shouldClientCheckLight()
     {
         return this.shouldClientCheckLight;
+    }
+
+    public boolean generateFallbackSpawnBlock()
+    {
+        return this.generateFallbackSpawnBlock;
     }
 
     @Nullable
