@@ -27,17 +27,17 @@ public class VoidTeleport
 
                 if (voidTeleport != null && entity.posY < voidTeleport.getTriggerY())
                 {
-                    tryVoidTeleportEntity(voidTeleport, entity, server);
+                    tryVoidTeleportEntity(entity, voidTeleport, server);
                 }
                 else if (skyTeleport != null && entity.posY > skyTeleport.getTriggerY())
                 {
-                    tryVoidTeleportEntity(skyTeleport, entity, server);
+                    tryVoidTeleportEntity(entity, skyTeleport, server);
                 }
             }
         }
     }
 
-    public static void tryVoidTeleportEntity(VoidTeleportData voidTeleport, Entity entity, MinecraftServer server)
+    private static void tryVoidTeleportEntity(Entity entity, VoidTeleportData voidTeleport, MinecraftServer server)
     {
         final int originalDimension = entity.getEntityWorld().provider.getDimension();
 
@@ -47,7 +47,11 @@ public class VoidTeleport
 
             if (data != null)
             {
-                entity.fallDistance = 0f;
+                if (voidTeleport.getRemoveFallDamage())
+                {
+                    entity.fallDistance = 0f;
+                }
+
                 CommandTeleportJED.instance().teleportEntityToLocation(entity, data, server);
             }
         }
@@ -67,6 +71,7 @@ public class VoidTeleport
         private Vec3d offset;
         private Vec3d targetPosition;
         private boolean findSurface;
+        private boolean removeFallDamage;
 
         private VoidTeleportData(TeleportType type, int destDimension)
         {
@@ -82,6 +87,11 @@ public class VoidTeleport
         public int getDestinationDimension()
         {
             return this.destDimension;
+        }
+
+        public boolean getRemoveFallDamage()
+        {
+            return this.removeFallDamage;
         }
 
         public Vec3d getTargetPosition(Vec3d originalPosition, WorldServer targetWorld)
@@ -182,6 +192,7 @@ public class VoidTeleport
                         }
 
                         data.findSurface = JEDJsonUtils.getBooleanOrDefault(obj, "find_surface", false);
+                        data.removeFallDamage = JEDJsonUtils.getBooleanOrDefault(obj, "remove_fall_damage", false);
 
                         if (type == TeleportType.SCALED_LOCATION)
                         {
