@@ -387,6 +387,7 @@ public class WorldUtils
                 WorldInfo infoOverworld = overworld.getWorldInfo();
 
                 if (infoOverworld.getTerrainType() == info.getTerrainType() &&
+                    infoOverworld.isMapFeaturesEnabled() == info.isMapFeaturesEnabled() &&
                     infoOverworld.getGeneratorOptions().equals(info.getGeneratorOptions()) &&
                     infoOverworld.getSeed() == info.getSeed())
                 {
