@@ -63,6 +63,6 @@ public class CommandJEDDifficulty
         if (str.equalsIgnoreCase("normal")   || str.equalsIgnoreCase("n")) { return EnumDifficulty.NORMAL;   }
         if (str.equalsIgnoreCase("hard")     || str.equalsIgnoreCase("h")) { return EnumDifficulty.HARD;     }
 
-        return EnumDifficulty.getDifficultyEnum(CommandBase.parseInt(str, 0, 3));
+        return EnumDifficulty.byId(CommandBase.parseInt(str, 0, 3));
     }
 }

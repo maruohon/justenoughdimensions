@@ -538,7 +538,7 @@ public class WorldUtils
 
         while (iterations < 200)
         {
-            Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
+            Chunk chunk = world.getChunk(x >> 4, z >> 4);
             int maxY = 120;
 
             if (yRangeMax != null)
@@ -613,7 +613,7 @@ public class WorldUtils
         {
             if (provider.canCoordinateBeSpawn(x, z))
             {
-                Chunk chunk = world.getChunkFromChunkCoords(x >> 4, z >> 4);
+                Chunk chunk = world.getChunk(x >> 4, z >> 4);
                 int maxY = chunk.getTopFilledSegment() + 15 + 1;
 
                 if (yRangeMax != null)
@@ -663,7 +663,7 @@ public class WorldUtils
     @Nonnull
     public static BlockPos getSuitableSpawnBlockInColumn(World world, BlockPos originalPos, boolean leanient, boolean generateFallbackBlock)
     {
-        Chunk chunk = world.getChunkFromBlockCoords(originalPos);
+        Chunk chunk = world.getChunk(originalPos);
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
         SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         @Nullable final Integer yRangeMax = searchType != null ? searchType.getMaxY() : null;

@@ -239,7 +239,7 @@ public class WorldInfoUtils
         if (nbt.hasKey("thundering", Constants.NBT.TAG_BYTE))       { info.setThundering(nbt.getBoolean("tundering")); }
         if (nbt.hasKey("hardcore", Constants.NBT.TAG_BYTE))         { info.setHardcore(nbt.getBoolean("hardcore")); }
         if (nbt.hasKey("allowCommands", Constants.NBT.TAG_BYTE))    { info.setAllowCommands(nbt.getBoolean("allowCommands")); }
-        if (nbt.hasKey("Difficulty", Constants.NBT.TAG_BYTE))       { info.setDifficulty(EnumDifficulty.getDifficultyEnum(nbt.getByte("Difficulty"))); }
+        if (nbt.hasKey("Difficulty", Constants.NBT.TAG_BYTE))       { info.setDifficulty(EnumDifficulty.byId(nbt.getByte("Difficulty"))); }
         if (nbt.hasKey("DifficultyLocked", Constants.NBT.TAG_BYTE)) { info.setDifficultyLocked(nbt.getBoolean("DifficultyLocked")); }
 
         if (nbt.hasKey("BorderCenterX", Constants.NBT.TAG_DOUBLE))          { info.getBorderCenterX(nbt.getDouble("BorderCenterX")); }
@@ -270,7 +270,7 @@ public class WorldInfoUtils
     private static WorldType getWorldType(NBTTagCompound nbt)
     {
         String name = nbt.getString("generatorName");
-        WorldType worldType = WorldType.parseWorldType(name);
+        WorldType worldType = WorldType.byName(name);
 
         if (worldType == null)
         {
