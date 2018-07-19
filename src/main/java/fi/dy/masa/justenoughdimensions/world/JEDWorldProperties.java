@@ -65,6 +65,7 @@ public class JEDWorldProperties
     private Boolean canSpawnHostiles = null;
     private Boolean canSpawnPeacefulMobs = null;
     private SpawnPointSearch spawnPointSearchType = null;
+    private String worldProviderOverrideClass = null;
 
     @Nullable
     public static JEDWorldProperties getPropertiesIfExists(World world)
@@ -171,10 +172,11 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "CloudRenderer"))       { this.cloudRenderer        = JEDJsonUtils.getString(obj, "CloudRenderer"); }
         if (JEDJsonUtils.hasString(obj, "WeatherRenderer"))     { this.weatherRenderer      = JEDJsonUtils.getString(obj, "WeatherRenderer"); }
         if (JEDJsonUtils.hasString(obj, "MusicType"))           { this.musicType            = JEDJsonUtils.getString(obj, "MusicType"); }
+        if (JEDJsonUtils.hasString(obj, "WorldProviderOverride")) { this.worldProviderOverrideClass = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
 
-        if (JEDJsonUtils.hasString(obj, "SkyColor"))   { this.skyColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
-        if (JEDJsonUtils.hasString(obj, "FogColor"))   { this.fogColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
-        if (JEDJsonUtils.hasString(obj, "CloudColor")) { this.cloudColor = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
+        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "CloudColor"))  { this.cloudColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
 
         if (JEDJsonUtils.hasDouble(obj, "CelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CelestialAngleMax"))
         {
@@ -251,6 +253,7 @@ public class JEDWorldProperties
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
         if (this.sunBrightnessFactor != null)   { obj.add("SunBrightnessFactor",    new JsonPrimitive(this.sunBrightnessFactor)); }
         if (this.sunBrightness != null)         { obj.add("SunBrightness",          new JsonPrimitive(this.sunBrightness)); }
+        if (this.worldProviderOverrideClass != null) { obj.add("WorldProviderOverride", new JsonPrimitive(this.worldProviderOverrideClass)); }
 
         if (this.useCustomCelestialAngleRange)
         {
@@ -524,5 +527,16 @@ public class JEDWorldProperties
     public SpawnPointSearch getSpawnPointSearchType()
     {
         return this.spawnPointSearchType;
+    }
+
+    public boolean overrideWorldProvider()
+    {
+        return this.worldProviderOverrideClass != null;
+    }
+
+    @Nullable
+    public String getWorldProviderOverrideClassName()
+    {
+        return this.worldProviderOverrideClass;
     }
 }

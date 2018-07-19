@@ -32,6 +32,7 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
@@ -74,6 +75,7 @@ public class JEDEventHandler
             JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
 
             overrideWorldInfoAndBiomeProvider(world);
+
             WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
             WorldUtils.findAndSetWorldSpawnIfApplicable(world);
 
@@ -83,15 +85,28 @@ public class JEDEventHandler
                 world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
             }
         }
+        else
+        {
+            JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
+
+            WorldUtils.overrideWorldProviderIfApplicable(world);
+        }
     }
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event)
     {
+        final int dimension = event.getWorld().provider.getDimension();
+
         if (event.getWorld().isRemote == false)
         {
-            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", event.getWorld().provider.getDimension());
+            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", dimension);
             WorldUtils.removeTemporaryWorldIfApplicable(event.getWorld());
+        }
+        else
+        {
+            // Remove the props, in case the player would join to another server or load another world with different settings
+            JEDWorldProperties.removePropertiesFrom(dimension);
         }
     }
 
@@ -127,6 +142,11 @@ public class JEDEventHandler
         // Copying/handling template worlds needs to happen before WorldInfo overrides,
         // in case we need to apply custom values from the dimension config on top of any existing values.
         WorldFileUtils.copyTemplateWorldIfApplicable(world);
+
+        if (Configs.enableOverrideWorldProvider)
+        {
+            WorldUtils.overrideWorldProviderIfApplicable(world);
+        }
 
         if (Configs.enableSeparateWorldInfo)
         {

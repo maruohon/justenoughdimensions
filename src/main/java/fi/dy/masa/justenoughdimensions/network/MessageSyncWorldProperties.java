@@ -138,10 +138,15 @@ public class MessageSyncWorldProperties implements IMessage
                 JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
                         world.provider.getDimension(), message.jedProperties);
             }
-            else if (ClientUtils.setRenderersFrom(world.provider, message.jedProperties))
+            else
             {
-                JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky/cloud/weather render type for a non-JED world",
-                        world.provider.getDimension());
+                JEDWorldProperties.createAndSetPropertiesForDimension(world.provider.getDimension(), message.jedProperties);
+
+                if (ClientUtils.setRenderersFrom(world.provider, message.jedProperties))
+                {
+                    JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky/cloud/weather render type for a non-JED world",
+                            world.provider.getDimension());
+                }
             }
 
             JsonObject colorData = message.jedProperties != null ? JEDJsonUtils.getNestedObject(message.jedProperties, "Colors", false) : null;

@@ -31,6 +31,7 @@ public class Configs
     public static boolean enableInitialSpawnDimensionOverride;
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
+    public static boolean enableOverrideWorldProvider;
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
@@ -207,6 +208,16 @@ public class Configs
                         "This means that the entire dimension will use only that one biome set in the config.\n" +
                         "To get the registry names of biomes, you can use the TellMe mod (the command '/tellme dump biomes').");
         enableOverrideBiomeProvider = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableOverrideWorldProvider", false);
+        prop.setComment("If enabled, then a '\"WorldProviderOverride\": \"class name\"' value in JED options in the dimensions.json config\n" +
+                        "will override the WorldProvider of that dimension with one created by the provided class name.\n" +
+                        "NOTE: This is normally not recommended!!!\n" +
+                        "This is provided for certain mod compatibility cases,\n" +
+                        "where the other mod is checking the DimensionType against one of the vanilla values, and thus\n" +
+                        "you have to use an \"existing_dimensiontype\" key in the \"dimensiontype\" object, instead of\n" +
+                        "registering/defining a new custom entry as you would do normally.");
+        enableOverrideWorldProvider = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", true).setRequiresMcRestart(false);
         prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in\n" +

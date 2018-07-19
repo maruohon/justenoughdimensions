@@ -412,6 +412,7 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
         return provName;
     }
 
+    @Nullable
     @SuppressWarnings("unchecked")
     public static Class<? extends WorldProvider> getProviderClass(String providerClassName)
     {

@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
@@ -50,6 +51,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
+import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
 import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -63,6 +65,7 @@ public class WorldUtils
     private static final String JED_RESPAWN_DIM_TAG = "justenoughdimensions:respawndimension";
     //private static Field field_WorldProvider_terrainType;
     //private static Field field_WorldProvider_generatorSettings;
+    private static Field field_World_provider = null;
     private static Field field_WorldProvider_biomeProvider = null;
     private static Field field_ChunkProviderServer_chunkGenerator = null;
 
@@ -72,6 +75,7 @@ public class WorldUtils
         {
             //field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
             //field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
+            field_World_provider = ReflectionHelper.findField(World.class, "field_73011_w", "provider");
             field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
             field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
         }
@@ -339,6 +343,52 @@ public class WorldUtils
         }
     }
     */
+
+    public static void overrideWorldProviderIfApplicable(World world)
+    {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
+
+        if (props != null && props.overrideWorldProvider())
+        {
+            String newClassName = props.getWorldProviderOverrideClassName();
+            Class<? extends WorldProvider> newProviderClass = DimensionTypeEntry.getProviderClass(newClassName);
+
+            if (newProviderClass != null && newProviderClass != world.provider.getClass())
+            {
+                final int dim = world.provider.getDimension();
+                String oldName = world.provider.getClass().getName();
+                JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Trying to override the WorldProvider of type '{}' in dimension {} with '{}'", oldName, dim, newClassName);
+
+                try
+                {
+                    Constructor <? extends WorldProvider> constructor = newProviderClass.getConstructor();
+                    WorldProvider newProvider = constructor.newInstance();
+
+                    try
+                    {
+                        field_World_provider.set(world, newProvider);
+                        world.provider.setWorld(world);
+                        world.provider.setDimension(dim);
+
+                        JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Overrode the WorldProvider in dimension {} with '{}'", dim, newClassName);
+
+                        reCreateChunkGenerator(world, dim == 0);
+                    }
+                    catch (Exception e)
+                    {
+                        JustEnoughDimensions.logger.error("WorldUtils.overrideWorldProvider: Failed to override the WorldProvider of dimension {}", dim);
+                    }
+
+                    return;
+                }
+                catch (Exception e)
+                {
+                }
+            }
+
+            JustEnoughDimensions.logger.warn("WorldUtils.overrideWorldProvider: Failed to create a WorldProvider from name '{}', or it was already that type", newClassName);
+        }
+    }
 
     public static void overrideBiomeProvider(World world)
     {
