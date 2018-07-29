@@ -487,36 +487,43 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         BlockPos blockpos = new BlockPos(x, y, z);
 
         int blendColour = net.minecraftforge.client.ForgeHooksClient.getSkyBlendColour(this.world, blockpos);
-        float r = (float)((blendColour >> 16 & 255) / 255.0F * skyColor.x);
-        float g = (float)((blendColour >>  8 & 255) / 255.0F * skyColor.y);
-        float b = (float)((blendColour       & 255) / 255.0F * skyColor.z);
-        float f1 = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
-        f1 = MathHelper.clamp(f1, 0.0F, 1.0F);
+        float r = (float)((blendColour >> 16 & 255) / 255.0F);
+        float g = (float)((blendColour >>  8 & 255) / 255.0F);
+        float b = (float)((blendColour       & 255) / 255.0F);
 
-        r = r * f1;
-        g = g * f1;
-        b = b * f1;
+        Float skyBlend = this.properties.getSkyBlend();
+        float blendRatio = skyBlend != null ? MathHelper.clamp(skyBlend.floatValue(), 0.0f, 1.0f) : 0.0f;
+
+        r = r * (float)skyColor.x * (1.0f - blendRatio) + (float) skyColor.x * blendRatio;
+        g = g * (float)skyColor.y * (1.0f - blendRatio) + (float) skyColor.y * blendRatio;
+        b = b * (float)skyColor.z * (1.0f - blendRatio) + (float) skyColor.z * blendRatio;
+        float lightLevel = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
+        lightLevel = MathHelper.clamp(lightLevel, 0.0F, 1.0F);
+
+        r = r * lightLevel;
+        g = g * lightLevel;
+        b = b * lightLevel;
 
         float rain = this.world.getRainStrength(partialTicks);
 
         if (rain > 0.0F)
         {
-            float f7 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.6F;
+            float greyLevel = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.6F;
             float f8 = 1.0F - rain * 0.75F;
-            r = r * f8 + f7 * (1.0F - f8);
-            g = g * f8 + f7 * (1.0F - f8);
-            b = b * f8 + f7 * (1.0F - f8);
+            r = r * f8 + greyLevel * (1.0F - f8);
+            g = g * f8 + greyLevel * (1.0F - f8);
+            b = b * f8 + greyLevel * (1.0F - f8);
         }
 
         float thunder = this.world.getThunderStrength(partialTicks);
 
         if (thunder > 0.0F)
         {
-            float f11 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.2F;
+            float greyLevel = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.2F;
             float f9 = 1.0F - thunder * 0.75F;
-            r = r * f9 + f11 * (1.0F - f9);
-            g = g * f9 + f11 * (1.0F - f9);
-            b = b * f9 + f11 * (1.0F - f9);
+            r = r * f9 + greyLevel * (1.0F - f9);
+            g = g * f9 + greyLevel * (1.0F - f9);
+            b = b * f9 + greyLevel * (1.0F - f9);
         }
 
         if (this.world.getLastLightningBolt() > 0)

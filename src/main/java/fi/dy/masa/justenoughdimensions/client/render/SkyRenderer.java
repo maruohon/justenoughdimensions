@@ -23,9 +23,7 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private static final ResourceLocation SUN_TEXTURES          = new ResourceLocation("textures/environment/sun.png");
 
     private int skyRenderType;
-    private boolean disableSun;
-    private boolean disableMoon;
-    private boolean disableStars;
+    private SkySettings skySettings;
     private boolean vboEnabled;
     private int starGLCallList = -1;
     private int glSkyList = -1;
@@ -35,15 +33,24 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     private net.minecraft.client.renderer.vertex.VertexBuffer skyVBO;
     private net.minecraft.client.renderer.vertex.VertexBuffer sky2VBO;
 
-    public SkyRenderer(int skyRenderType, int disableFlags)
+    public static class SkySettings
+    {
+        public boolean disableSun;
+        public boolean disableMoon;
+        public boolean disableStars;
+        public float SunScale;
+        public float MoonScale;
+        public Vec3d SunColor;
+        public Vec3d MoonColor;
+    };
+    
+    public SkyRenderer(int skyRenderType, SkySettings settings)
     {
         this.vboEnabled = OpenGlHelper.useVbo();
         this.vertexBufferFormat = new VertexFormat();
         this.vertexBufferFormat.addElement(new VertexFormatElement(0, VertexFormatElement.EnumType.FLOAT, VertexFormatElement.EnumUsage.POSITION, 3));
         this.skyRenderType = skyRenderType;
-        this.disableSun   = (disableFlags & 0x01) != 0;
-        this.disableMoon  = (disableFlags & 0x02) != 0;
-        this.disableStars = (disableFlags & 0x04) != 0;
+        this.skySettings = settings;
         this.generateStars();
         this.generateSky();
         this.generateSky2();
@@ -124,17 +131,6 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         float r = (float)skyColor.x;
         float g = (float)skyColor.y;
         float b = (float)skyColor.z;
-        int pass = 2;
-
-        if (pass != 2)
-        {
-            float f3 = (r * 30.0F + g * 59.0F + b * 11.0F) / 100.0F;
-            float f4 = (r * 30.0F + g * 70.0F) / 100.0F;
-            float f5 = (r * 30.0F + b * 70.0F) / 100.0F;
-            r = f3;
-            g = f4;
-            b = f5;
-        }
 
         GlStateManager.color(r, g, b);
         Tessellator tessellator = Tessellator.getInstance();
@@ -176,16 +172,6 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             float gsr = afloat[1];
             float bsr = afloat[2];
 
-            if (pass != 2)
-            {
-                float f9 = (rsr * 30.0F + gsr * 59.0F + bsr * 11.0F) / 100.0F;
-                float f10 = (rsr * 30.0F + gsr * 70.0F) / 100.0F;
-                float f11 = (rsr * 30.0F + bsr * 70.0F) / 100.0F;
-                rsr = f9;
-                gsr = f10;
-                bsr = f11;
-            }
-
             bufferBuilder.begin(6, DefaultVertexFormats.POSITION_COLOR);
             bufferBuilder.pos(0.0D, 100.0D, 0.0D).color(rsr, gsr, bsr, afloat[3]).endVertex();
 
@@ -205,27 +191,36 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         GlStateManager.enableTexture2D();
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         GlStateManager.pushMatrix();
-        float f16 = 1.0F - world.getRainStrength(partialTicks);
-        GlStateManager.color(1.0F, 1.0F, 1.0F, f16);
+        float rainFade = 1.0F - world.getRainStrength(partialTicks);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, rainFade);
         GlStateManager.rotate(-90.0F, 0.0F, 1.0F, 0.0F);
         GlStateManager.rotate(world.getCelestialAngle(partialTicks) * 360.0F, 1.0F, 0.0F, 0.0F);
 
-        double d17 = 30.0D;
+        double radius = 0.0D;
 
-        if (this.disableSun == false)
+        if (this.skySettings.disableSun == false)
         {
+            float sunRed = (float) this.skySettings.SunColor.x;
+            float sunGrb = (float) this.skySettings.SunColor.y;
+            float sunBlu = (float) this.skySettings.SunColor.z;
+            GlStateManager.color(sunRed, sunGrb, sunBlu, rainFade);
+            radius = 30.0D * this.skySettings.SunScale;
             mc.getTextureManager().bindTexture(SUN_TEXTURES);
             bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-            bufferBuilder.pos(-d17, 100.0D, -d17).tex(0.0D, 0.0D).endVertex();
-            bufferBuilder.pos( d17, 100.0D, -d17).tex(1.0D, 0.0D).endVertex();
-            bufferBuilder.pos( d17, 100.0D,  d17).tex(1.0D, 1.0D).endVertex();
-            bufferBuilder.pos(-d17, 100.0D,  d17).tex(0.0D, 1.0D).endVertex();
+            bufferBuilder.pos(-radius, 100.0D, -radius).tex(0.0D, 0.0D).endVertex();
+            bufferBuilder.pos( radius, 100.0D, -radius).tex(1.0D, 0.0D).endVertex();
+            bufferBuilder.pos( radius, 100.0D,  radius).tex(1.0D, 1.0D).endVertex();
+            bufferBuilder.pos(-radius, 100.0D,  radius).tex(0.0D, 1.0D).endVertex();
             tessellator.draw();
         }
 
-        if (this.disableMoon == false)
+        if (this.skySettings.disableMoon == false)
         {
-            d17 = 20.0D;
+            float moonRed = (float) this.skySettings.MoonColor.x;
+            float moonGrb = (float) this.skySettings.MoonColor.y;
+            float moonBlu = (float) this.skySettings.MoonColor.z;
+            GlStateManager.color(moonRed, moonGrb, moonBlu, rainFade);
+            radius = 20.0D * this.skySettings.MoonScale;
             mc.getTextureManager().bindTexture(MOON_PHASES_TEXTURES);
             int i = world.getMoonPhase();
             int k = i % 4;
@@ -235,17 +230,17 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             double f24 = (double)(k + 1) / 4.0D;
             double f14 = (double)(j + 1) / 2.0D;
             bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-            bufferBuilder.pos(-d17, -100.0D,  d17).tex(f24, f14).endVertex();
-            bufferBuilder.pos( d17, -100.0D,  d17).tex(f22, f14).endVertex();
-            bufferBuilder.pos( d17, -100.0D, -d17).tex(f22, f23).endVertex();
-            bufferBuilder.pos(-d17, -100.0D, -d17).tex(f24, f23).endVertex();
+            bufferBuilder.pos(-radius, -100.0D,  radius).tex(f24, f14).endVertex();
+            bufferBuilder.pos( radius, -100.0D,  radius).tex(f22, f14).endVertex();
+            bufferBuilder.pos( radius, -100.0D, -radius).tex(f22, f23).endVertex();
+            bufferBuilder.pos(-radius, -100.0D, -radius).tex(f24, f23).endVertex();
             tessellator.draw();
         }
 
-        if (this.disableStars == false)
+        if (this.skySettings.disableStars == false)
         {
             GlStateManager.disableTexture2D();
-            float brightness = world.getStarBrightness(partialTicks) * f16;
+            float brightness = world.getStarBrightness(partialTicks) * rainFade;
 
             if (brightness > 0.0F)
             {
