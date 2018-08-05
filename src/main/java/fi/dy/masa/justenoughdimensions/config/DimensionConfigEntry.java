@@ -144,7 +144,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         DimensionConfigEntry entry = new DimensionConfigEntry(dimension);
 
         entry.override =   JEDJsonUtils.getBooleanOrDefault(obj, "override", false);
-        entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false);
+        entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false) && dimension != 0;
         entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
         entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
         entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
