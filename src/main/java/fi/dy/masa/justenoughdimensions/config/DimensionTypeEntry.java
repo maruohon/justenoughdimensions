@@ -1,6 +1,9 @@
 package fi.dy.masa.justenoughdimensions.config;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
@@ -20,6 +23,8 @@ import io.netty.buffer.ByteBuf;
 
 public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 {
+    private static final List<DimensionType> DIMENSION_TYPE_CACHE = new ArrayList<>();
+
     private int dimensionTypeId;
     private String name;
     private String suffix;
@@ -30,6 +35,14 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     private boolean allowDifferentId = true;
     private boolean requireExactMatch;
     private static final Field field_DimensionType_clazz = ReflectionHelper.findField(DimensionType.class, "field_186077_g", "clazz");
+
+    public static void cache(DimensionType entry)
+    {
+        if (DIMENSION_TYPE_CACHE.contains(entry) == false)
+        {
+            DIMENSION_TYPE_CACHE.add(entry);
+        }
+    }
 
     @SuppressWarnings("unchecked")
     @Nullable
@@ -126,72 +139,94 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     {
         if (this.forceRegister == false)
         {
-            DimensionType type = null;
+            DimensionType entry = this.getExistingMatchingEntry(DIMENSION_TYPE_CACHE);
 
-            // Try to find a suitable existing entry,
-            // to try to avoid modifying the DimensionType enum unnecessarily.
-            for (DimensionType tmp : DimensionType.values())
+            if (entry == null)
             {
-                if (tmp.shouldLoadSpawn() == this.keepLoaded && getProviderClassFrom(tmp) == this.providerClass)
-                {
-                    if (this.requireExactMatch)
-                    {
-                        if (tmp.getId() == this.dimensionTypeId &&
-                            tmp.getSuffix().equals(this.suffix) &&
-                            tmp.getName().equals(this.name))
-                        {
-                            type = tmp;
-                            break;
-                        }
-                    }
-                    else if ((tmp.getId() == this.dimensionTypeId || this.allowDifferentId))
-                    {
-                        type = tmp;
-
-                        // "Exact"/best match, stop searching
-                        if (tmp.getId() == this.dimensionTypeId)
-                        {
-                            break;
-                        }
-                    }
-                }
+                entry = this.getExistingMatchingEntry(Arrays.asList(DimensionType.values()));
             }
 
-            if (type != null)
+            if (entry != null)
             {
-                JustEnoughDimensions.logInfo("Using an existing DimensionType '{}', for dimension {}", type, dimension);
-                return type;
+                JustEnoughDimensions.logInfo("Using an existing DimensionType '{}', for dimension {}", entry, dimension);
+                return entry;
             }
         }
 
         return this.registerDimensionType(dimension);
     }
 
+    @Nullable
+    private DimensionType getExistingMatchingEntry(List<DimensionType> list)
+    {
+        DimensionType entry = null;
+
+        // Try to find a suitable existing entry,
+        // to try to avoid modifying the DimensionType enum unnecessarily.
+        for (DimensionType tmp : list)
+        {
+            if (tmp.shouldLoadSpawn() == this.keepLoaded && getProviderClassFrom(tmp) == this.providerClass)
+            {
+                if (this.requireExactMatch)
+                {
+                    if (tmp.getId() == this.dimensionTypeId &&
+                        tmp.getSuffix().equals(this.suffix) &&
+                        tmp.getName().equals(this.name))
+                    {
+                        entry = tmp;
+                        break;
+                    }
+                }
+                else if ((tmp.getId() == this.dimensionTypeId || this.allowDifferentId))
+                {
+                    entry = tmp;
+
+                    // "Exact"/best match, stop searching
+                    if (tmp.getId() == this.dimensionTypeId)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return entry;
+    }
+
     private DimensionType registerDimensionType(int dimension)
     {
+        DimensionType entry = null;
+
         if (this.dimensionTypeName != null)
         {
-            DimensionType type = null;
-
             try
             {
-                type = DimensionType.byName(this.dimensionTypeName);
-                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", type, dimension);
+                entry = DimensionType.byName(this.dimensionTypeName);
+                JustEnoughDimensions.logInfo("Using a vanilla DimensionType (or some other existing one) '{}' for dimension {}", entry, dimension);
             }
             catch (IllegalArgumentException e)
             {
-                type = DimensionType.OVERWORLD;
+                entry = DimensionType.OVERWORLD;
                 JustEnoughDimensions.logger.warn("Failed to get a DimensionType by the name '{}' for dimension {}, falling back to {}",
-                        this.dimensionTypeName, dimension, type);
+                        this.dimensionTypeName, dimension, entry);
             }
-
-            return type;
         }
         else
         {
             JustEnoughDimensions.logInfo("Registering a new DimensionType with values '{}' for dimension {}", this.getDescription(), dimension);
-            return DimensionType.register(this.name, this.suffix, this.dimensionTypeId, this.providerClass, this.keepLoaded);
+            entry =  DimensionType.register(this.name, this.suffix, this.dimensionTypeId, this.providerClass, this.keepLoaded);
         }
+
+        // Cache the registered entries internally, because DimensionType.values() at some point gets JIT'd and
+        // stops returning the new registered entries.
+        // The contains check doesn't really help with anything except reference equality when 'force_register' is used
+        // with the 'existing_dimensiontype' option, to avoid caching duplicate instances.
+        if (this.forceRegister == false || DIMENSION_TYPE_CACHE.contains(entry) == false)
+        {
+            DIMENSION_TYPE_CACHE.add(entry);
+        }
+
+        return entry;
     }
 
     public void writeToByteBuf(ByteBuf buf)

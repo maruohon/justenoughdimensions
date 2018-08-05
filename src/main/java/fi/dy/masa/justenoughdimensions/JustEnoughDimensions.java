@@ -22,6 +22,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
 import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -153,11 +154,10 @@ public class JustEnoughDimensions
     // Note that these still have some potential issues, the suffix being one.
     static
     {
-        DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false);
-        DimensionType.register("JED Hell",              "_dim7892", 7892, WorldProviderHellJED.class,       false);
-        DimensionType.register("JED End",               "_dim7893", 7893, WorldProviderEndJED.class,        false);
-        DimensionType.register("JED Surface 0",         "_dim7894",    0, WorldProviderSurfaceJED.class,    false);
-        DimensionType.register("JED Surface Loaded",    "_dim7895", 7895, WorldProviderSurfaceJED.class,    true);
-        DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true);
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false));
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface 0",         "",            0, WorldProviderSurfaceJED.class,    false));
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true));
+        DimensionTypeEntry.cache(DimensionType.register("JED Hell",              "_dim-1",     -1, WorldProviderHellJED.class,       false));
+        DimensionTypeEntry.cache(DimensionType.register("JED End",               "_dim1",       1, WorldProviderEndJED.class,        false));
     }
 }
