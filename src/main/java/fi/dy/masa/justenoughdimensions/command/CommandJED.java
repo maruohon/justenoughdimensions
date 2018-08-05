@@ -77,6 +77,7 @@ public class CommandJED extends CommandBase
                     "gamerule",
                     "list-loaded-dimensions",
                     "list-registered-dimensions",
+                    "load-dimension",
                     "register",
                     "reload",
                     "reload-main-config",
@@ -257,6 +258,26 @@ public class CommandJED extends CommandBase
         {
             int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("unload-chunks"));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
+        }
+        else if (cmd.equals("load-dimension"))
+        {
+            if (args.length == 1)
+            {
+                int dimension = parseInt(args[0]);
+
+                if (server.getWorld(dimension) != null)
+                {
+                    sender.sendMessage(new TextComponentTranslation("jed.commands.info.loaded.dimension", String.valueOf(dimension)));
+                }
+                else
+                {
+                    throwCommand("load_dimension_failed", String.valueOf(dimension));
+                }
+            }
+            else
+            {
+                throwUsage("load_dimension");
+            }
         }
         else if (cmd.equals("dimbuilder"))
         {
