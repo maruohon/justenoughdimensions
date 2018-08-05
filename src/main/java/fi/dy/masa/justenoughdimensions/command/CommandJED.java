@@ -369,7 +369,16 @@ public class CommandJED extends CommandBase
             if (world != null)
             {
                 IChunkProvider cp = world.getChunkProvider();
-                DimensionType dimType = world.provider.getDimensionType();
+                DimensionType dimType = null;
+
+                try
+                {
+                    dimType = DimensionManager.getProviderType(world.provider.getDimension());
+                }
+                catch (Exception e)
+                {
+                    dimType = world.provider.getDimensionType();
+                }
 
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
@@ -386,7 +395,7 @@ public class CommandJED extends CommandBase
                                                   "shouldLoadSpawn: %s, WorldProvider class: '%s'",
                                                   dimType.getId(), dimType.getName(), dimType.getSuffix(), dimType.shouldLoadSpawn(), clazzName));
 
-                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", world.provider.getDimensionType().toString());
+                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", dimType.toString());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
