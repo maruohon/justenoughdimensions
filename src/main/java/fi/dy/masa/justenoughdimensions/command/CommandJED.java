@@ -411,7 +411,7 @@ public class CommandJED extends CommandBase
                 if (props != null)
                 {
                     JustEnoughDimensions.logger.info("Dimension has JED properties");
-                    String str = JEDJsonUtils.serialize(props.getFullJEDPropertiesObject());
+                    String str = JEDJsonUtils.serialize(props.getFullJEDProperties());
                     JustEnoughDimensions.logger.info("JED properties tag: {}", str);
                 }
                 else

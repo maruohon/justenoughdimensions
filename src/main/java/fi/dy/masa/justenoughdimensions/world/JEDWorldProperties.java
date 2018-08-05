@@ -21,56 +21,73 @@ import fi.dy.masa.justenoughdimensions.util.SpawnPointSearch;
 public class JEDWorldProperties
 {
     private static final Map<Integer, JEDWorldProperties> PROPERTIES = new HashMap<>();
+    private static JEDWorldProperties clientProperties = new JEDWorldProperties();
 
+    @Nullable
     private JsonObject fullJEDTag;
+    @Nullable
     private JsonObject colorData;
+
     private boolean forceGameMode;
-    private boolean useCustomDayCycle;
-    private boolean useCustomCelestialAngleRange;
-    private boolean useCustomDayTimeRange;
     private boolean generateFallbackSpawnBlock;
+    private boolean useCustomCelestialAngleRange;
+    private boolean useCustomDayCycle;
+    private boolean useCustomDayTimeRange;
     private float celestialAngleMin = 0.0f;
     private float celestialAngleMax = 1.0f;
-    private int dayTimeMin = 0;
-    private int dayTimeMax = 24000 - 1;
+    private int cloudHeight = 128;
     private int dayCycleIncrement = 24000;
     private int dayLength = 12000;
+    private int dayTimeMax = 24000 - 1;
+    private int dayTimeMin = 0;
     private int nightLength = 12000;
-    private int cloudHeight = 128;
-    private int skyRenderType;
     private int skyDisableFlags;
+    private int skyRenderType;
     private int voidTeleportInterval = 40;
-    private Vec3d skyColor = null;
-    private Vec3d cloudColor = null;
-    private Vec3d fogColor = null;
-    private String skyRenderer = null;
-    private String cloudRenderer = null;
-    private String weatherRenderer = null;
     private float[] customLightBrightnessTable = null;
+
+    private Boolean canDoLightning = null;
+    private Boolean canDoRainSnowIce = null;
     private Boolean canRespawnHere = null;
+    private Boolean canSpawnHostiles = null;
+    private Boolean canSpawnPeacefulMobs = null;
+    private Boolean hasSkyLight = null;
+    private Boolean hasXZFog = null;
+    private Boolean ignoreSpawnSuitability = null;
+    private Boolean isSurfaceWorld = null;
+    private Boolean shouldClientCheckLight = null;
+
+    private Integer averageGroundLevel = null;
+    private Double horizon = null;
+    private Double movementFactor = null;
     private Integer respawnDimension = null;
     private Float sunBrightnessFactor = null;
     private Float sunBrightness = null;
-    private Double horizon = null;
-    private Double movementFactor = null;
-    private Integer averageGroundLevel = null;
-    private Boolean hasSkyLight = null;
-    private Boolean isSurfaceWorld = null;
-    private Boolean ignoreSpawnSuitability = null;
-    private Boolean hasXZFog = null;
-    private Boolean canDoLightning = null;
-    private Boolean canDoRainSnowIce = null;
+
+    private Vec3d cloudColor = null;
+    private Vec3d fogColor = null;
+    private Vec3d skyColor = null;
+
+    private String cloudRenderer = null;
+    private String skyRenderer = null;
+    private String weatherRenderer = null;
+
     private String musicType = null;
-    private Boolean shouldClientCheckLight = null;
-    private Boolean canSpawnHostiles = null;
-    private Boolean canSpawnPeacefulMobs = null;
-    private SpawnPointSearch spawnPointSearchType = null;
     private String worldProviderOverrideClass = null;
+
+    private SpawnPointSearch spawnPointSearchType = null;
 
     @Nullable
     public static JEDWorldProperties getPropertiesIfExists(World world)
     {
-        return getPropertiesIfExists(world.provider.getDimension());
+        JEDWorldProperties props = getPropertiesIfExists(world.provider.getDimension());
+
+        if (props == null && world.isRemote)
+        {
+            props = clientProperties;
+        }
+
+        return props;
     }
 
     @Nullable
@@ -81,42 +98,44 @@ public class JEDWorldProperties
 
     /**
      * Gets the properties for the requested dimension.
-     * If there no properties for that dimension, then a new default instance is returned.
+     * If there are no properties for that dimension, then a new default instance is returned.
      * NOTE: If the default instance is created and returned, it is NOT added to the map.
      * @param dimension
      * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
      */
     public static JEDWorldProperties getOrCreateProperties(int dimension)
     {
-        return getOrCreateProperties(dimension, null);
-    }
-
-    /**
-     * Gets the properties for the requested dimension.
-     * If there no properties for that dimension, then a new instance is created and returned,
-     * based on the JsonObject passed in.
-     * NOTE: If a new instance is created and returned, it is NOT added to the map.
-     * @param dimension
-     * @param obj the properties to set for the created instance
-     * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
-     */
-    public static JEDWorldProperties getOrCreateProperties(int dimension, @Nullable JsonObject obj)
-    {
         JEDWorldProperties props = PROPERTIES.get(dimension);
 
         if (props == null)
         {
-            props = obj != null ? new JEDWorldProperties(obj) : new JEDWorldProperties();
+            props = new JEDWorldProperties();
         }
 
         return props;
     }
 
-    public static JEDWorldProperties createAndSetPropertiesForDimension(int dimension, @Nonnull JsonObject obj)
+    public static JEDWorldProperties createAndSetPropertiesForDimension(int dimension, @Nullable JsonObject obj)
     {
-        JEDWorldProperties props = new JEDWorldProperties(obj);
-        PROPERTIES.put(dimension, props);
-        return props;
+        if (obj != null)
+        {
+            JEDWorldProperties props = new JEDWorldProperties(obj);
+            PROPERTIES.put(dimension, props);
+
+            return props;
+        }
+
+        return null;
+    }
+
+    public static void setClientProperties(@Nullable JsonObject obj)
+    {
+        clientProperties = obj != null ? new JEDWorldProperties(obj) : new JEDWorldProperties();
+    }
+
+    public static JEDWorldProperties getClientProperties()
+    {
+        return clientProperties;
     }
 
     public static void removePropertiesFrom(int dimension)
@@ -288,9 +307,9 @@ public class JEDWorldProperties
     }
 
     @Nullable
-    public JsonObject getFullJEDPropertiesObject()
+    public JsonObject getFullJEDProperties()
     {
-        return this.fullJEDTag != null ? JEDJsonUtils.deepCopy(this.fullJEDTag) : null;
+        return this.fullJEDTag;
     }
 
     @Nullable

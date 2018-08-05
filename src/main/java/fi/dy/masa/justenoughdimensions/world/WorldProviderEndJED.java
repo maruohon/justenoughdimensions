@@ -1,7 +1,6 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import javax.annotation.Nullable;
-import com.google.gson.JsonObject;
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -50,11 +49,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             this.worldInfoSet = true;
 
-            if (this.properties != null)
-            {
-                this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
-                this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
-            }
+            this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
+            this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
         }
     }
 
@@ -75,14 +71,10 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
-    public void setJEDPropertiesFromJson(JsonObject obj)
+    public void setJEDProperties(JEDWorldProperties properties)
     {
-        if (obj != null)
-        {
-            this.properties = JEDWorldProperties.getOrCreateProperties(this.getDimension(), obj);
-        }
-
-        ClientUtils.setRenderersFrom(this, obj);
+        this.properties = properties;
+        ClientUtils.setRenderersFrom(this, this.properties.getFullJEDProperties());
     }
 
     @Override

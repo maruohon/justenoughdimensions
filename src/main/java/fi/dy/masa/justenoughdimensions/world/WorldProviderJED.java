@@ -1,7 +1,6 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import javax.annotation.Nullable;
-import com.google.gson.JsonObject;
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -90,11 +89,8 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;
 
-            if (this.properties != null)
-            {
-                this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
-                this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
-            }
+            this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
+            this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
 
             // This is to fix the allowHostiles and allowPeacefulMobs options not
             // taking effect in single player after first loading a world,
@@ -204,14 +200,10 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     }
 
     @Override
-    public void setJEDPropertiesFromJson(JsonObject obj)
+    public void setJEDProperties(JEDWorldProperties properties)
     {
-        if (obj != null)
-        {
-            this.properties = JEDWorldProperties.getOrCreateProperties(this.getDimension(), obj);
-        }
-
-        ClientUtils.setRenderersFrom(this, obj);
+        this.properties = properties;
+        ClientUtils.setRenderersFrom(this, this.properties.getFullJEDProperties());
     }
 
     @Override

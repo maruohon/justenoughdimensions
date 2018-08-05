@@ -325,7 +325,8 @@ public class DimensionConfig
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}", dimension);
-            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
+            DimensionType type = entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension);
+            DimensionManager.registerDimension(dimension, type);
             this.registeredDimensions.add(dimension);
             return true;
         }

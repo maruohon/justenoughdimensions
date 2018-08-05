@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
@@ -29,6 +30,7 @@ import io.netty.buffer.ByteBufOutputStream;
 
 public class MessageSyncWorldProperties implements IMessage
 {
+    @Nullable
     private JsonObject jedProperties;
     private boolean hasJEDTag;
     private boolean isHardcore;
@@ -75,9 +77,10 @@ public class MessageSyncWorldProperties implements IMessage
     public void fromBytes(ByteBuf buf)
     {
         this.isHardcore = buf.readBoolean();
+        this.hasJEDTag = buf.readBoolean();
 
         // Has the JED World Properties object
-        if (buf.readBoolean())
+        if (this.hasJEDTag)
         {
             try
             {
@@ -130,18 +133,17 @@ public class MessageSyncWorldProperties implements IMessage
         protected void processMessage(final MessageSyncWorldProperties message, final World world)
         {
             world.getWorldInfo().setHardcore(message.isHardcore);
+            JEDWorldProperties.setClientProperties(message.jedProperties);
 
             if (world.provider instanceof IWorldProviderJED)
             {
-                ((IWorldProviderJED) world.provider).setJEDPropertiesFromJson(message.jedProperties);
+                ((IWorldProviderJED) world.provider).setJEDProperties(JEDWorldProperties.getClientProperties());
                 
                 JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Synced custom JED WorldProvider properties: {}",
                         world.provider.getDimension(), message.jedProperties);
             }
             else
             {
-                JEDWorldProperties.createAndSetPropertiesForDimension(world.provider.getDimension(), message.jedProperties);
-
                 if (ClientUtils.setRenderersFrom(world.provider, message.jedProperties))
                 {
                     JustEnoughDimensions.logInfo("MessageSyncWorldProperties - DIM: {}: Set a customized sky/cloud/weather render type for a non-JED world",
@@ -149,7 +151,9 @@ public class MessageSyncWorldProperties implements IMessage
                 }
             }
 
+            @Nullable
             JsonObject colorData = message.jedProperties != null ? JEDJsonUtils.getNestedObject(message.jedProperties, "Colors", false) : null;
+
             JEDEventHandlerClient.setColors(ColorType.FOLIAGE, JEDEventHandlerClient.getColorMap(colorData, ColorType.FOLIAGE));
             JEDEventHandlerClient.setColors(ColorType.GRASS,   JEDEventHandlerClient.getColorMap(colorData, ColorType.GRASS));
             JEDEventHandlerClient.setColors(ColorType.WATER,   JEDEventHandlerClient.getColorMap(colorData, ColorType.WATER));

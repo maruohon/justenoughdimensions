@@ -32,7 +32,6 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
-import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
@@ -102,11 +101,6 @@ public class JEDEventHandler
         {
             JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", dimension);
             WorldUtils.removeTemporaryWorldIfApplicable(event.getWorld());
-        }
-        else
-        {
-            // Remove the props, in case the player would join to another server or load another world with different settings
-            JEDWorldProperties.removePropertiesFrom(dimension);
         }
     }
 
