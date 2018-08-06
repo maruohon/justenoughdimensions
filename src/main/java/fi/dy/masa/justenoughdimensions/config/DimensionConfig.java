@@ -158,13 +158,6 @@ public class DimensionConfig
         return this.customWorldInfo.containsKey(dimension) || this.onetimeWorldInfo.containsKey(dimension);
     }
 
-    @Nullable
-    public String getBiomeFor(int dimension)
-    {
-        DimensionConfigEntry entry = this.dimensions.get(dimension);
-        return entry != null ? entry.getBiome() : null;
-    }
-
     public void setWorldInfoValues(int dimension, NBTTagCompound tagIn, WorldInfoType type)
     {
         Map<Integer, NBTTagCompound> map = type == WorldInfoType.ONE_TIME ? this.onetimeWorldInfo : this.customWorldInfo;

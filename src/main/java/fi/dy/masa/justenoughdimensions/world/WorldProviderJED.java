@@ -13,12 +13,14 @@ import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProviderSurface;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.util.ClientUtils;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
@@ -59,16 +61,31 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
 
     protected void setBiomeProviderIfConfigured()
     {
-        // If this dimension has been configured for a single biome,
+        // If this dimension has been configured for a 'non-default' biome provider,
         // then set it here so that it's early enough for Sponge to use it.
-        String biomeName = DimensionConfig.instance().getBiomeFor(this.getDimension());
-        Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(this.getDimension());
 
-        if (biome != null)
+        if (entry != null)
         {
-            JustEnoughDimensions.logInfo("WorldProviderJED.setBiomeProviderIfConfigured(): Using BiomeProviderSingle with biome '{}' for dimension {}",
-                    biomeName, this.getDimension());
-            this.biomeProvider = new BiomeProviderSingle(biome);
+            if (entry.getBiome() != null)
+            {
+                Biome biome = Biome.REGISTRY.getObject(new ResourceLocation(entry.getBiome()));
+
+                if (biome != null)
+                {
+                    JustEnoughDimensions.logInfo("WorldProviderJED.setBiomeProviderIfConfigured(): Using BiomeProviderSingle with biome '{}' for dimension {}",
+                            entry.getBiome(), this.getDimension());
+                    this.biomeProvider = new BiomeProviderSingle(biome);
+                }
+                else
+                {
+                    JustEnoughDimensions.logger.warn("Failed to find a biome by the name '{}' for dimension {}", entry.getBiome(), this.getDimension());
+                }
+            }
+            else if (entry.shouldUseNormalBiomes() && this.biomeProvider instanceof BiomeProviderSingle)
+            {
+                this.biomeProvider = new BiomeProvider(this.world.getWorldInfo());
+            }
         }
     }
 

@@ -396,24 +396,43 @@ public class WorldUtils
         if ((world.provider instanceof WorldProviderSurfaceJED) == false)
         {
             int dimension = world.provider.getDimension();
-            String biomeName = DimensionConfig.instance().getBiomeFor(dimension);
-            Biome biome = biomeName != null ? Biome.REGISTRY.getObject(new ResourceLocation(biomeName)) : null;
+            DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
 
-            if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
-                world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+            if (entry != null)
             {
-                BiomeProvider biomeProvider = new BiomeProviderSingle(biome);
+                BiomeProvider biomeProvider = null;
 
-                JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider for dimension {} with {}" +
-                    " using the biome '{}'", dimension, biomeProvider.getClass().getName(), biomeName);
-
-                try
+                if (entry.getBiome() != null)
                 {
-                    field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
+                    Biome biome = Biome.REGISTRY.getObject(new ResourceLocation(entry.getBiome()));
+
+                    if (biome != null && ((world.provider.getBiomeProvider() instanceof BiomeProviderSingle) == false ||
+                        world.provider.getBiomeProvider().getBiome(BlockPos.ORIGIN) != biome))
+                    {
+                        biomeProvider = new BiomeProviderSingle(biome);
+
+                        JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider of dimension {} with '{}' using the biome '{}'",
+                                dimension, biomeProvider.getClass().getName(), entry.getBiome());
+                    }
                 }
-                catch (Exception e)
+                else if (entry.shouldUseNormalBiomes() && world.provider.getBiomeProvider() instanceof BiomeProviderSingle)
                 {
-                    JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                    biomeProvider = new BiomeProvider(world.getWorldInfo());
+
+                    JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Overriding the BiomeProvider of dimension {} with '{}'",
+                            dimension, biomeProvider.getClass().getName());
+                }
+
+                if (biomeProvider != null)
+                {
+                    try
+                    {
+                        field_WorldProvider_biomeProvider.set(world.provider, biomeProvider);
+                    }
+                    catch (Exception e)
+                    {
+                        JustEnoughDimensions.logger.error("Failed to override the BiomeProvider of dimension {}", dimension);
+                    }
                 }
             }
         }
