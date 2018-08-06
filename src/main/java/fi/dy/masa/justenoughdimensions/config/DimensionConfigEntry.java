@@ -15,6 +15,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
     private boolean isTemporaryDimension = false;
+    private boolean shouldLoadOnStart;
     private String biome; // if != null, then use BiomeProviderSingle with this biome
     private String worldTemplate;
     private JsonObject jedTag;
@@ -40,6 +41,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public boolean getUnregister()
     {
         return this.unregister;
+    }
+
+    public boolean getShouldLoadOnStart()
+    {
+        return this.shouldLoadOnStart;
     }
 
     public boolean getDisableTeleportingFrom()
@@ -145,6 +151,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
         entry.override =   JEDJsonUtils.getBooleanOrDefault(obj, "override", false);
         entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false) && dimension != 0;
+        entry.shouldLoadOnStart      = JEDJsonUtils.getBooleanOrDefault(obj, "load_on_start", false);
         entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
         entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
         entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
@@ -187,6 +194,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         if (this.unregister)
         {
             jsonEntry.addProperty("unregister", true);
+        }
+
+        if (this.shouldLoadOnStart)
+        {
+            jsonEntry.addProperty("load_on_start", true);
         }
 
         if (this.disableTeleportingFrom)
@@ -239,9 +251,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
     public String getDescription()
     {
-        return String.format("{id=%d,override=%s,unregister=%s,biome=%s,world_template=%s," +
+        return String.format("{id=%d,override=%s,unregister=%s,load_on_start=%s,biome=%s,world_template=%s," +
                              "disable_teleporting_from=%s,disable_teleporting_to=%s,temporary_dimension=%s,DimensionTypeEntry:[%s]}",
-                this.dimension, this.override, this.unregister, this.biome, this.worldTemplate,
+                this.dimension, this.override, this.unregister, this.shouldLoadOnStart, this.biome, this.worldTemplate,
                 this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }

@@ -80,7 +80,7 @@ public class JustEnoughDimensions
         // they get loaded during server start.
         // But on the other hand we don't want to register the rest of the dimensions yet,
         // otherwise they would be considered 'static dimensions' and get loaded on server start.
-        DimensionConfig.instance().doDimensionOverridesAndUnregistering();
+        DimensionConfig.instance().doEarlyDimensionRegistrations();
 
         // Handle template world copying for the overworld before the server starts
         WorldFileUtils.copyTemplateWorldIfApplicable(0, worldDir);

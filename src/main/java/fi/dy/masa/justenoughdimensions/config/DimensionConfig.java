@@ -292,11 +292,9 @@ public class DimensionConfig
                 this.registerDimension(entry.getDimension(), entry);
             }
         }
-
-        PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
     }
 
-    public void doDimensionOverridesAndUnregistering()
+    public void doEarlyDimensionRegistrations()
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
@@ -311,6 +309,10 @@ public class DimensionConfig
                 {
                     this.registerDimension(entry.getDimension(), entry);
                 }
+            }
+            else if (entry.getShouldLoadOnStart())
+            {
+                this.registerDimension(entry.getDimension(), entry);
             }
         }
     }
