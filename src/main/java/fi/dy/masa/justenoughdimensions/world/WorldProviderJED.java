@@ -151,7 +151,7 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         {
         }
 
-        return type != null ? type : DimensionType.OVERWORLD;
+        return type != null ? type : super.getDimensionType();
     }
 
     @Override
@@ -190,7 +190,7 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     @Override
     public boolean canDropChunk(int x, int z)
     {
-        return this.world.isSpawnChunk(x, z) == false || this.getDimensionType().shouldLoadSpawn() == false;
+        return this.getDimensionType().shouldLoadSpawn() == false || this.world.isSpawnChunk(x, z) == false;
     }
 
     @Override
