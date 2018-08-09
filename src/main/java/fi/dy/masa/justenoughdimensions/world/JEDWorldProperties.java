@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
@@ -49,6 +50,7 @@ public class JEDWorldProperties
     private Boolean canDoLightning = null;
     private Boolean canDoRainSnowIce = null;
     private Boolean canRespawnHere = null;
+    private WorldProvider.WorldSleepResult canSleepHere = null;
     private Boolean canSpawnHostiles = null;
     private Boolean canSpawnPeacefulMobs = null;
     private Boolean hasSkyLight = null;
@@ -196,6 +198,15 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
         if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
         if (JEDJsonUtils.hasString(obj, "CloudColor"))  { this.cloudColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+
+        if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
+        {
+            String value = JEDJsonUtils.getString(obj, "CanSleepHere");
+            if (value.equalsIgnoreCase("allow"))                { this.canSleepHere = WorldProvider.WorldSleepResult.ALLOW; }
+            else if (value.equalsIgnoreCase("deny"))            { this.canSleepHere = WorldProvider.WorldSleepResult.DENY; }
+            else if (value.equalsIgnoreCase("bed_explodes"))    { this.canSleepHere = WorldProvider.WorldSleepResult.BED_EXPLODES; }
+            else { JustEnoughDimensions.logger.warn("Invalid 'CanSleepHere' value: '{}'", value); }
+        }
 
         if (JEDJsonUtils.hasDouble(obj, "CelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CelestialAngleMax"))
         {
@@ -439,6 +450,12 @@ public class JEDWorldProperties
     public Boolean canRespawnHere()
     {
         return this.canRespawnHere;
+    }
+
+    @Nullable
+    public WorldProvider.WorldSleepResult canSleepHere()
+    {
+        return this.canSleepHere;
     }
 
     @Nullable

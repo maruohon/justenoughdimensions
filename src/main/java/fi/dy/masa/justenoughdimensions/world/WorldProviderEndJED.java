@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions.world;
 import javax.annotation.Nullable;
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -75,6 +76,12 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     {
         this.properties = properties;
         ClientUtils.setRenderersFrom(this, this.properties.getFullJEDProperties());
+    }
+
+    @Override
+    public WorldSleepResult canSleepAt(EntityPlayer player, BlockPos pos)
+    {
+        return this.properties.canSleepHere() != null ? this.properties.canSleepHere() : super.canSleepAt(player, pos);
     }
 
     @Override
