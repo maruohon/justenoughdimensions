@@ -423,6 +423,11 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     @Override
     public boolean doesXZShowFog(int x, int z)
     {
+        if (this.properties.getHasPerBiomeFog())
+        {
+            return this.properties.doesBiomeHaveFog(this.world.getBiome(new BlockPos(x, 0, z)));
+        }
+
         return this.properties.getHasXZFog() != null ? this.properties.getHasXZFog().booleanValue() : this.hasXZFog;
     }
 

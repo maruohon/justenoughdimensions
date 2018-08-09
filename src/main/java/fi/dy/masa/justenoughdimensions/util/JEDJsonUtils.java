@@ -102,6 +102,18 @@ public class JEDJsonUtils
         return false;
     }
 
+    public static boolean hasArray(JsonObject obj, String name)
+    {
+        JsonElement el = obj.get(name);
+
+        if (el != null && el.isJsonArray())
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public static String getStringOrDefault(JsonObject obj, String name, String defaultValue, boolean allowEmpty)
     {
         if (obj.has(name) && obj.get(name).isJsonPrimitive())

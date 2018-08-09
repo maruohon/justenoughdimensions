@@ -1,7 +1,10 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.google.gson.JsonArray;
@@ -10,10 +13,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.biome.Biome;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
@@ -28,6 +34,8 @@ public class JEDWorldProperties
     private JsonObject fullJEDTag;
     @Nullable
     private JsonObject colorData;
+    @Nullable
+    private JsonObject perBiomeFogData;
 
     private boolean forceGameMode;
     private boolean generateFallbackSpawnBlock;
@@ -46,6 +54,8 @@ public class JEDWorldProperties
     private int skyRenderType;
     private int voidTeleportInterval = 40;
     private float[] customLightBrightnessTable = null;
+    private boolean hasPerBiomeFog = false;
+    private final IdentityHashMap<Biome, Boolean> foggyBiomes = new IdentityHashMap<>();
 
     private Boolean canDoLightning = null;
     private Boolean canDoRainSnowIce = null;
@@ -158,6 +168,7 @@ public class JEDWorldProperties
     {
         this.fullJEDTag = JEDJsonUtils.deepCopy(obj);
         this.colorData = JEDJsonUtils.getNestedObject(obj, "Colors", false);
+        this.perBiomeFogData = JEDJsonUtils.getNestedObject(obj, "FoggyBiomes", false);
 
         if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))          { this.forceGameMode            = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
         if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))         { this.useCustomDayCycle        = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
@@ -206,6 +217,47 @@ public class JEDWorldProperties
             else if (value.equalsIgnoreCase("deny"))            { this.canSleepHere = WorldProvider.WorldSleepResult.DENY; }
             else if (value.equalsIgnoreCase("bed_explodes"))    { this.canSleepHere = WorldProvider.WorldSleepResult.BED_EXPLODES; }
             else { JustEnoughDimensions.logger.warn("Invalid 'CanSleepHere' value: '{}'", value); }
+        }
+
+        if (JEDJsonUtils.hasObject(obj, "FoggyBiomes"))
+        {
+            JsonObject fogObj = obj.getAsJsonObject("FoggyBiomes");
+            boolean listedHaveFog = JEDJsonUtils.getBoolean(fogObj, "listed_have_fog");
+            Set<Biome> biomes = new HashSet<>();
+
+            if (JEDJsonUtils.hasArray(fogObj, "biomes"))
+            {
+                JsonArray arr = fogObj.getAsJsonArray("biomes");
+                final int size = arr.size();
+
+                for (int i = 0; i < size; ++i)
+                {
+                    String name = arr.get(i).getAsString();
+                    ResourceLocation rl = new ResourceLocation(name);
+                    Biome biome = ForgeRegistries.BIOMES.getValue(rl);
+
+                    if (biome != null)
+                    {
+                        biomes.add(biome);
+                    }
+                }
+            }
+
+            this.foggyBiomes.clear();
+
+            if (listedHaveFog == false)
+            {
+                Set<Biome> allBiomes = new HashSet<>(ForgeRegistries.BIOMES.getValuesCollection());
+                allBiomes.removeAll(biomes);
+                biomes = allBiomes;
+            }
+
+            for (Biome biome : biomes)
+            {
+                this.foggyBiomes.put(biome, true);
+            }
+
+            this.hasPerBiomeFog = true;
         }
 
         if (JEDJsonUtils.hasDouble(obj, "CelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CelestialAngleMax"))
@@ -300,6 +352,11 @@ public class JEDWorldProperties
         if (this.colorData != null)
         {
             obj.add("Colors", JEDJsonUtils.deepCopy(this.colorData));
+        }
+
+        if (this.perBiomeFogData != null)
+        {
+            obj.add("FoggyBiomes", JEDJsonUtils.deepCopy(this.perBiomeFogData));
         }
 
         if (this.customLightBrightnessTable != null)
@@ -528,6 +585,16 @@ public class JEDWorldProperties
     public Boolean getHasXZFog()
     {
         return this.hasXZFog;
+    }
+
+    public boolean getHasPerBiomeFog()
+    {
+        return this.hasPerBiomeFog;
+    }
+
+    public boolean doesBiomeHaveFog(Biome biome)
+    {
+        return this.foggyBiomes.containsKey(biome);
     }
 
     @Nullable
