@@ -1,7 +1,10 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.google.gson.JsonArray;
@@ -10,9 +13,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
+import net.minecraft.world.biome.Biome;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
@@ -21,61 +28,85 @@ import fi.dy.masa.justenoughdimensions.util.SpawnPointSearch;
 public class JEDWorldProperties
 {
     private static final Map<Integer, JEDWorldProperties> PROPERTIES = new HashMap<>();
+    private static JEDWorldProperties clientProperties = new JEDWorldProperties();
 
+    @Nullable
     private JsonObject fullJEDTag;
+    @Nullable
     private JsonObject colorData;
+    @Nullable
+    private JsonObject perBiomeFogData;
+
     private boolean forceGameMode;
-    private boolean useCustomDayCycle;
-    private boolean useCustomCelestialAngleRange;
-    private boolean useCustomDayTimeRange;
     private boolean generateFallbackSpawnBlock;
+    private boolean useCustomCelestialAngleRange;
+    private boolean useCustomDayCycle;
+    private boolean useCustomDayTimeRange;
     private float celestialAngleMin = 0.0f;
     private float celestialAngleMax = 1.0f;
-    private int dayTimeMin = 0;
-    private int dayTimeMax = 24000 - 1;
+    private int cloudHeight = 128;
     private int dayCycleIncrement = 24000;
     private int dayLength = 12000;
+    private int dayTimeMax = 24000 - 1;
+    private int dayTimeMin = 0;
     private int nightLength = 12000;
-    private int cloudHeight = 128;
-    private int skyRenderType;
     private int skyDisableFlags;
+    private int skyRenderType;
     private int voidTeleportInterval = 40;
-    private Vec3d skyColor = null;
-    private Vec3d cloudColor = null;
-    private Vec3d fogColor = null;
-    private Float skyBlend = null;
-    private Vec3d sunColor = null;
-    private Vec3d moonColor = null;
-    private Float sunScale = null;
-    private Float moonScale = null;
-    private String skyRenderer = null;
-    private String cloudRenderer = null;
-    private String weatherRenderer = null;
+
     private float[] customLightBrightnessTable = null;
+    private boolean hasPerBiomeFog = false;
+    private final IdentityHashMap<Biome, Boolean> foggyBiomes = new IdentityHashMap<>();
+
+    private Boolean canDoLightning = null;
+    private Boolean canDoRainSnowIce = null;
     private Boolean canRespawnHere = null;
+    private WorldProvider.WorldSleepResult canSleepHere = null;
+    private Boolean canSpawnHostiles = null;
+    private Boolean canSpawnPeacefulMobs = null;
+    private Boolean hasSkyLight = null;
+    private Boolean hasXZFog = null;
+    private Boolean ignoreSpawnSuitability = null;
+    private Boolean isSurfaceWorld = null;
+    private Boolean shouldClientCheckLight = null;
+
+    private Integer averageGroundLevel = null;
+    private Double horizon = null;
+    private Double movementFactor = null;
     private Integer respawnDimension = null;
     private Float sunBrightnessFactor = null;
     private Float sunBrightness = null;
-    private Double horizon = null;
-    private Double movementFactor = null;
-    private Integer averageGroundLevel = null;
-    private Boolean hasSkyLight = null;
-    private Boolean isSurfaceWorld = null;
-    private Boolean ignoreSpawnSuitability = null;
-    private Boolean hasXZFog = null;
-    private Boolean canDoLightning = null;
-    private Boolean canDoRainSnowIce = null;
+
+    private Vec3d cloudColor = null;
+    private Vec3d fogColor = null;
+    private Vec3d moonColor = null;
+    private Vec3d skyColor = null;
+    private Vec3d sunColor = null;
+
+    private Float skyBlend = null;
+    private Float moonScale = null;
+    private Float sunScale = null;
+
+    private String cloudRenderer = null;
+    private String skyRenderer = null;
+    private String weatherRenderer = null;
+
     private String musicType = null;
-    private Boolean shouldClientCheckLight = null;
-    private Boolean canSpawnHostiles = null;
-    private Boolean canSpawnPeacefulMobs = null;
-    private SpawnPointSearch spawnPointSearchType = null;
     private String worldProviderOverrideClass = null;
+
+    private SpawnPointSearch spawnPointSearchType = null;
 
     @Nullable
     public static JEDWorldProperties getPropertiesIfExists(World world)
     {
-        return getPropertiesIfExists(world.provider.getDimension());
+        JEDWorldProperties props = getPropertiesIfExists(world.provider.getDimension());
+
+        if (props == null && world.isRemote)
+        {
+            props = clientProperties;
+        }
+
+        return props;
     }
 
     @Nullable
@@ -86,42 +117,44 @@ public class JEDWorldProperties
 
     /**
      * Gets the properties for the requested dimension.
-     * If there no properties for that dimension, then a new default instance is returned.
+     * If there are no properties for that dimension, then a new default instance is returned.
      * NOTE: If the default instance is created and returned, it is NOT added to the map.
      * @param dimension
      * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
      */
     public static JEDWorldProperties getOrCreateProperties(int dimension)
     {
-        return getOrCreateProperties(dimension, null);
-    }
-
-    /**
-     * Gets the properties for the requested dimension.
-     * If there no properties for that dimension, then a new instance is created and returned,
-     * based on the JsonObject passed in.
-     * NOTE: If a new instance is created and returned, it is NOT added to the map.
-     * @param dimension
-     * @param obj the properties to set for the created instance
-     * @return the properties for the requested dimension, or a new default instance (which is NOT added to the map!)
-     */
-    public static JEDWorldProperties getOrCreateProperties(int dimension, @Nullable JsonObject obj)
-    {
         JEDWorldProperties props = PROPERTIES.get(dimension);
 
         if (props == null)
         {
-            props = obj != null ? new JEDWorldProperties(obj) : new JEDWorldProperties();
+            props = new JEDWorldProperties();
         }
 
         return props;
     }
 
-    public static JEDWorldProperties createAndSetPropertiesForDimension(int dimension, @Nonnull JsonObject obj)
+    public static JEDWorldProperties createAndSetPropertiesForDimension(int dimension, @Nullable JsonObject obj)
     {
-        JEDWorldProperties props = new JEDWorldProperties(obj);
-        PROPERTIES.put(dimension, props);
-        return props;
+        if (obj != null)
+        {
+            JEDWorldProperties props = new JEDWorldProperties(obj);
+            PROPERTIES.put(dimension, props);
+
+            return props;
+        }
+
+        return null;
+    }
+
+    public static void setClientProperties(@Nullable JsonObject obj)
+    {
+        clientProperties = obj != null ? new JEDWorldProperties(obj) : new JEDWorldProperties();
+    }
+
+    public static JEDWorldProperties getClientProperties()
+    {
+        return clientProperties;
     }
 
     public static void removePropertiesFrom(int dimension)
@@ -142,6 +175,7 @@ public class JEDWorldProperties
     {
         this.fullJEDTag = JEDJsonUtils.deepCopy(obj);
         this.colorData = JEDJsonUtils.getNestedObject(obj, "Colors", false);
+        this.perBiomeFogData = JEDJsonUtils.getNestedObject(obj, "FoggyBiomes", false);
 
         if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))          { this.forceGameMode            = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
         if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))         { this.useCustomDayCycle        = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
@@ -179,15 +213,65 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "MusicType"))           { this.musicType            = JEDJsonUtils.getString(obj, "MusicType"); }
         if (JEDJsonUtils.hasString(obj, "WorldProviderOverride")) { this.worldProviderOverrideClass = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
 
-        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
-        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
         if (JEDJsonUtils.hasString(obj, "CloudColor"))  { this.cloudColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "MoonColor"))   { this.moonColor    = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")); }
+        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
+        if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
 
-        if (JEDJsonUtils.hasInteger(obj, "SkyBlend"))    { this.skyBlend    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
-        if (JEDJsonUtils.hasString(obj,  "SunColor"))    { this.sunColor    = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
-        if (JEDJsonUtils.hasString(obj,  "MoonColor"))   { this.moonColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")); }
-        if (JEDJsonUtils.hasInteger(obj, "SunScale"))    { this.sunScale    = JEDJsonUtils.getFloat(obj, "SunScale"); }
-        if (JEDJsonUtils.hasInteger(obj, "MoonScale"))   { this.moonScale   = JEDJsonUtils.getFloat(obj, "MoonScale"); }
+        if (JEDJsonUtils.hasInteger(obj, "MoonScale"))  { this.moonScale   = JEDJsonUtils.getFloat(obj, "MoonScale"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyBlend"))   { this.skyBlend    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
+        if (JEDJsonUtils.hasInteger(obj, "SunScale"))   { this.sunScale    = JEDJsonUtils.getFloat(obj, "SunScale"); }
+
+        if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
+        {
+            String value = JEDJsonUtils.getString(obj, "CanSleepHere");
+            if (value.equalsIgnoreCase("allow"))                { this.canSleepHere = WorldProvider.WorldSleepResult.ALLOW; }
+            else if (value.equalsIgnoreCase("deny"))            { this.canSleepHere = WorldProvider.WorldSleepResult.DENY; }
+            else if (value.equalsIgnoreCase("bed_explodes"))    { this.canSleepHere = WorldProvider.WorldSleepResult.BED_EXPLODES; }
+            else { JustEnoughDimensions.logger.warn("Invalid 'CanSleepHere' value: '{}'", value); }
+        }
+
+        if (JEDJsonUtils.hasObject(obj, "FoggyBiomes"))
+        {
+            JsonObject fogObj = obj.getAsJsonObject("FoggyBiomes");
+            boolean listedHaveFog = JEDJsonUtils.getBoolean(fogObj, "listed_have_fog");
+            Set<Biome> biomes = new HashSet<>();
+
+            if (JEDJsonUtils.hasArray(fogObj, "biomes"))
+            {
+                JsonArray arr = fogObj.getAsJsonArray("biomes");
+                final int size = arr.size();
+
+                for (int i = 0; i < size; ++i)
+                {
+                    String name = arr.get(i).getAsString();
+                    ResourceLocation rl = new ResourceLocation(name);
+                    Biome biome = ForgeRegistries.BIOMES.getValue(rl);
+
+                    if (biome != null)
+                    {
+                        biomes.add(biome);
+                    }
+                }
+            }
+
+            this.foggyBiomes.clear();
+
+            if (listedHaveFog == false)
+            {
+                Set<Biome> allBiomes = new HashSet<>(ForgeRegistries.BIOMES.getValuesCollection());
+                allBiomes.removeAll(biomes);
+                biomes = allBiomes;
+            }
+
+            for (Biome biome : biomes)
+            {
+                this.foggyBiomes.put(biome, true);
+            }
+
+            this.hasPerBiomeFog = true;
+        }
 
         if (JEDJsonUtils.hasDouble(obj, "CelestialAngleMin") && JEDJsonUtils.hasDouble(obj, "CelestialAngleMax"))
         {
@@ -289,6 +373,11 @@ public class JEDWorldProperties
             obj.add("Colors", JEDJsonUtils.deepCopy(this.colorData));
         }
 
+        if (this.perBiomeFogData != null)
+        {
+            obj.add("FoggyBiomes", JEDJsonUtils.deepCopy(this.perBiomeFogData));
+        }
+
         if (this.customLightBrightnessTable != null)
         {
             JsonArray arr = new JsonArray();
@@ -305,9 +394,9 @@ public class JEDWorldProperties
     }
 
     @Nullable
-    public JsonObject getFullJEDPropertiesObject()
+    public JsonObject getFullJEDProperties()
     {
-        return this.fullJEDTag != null ? JEDJsonUtils.deepCopy(this.fullJEDTag) : null;
+        return this.fullJEDTag;
     }
 
     @Nullable
@@ -471,6 +560,12 @@ public class JEDWorldProperties
     }
 
     @Nullable
+    public WorldProvider.WorldSleepResult canSleepHere()
+    {
+        return this.canSleepHere;
+    }
+
+    @Nullable
     public Boolean canSpawnPeacefulMobs()
     {
         return this.canSpawnPeacefulMobs;
@@ -540,6 +635,16 @@ public class JEDWorldProperties
     public Boolean getHasXZFog()
     {
         return this.hasXZFog;
+    }
+
+    public boolean getHasPerBiomeFog()
+    {
+        return this.hasPerBiomeFog;
+    }
+
+    public boolean doesBiomeHaveFog(Biome biome)
+    {
+        return this.foggyBiomes.containsKey(biome);
     }
 
     @Nullable

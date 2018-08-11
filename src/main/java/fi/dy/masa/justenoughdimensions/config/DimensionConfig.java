@@ -76,6 +76,11 @@ public class DimensionConfig
         return instance;
     }
 
+    public File getGlobalJEDConfigDir()
+    {
+        return this.configDirJED;
+    }
+
     public Collection<DimensionConfigEntry> getRegisteredDimensions()
     {
         List<DimensionConfigEntry> list = new ArrayList<>();
@@ -156,13 +161,6 @@ public class DimensionConfig
     public boolean useCustomWorldInfoFor(int dimension)
     {
         return this.customWorldInfo.containsKey(dimension) || this.onetimeWorldInfo.containsKey(dimension);
-    }
-
-    @Nullable
-    public String getBiomeFor(int dimension)
-    {
-        DimensionConfigEntry entry = this.dimensions.get(dimension);
-        return entry != null ? entry.getBiome() : null;
     }
 
     public void setWorldInfoValues(int dimension, NBTTagCompound tagIn, WorldInfoType type)
@@ -292,11 +290,9 @@ public class DimensionConfig
                 this.registerDimension(entry.getDimension(), entry);
             }
         }
-
-        PacketHandler.INSTANCE.sendToAll(new MessageSyncDimensions(this.getRegisteredDimensions()));
     }
 
-    public void doDimensionOverridesAndUnregistering()
+    public void doEarlyDimensionRegistrations()
     {
         for (DimensionConfigEntry entry : this.dimensions.values())
         {
@@ -312,6 +308,10 @@ public class DimensionConfig
                     this.registerDimension(entry.getDimension(), entry);
                 }
             }
+            else if (entry.getShouldLoadOnStart())
+            {
+                this.registerDimension(entry.getDimension(), entry);
+            }
         }
     }
 
@@ -325,7 +325,8 @@ public class DimensionConfig
         if (DimensionManager.isDimensionRegistered(dimension) == false)
         {
             JustEnoughDimensions.logInfo("Registering a dimension with ID {}", dimension);
-            DimensionManager.registerDimension(dimension, entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension));
+            DimensionType type = entry.getDimensionTypeEntry().getOrRegisterDimensionType(dimension);
+            DimensionManager.registerDimension(dimension, type);
             this.registeredDimensions.add(dimension);
             return true;
         }

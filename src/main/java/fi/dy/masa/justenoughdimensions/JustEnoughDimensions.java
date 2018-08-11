@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.chunk.storage.AnvilSaveConverter;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLFingerprintViolationEvent;
@@ -22,6 +23,7 @@ import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
+import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
 import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -78,7 +80,7 @@ public class JustEnoughDimensions
         // they get loaded during server start.
         // But on the other hand we don't want to register the rest of the dimensions yet,
         // otherwise they would be considered 'static dimensions' and get loaded on server start.
-        DimensionConfig.instance().doDimensionOverridesAndUnregistering();
+        DimensionConfig.instance().doEarlyDimensionRegistrations();
 
         // Handle template world copying for the overworld before the server starts
         WorldFileUtils.copyTemplateWorldIfApplicable(0, worldDir);
@@ -89,6 +91,20 @@ public class JustEnoughDimensions
     {
         event.registerServerCommand(new CommandJED());
         event.registerServerCommand(new CommandTeleportJED());
+
+        if (event.getServer().getAllowNether() == false && DimensionManager.getStaticDimensionIDs().length > 1)
+        {
+            logger.warn("******************************************************************************************");
+            logger.warn("**  The 'disable-nether' option is currently disabled in 'server.properties'.");
+            logger.warn("**  Just a friendly FYI, because this has been the cause of some weird and");
+            logger.warn("**  hard to pinpoint issues for some users, before it was found out that the");
+            logger.warn("**  above mentioned option was disabled in the hopes of simply disabling just the Nether.");
+            logger.warn("**  That's not what that option does.");
+            logger.warn("**  It actually prevents ANY DIMENSIONS except for dimension 0 from being ticked at all!!");
+            logger.warn("**  Thus it basically makes any dimensions except for the overworld unusable,");
+            logger.warn("**  and any player trying to go to other dimensions will get stuck in limbo.");
+            logger.warn("******************************************************************************************");
+        }
     }
 
     @Mod.EventHandler
@@ -153,11 +169,10 @@ public class JustEnoughDimensions
     // Note that these still have some potential issues, the suffix being one.
     static
     {
-        DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false);
-        DimensionType.register("JED Hell",              "_dim7892", 7892, WorldProviderHellJED.class,       false);
-        DimensionType.register("JED End",               "_dim7893", 7893, WorldProviderEndJED.class,        false);
-        DimensionType.register("JED Surface 0",         "_dim7894",    0, WorldProviderSurfaceJED.class,    false);
-        DimensionType.register("JED Surface Loaded",    "_dim7895", 7895, WorldProviderSurfaceJED.class,    true);
-        DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true);
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface",           "_dim7891", 7891, WorldProviderSurfaceJED.class,    false));
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface 0",         "",            0, WorldProviderSurfaceJED.class,    false));
+        DimensionTypeEntry.cache(DimensionType.register("JED Surface Loaded 0",  "_dim0",       0, WorldProviderSurfaceJED.class,    true));
+        DimensionTypeEntry.cache(DimensionType.register("JED Hell",              "_dim-1",     -1, WorldProviderHellJED.class,       false));
+        DimensionTypeEntry.cache(DimensionType.register("JED End",               "_dim1",       1, WorldProviderEndJED.class,        false));
     }
 }

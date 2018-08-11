@@ -1,9 +1,9 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import javax.annotation.Nullable;
-import com.google.gson.JsonObject;
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -50,11 +50,8 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             this.worldInfoSet = true;
 
-            if (this.properties != null)
-            {
-                this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
-                this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
-            }
+            this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
+            this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
         }
     }
 
@@ -75,14 +72,16 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     }
 
     @Override
-    public void setJEDPropertiesFromJson(JsonObject obj)
+    public void setJEDProperties(JEDWorldProperties properties)
     {
-        if (obj != null)
-        {
-            this.properties = JEDWorldProperties.getOrCreateProperties(this.getDimension(), obj);
-        }
+        this.properties = properties;
+        ClientUtils.setRenderersFrom(this, this.properties.getFullJEDProperties());
+    }
 
-        ClientUtils.setRenderersFrom(this, obj);
+    @Override
+    public WorldSleepResult canSleepAt(EntityPlayer player, BlockPos pos)
+    {
+        return this.properties.canSleepHere() != null ? this.properties.canSleepHere() : super.canSleepAt(player, pos);
     }
 
     @Override

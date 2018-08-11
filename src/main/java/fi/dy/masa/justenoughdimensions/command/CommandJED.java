@@ -77,6 +77,7 @@ public class CommandJED extends CommandBase
                     "gamerule",
                     "list-loaded-dimensions",
                     "list-registered-dimensions",
+                    "load-dimension",
                     "register",
                     "reload",
                     "reload-main-config",
@@ -258,6 +259,26 @@ public class CommandJED extends CommandBase
             int count = WorldUtils.unloadEmptyDimensions(args.length == 1 && args[0].equals("unload-chunks"));
             sender.sendMessage(new TextComponentTranslation("jed.commands.info.unloaded.dimensions", String.valueOf(count)));
         }
+        else if (cmd.equals("load-dimension"))
+        {
+            if (args.length == 1)
+            {
+                int dimension = parseInt(args[0]);
+
+                if (server.getWorld(dimension) != null)
+                {
+                    sender.sendMessage(new TextComponentTranslation("jed.commands.info.loaded.dimension", String.valueOf(dimension)));
+                }
+                else
+                {
+                    throwCommand("load_dimension_failed", String.valueOf(dimension));
+                }
+            }
+            else
+            {
+                throwUsage("load_dimension");
+            }
+        }
         else if (cmd.equals("dimbuilder"))
         {
             this.dimBuilder(args, sender);
@@ -369,7 +390,16 @@ public class CommandJED extends CommandBase
             if (world != null)
             {
                 IChunkProvider cp = world.getChunkProvider();
-                DimensionType dimType = world.provider.getDimensionType();
+                DimensionType dimType = null;
+
+                try
+                {
+                    dimType = DimensionManager.getProviderType(world.provider.getDimension());
+                }
+                catch (Exception e)
+                {
+                    dimType = world.provider.getDimensionType();
+                }
 
                 JustEnoughDimensions.logger.info("============= JED DEBUG START ==========");
                 JustEnoughDimensions.logger.info("DIM: {}", world.provider.getDimension());
@@ -386,7 +416,7 @@ public class CommandJED extends CommandBase
                                                   "shouldLoadSpawn: %s, WorldProvider class: '%s'",
                                                   dimType.getId(), dimType.getName(), dimType.getSuffix(), dimType.shouldLoadSpawn(), clazzName));
 
-                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", world.provider.getDimensionType().toString());
+                JustEnoughDimensions.logger.info("DimensionType.toString(): {}", dimType.toString());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
@@ -402,7 +432,7 @@ public class CommandJED extends CommandBase
                 if (props != null)
                 {
                     JustEnoughDimensions.logger.info("Dimension has JED properties");
-                    String str = JEDJsonUtils.serialize(props.getFullJEDPropertiesObject());
+                    String str = JEDJsonUtils.serialize(props.getFullJEDProperties());
                     JustEnoughDimensions.logger.info("JED properties tag: {}", str);
                 }
                 else

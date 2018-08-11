@@ -14,13 +14,16 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean unregister;
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
-    private boolean isTemporaryDimension = false;
-    private String biome; // if != null, then use BiomeProviderSingle with this biome
-    private String worldTemplate;
-    private JsonObject jedTag;
-    private JsonObject worldInfoJson;
-    private JsonObject oneTimeWorldInfoJson;
-    private DimensionTypeEntry dimensionTypeEntry;
+    private boolean isTemporaryDimension;
+    private boolean normalBiomes;
+    private boolean shouldLoadOnStart;
+    @Nullable private String biome; // if != null, then use BiomeProviderSingle with this biome
+    @Nullable private String worldTemplate;
+    @Nullable private JsonObject jedTag;
+    @Nullable private JsonObject worldInfoJson;
+    @Nullable private JsonObject oneTimeWorldInfoJson;
+    @Nullable private JsonObject spawnStructureJson;
+    @Nullable private DimensionTypeEntry dimensionTypeEntry;
 
     public DimensionConfigEntry(int id)
     {
@@ -40,6 +43,16 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public boolean getUnregister()
     {
         return this.unregister;
+    }
+
+    public boolean getShouldLoadOnStart()
+    {
+        return this.shouldLoadOnStart;
+    }
+
+    public boolean shouldUseNormalBiomes()
+    {
+        return this.normalBiomes;
     }
 
     public boolean getDisableTeleportingFrom()
@@ -85,6 +98,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.getDimensionTypeEntry() != null;
     }
 
+    @Nullable
     public DimensionTypeEntry getDimensionTypeEntry()
     {
         return this.dimensionTypeEntry;
@@ -105,6 +119,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public JsonObject getOneTimeWorldInfoJson()
     {
         return this.oneTimeWorldInfoJson;
+    }
+
+    @Nullable
+    public JsonObject getSpawnStructureJson()
+    {
+        return this.spawnStructureJson;
     }
 
     public void writeToByteBuf(ByteBuf buf)
@@ -144,7 +164,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         DimensionConfigEntry entry = new DimensionConfigEntry(dimension);
 
         entry.override =   JEDJsonUtils.getBooleanOrDefault(obj, "override", false);
-        entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false);
+        entry.unregister = JEDJsonUtils.getBooleanOrDefault(obj, "unregister", false) && dimension != 0;
+        entry.shouldLoadOnStart      = JEDJsonUtils.getBooleanOrDefault(obj, "load_on_start", false);
+        entry.normalBiomes           = JEDJsonUtils.getBooleanOrDefault(obj, "normal_biomes", false);
         entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
         entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
         entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
@@ -157,8 +179,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             entry.setDimensionTypeEntry(DimensionTypeEntry.fromJson(dimension, objDimType));
         }
 
-        entry.worldInfoJson =        JEDJsonUtils.getNestedObject(obj, "worldinfo", false);
-        entry.oneTimeWorldInfoJson = JEDJsonUtils.getNestedObject(obj, "worldinfo_onetime", false);
+        entry.worldInfoJson         = JEDJsonUtils.getNestedObject(obj, "worldinfo", false);
+        entry.oneTimeWorldInfoJson  = JEDJsonUtils.getNestedObject(obj, "worldinfo_onetime", false);
+        entry.spawnStructureJson    = JEDJsonUtils.getNestedObject(obj, "spawn_structure", false);
 
         if (obj.has("jed") && obj.get("jed").isJsonObject())
         {
@@ -187,6 +210,16 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         if (this.unregister)
         {
             jsonEntry.addProperty("unregister", true);
+        }
+
+        if (this.shouldLoadOnStart)
+        {
+            jsonEntry.addProperty("load_on_start", true);
+        }
+
+        if (this.normalBiomes)
+        {
+            jsonEntry.addProperty("normal_biomes", true);
         }
 
         if (this.disableTeleportingFrom)
@@ -234,14 +267,19 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.add("worldinfo_onetime",  JEDJsonUtils.deepCopy(this.oneTimeWorldInfoJson));
         }
 
+        if (this.spawnStructureJson != null)
+        {
+            jsonEntry.add("spawn_structure",  JEDJsonUtils.deepCopy(this.spawnStructureJson));
+        }
+
         return jsonEntry;
     }
 
     public String getDescription()
     {
-        return String.format("{id=%d,override=%s,unregister=%s,biome=%s,world_template=%s," +
+        return String.format("{id=%d,override=%s,unregister=%s,load_on_start=%s,biome=%s,world_template=%s," +
                              "disable_teleporting_from=%s,disable_teleporting_to=%s,temporary_dimension=%s,DimensionTypeEntry:[%s]}",
-                this.dimension, this.override, this.unregister, this.biome, this.worldTemplate,
+                this.dimension, this.override, this.unregister, this.shouldLoadOnStart, this.biome, this.worldTemplate,
                 this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
