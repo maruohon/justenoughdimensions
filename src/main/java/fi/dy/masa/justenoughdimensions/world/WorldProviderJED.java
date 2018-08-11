@@ -508,17 +508,18 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         BlockPos blockpos = new BlockPos(x, y, z);
 
         int blendColour = net.minecraftforge.client.ForgeHooksClient.getSkyBlendColour(this.world, blockpos);
-        float r = (float)((blendColour >> 16 & 255) / 255.0F);
-        float g = (float)((blendColour >>  8 & 255) / 255.0F);
-        float b = (float)((blendColour       & 255) / 255.0F);
+        float r = (float) ((blendColour >> 16 & 255) / 255.0F);
+        float g = (float) ((blendColour >>  8 & 255) / 255.0F);
+        float b = (float) ((blendColour       & 255) / 255.0F);
 
-        Float skyBlend = this.properties.getSkyBlend();
+        Float skyBlend = this.properties.getSkyBlendRatio();
         float blendRatio = skyBlend != null ? MathHelper.clamp(skyBlend.floatValue(), 0.0f, 1.0f) : 0.0f;
 
-        r = r * (float)skyColor.x * (1.0f - blendRatio) + (float) skyColor.x * blendRatio;
-        g = g * (float)skyColor.y * (1.0f - blendRatio) + (float) skyColor.y * blendRatio;
-        b = b * (float)skyColor.z * (1.0f - blendRatio) + (float) skyColor.z * blendRatio;
-        float lightLevel = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
+        r = r * (float) skyColor.x * (1.0f - blendRatio) + (float) skyColor.x * blendRatio;
+        g = g * (float) skyColor.y * (1.0f - blendRatio) + (float) skyColor.y * blendRatio;
+        b = b * (float) skyColor.z * (1.0f - blendRatio) + (float) skyColor.z * blendRatio;
+
+        float lightLevel = MathHelper.cos(this.world.getCelestialAngleRadians(partialTicks)) * 2.0F + 0.5F;
         lightLevel = MathHelper.clamp(lightLevel, 0.0F, 1.0F);
 
         r = r * lightLevel;
@@ -575,13 +576,15 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             return super.getCloudColor(partialTicks);
         }
 
-        float f1 = MathHelper.cos(this.world.getCelestialAngle(partialTicks) * ((float)Math.PI * 2F)) * 2.0F + 0.5F;
-        f1 = MathHelper.clamp(f1, 0.0F, 1.0F);
+        float celestialAngle = MathHelper.cos(this.world.getCelestialAngleRadians(partialTicks)) * 2.0F + 0.5F;
+        celestialAngle = MathHelper.clamp(celestialAngle, 0.0F, 1.0F);
+
         float r = (float) cloudColor.x;
         float g = (float) cloudColor.y;
         float b = (float) cloudColor.z;
 
         float rain = this.world.getRainStrength(partialTicks);
+
         if (rain > 0.0F)
         {
             float f6 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.6F;
@@ -591,18 +594,19 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             b = b * f7 + f6 * (1.0F - f7);
         }
 
-        r = r * (f1 * 0.9F + 0.1F);
-        g = g * (f1 * 0.9F + 0.1F);
-        b = b * (f1 * 0.85F + 0.15F);
+        r = r * (celestialAngle * 0.9F + 0.1F);
+        g = g * (celestialAngle * 0.9F + 0.1F);
+        b = b * (celestialAngle * 0.85F + 0.15F);
 
         float thunder = this.world.getThunderStrength(partialTicks);
+
         if (thunder > 0.0F)
         {
-            float f10 = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.2F;
-            float f8 = 1.0F - thunder * 0.95F;
-            r = r * f8 + f10 * (1.0F - f8);
-            g = g * f8 + f10 * (1.0F - f8);
-            b = b * f8 + f10 * (1.0F - f8);
+            float greyLevel = (r * 0.3F + g * 0.59F + b * 0.11F) * 0.2F;
+            float inverseThunderStrength = 1.0F - thunder * 0.95F;
+            r = r * inverseThunderStrength + greyLevel * (1.0F - inverseThunderStrength);
+            g = g * inverseThunderStrength + greyLevel * (1.0F - inverseThunderStrength);
+            b = b * inverseThunderStrength + greyLevel * (1.0F - inverseThunderStrength);
         }
 
         return new Vec3d(r, g, b);
@@ -624,14 +628,16 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             return super.getFogColor(celestialAngle, partialTicks);
         }
 
-        float f = MathHelper.cos(celestialAngle * ((float)Math.PI * 2F)) * 2.0F + 0.5F;
-        f = MathHelper.clamp(f, 0.0F, 1.0F);
-        float r = (float) fogColor.x;
-        float g = (float) fogColor.y;
-        float b = (float) fogColor.z;
-        r = r * (f * 0.94F + 0.06F);
-        g = g * (f * 0.94F + 0.06F);
-        b = b * (f * 0.91F + 0.09F);
+        float celestialAngleRadians = MathHelper.cos(celestialAngle * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
+        celestialAngleRadians = MathHelper.clamp(celestialAngleRadians, 0.0F, 1.0F);
+
+        Float fogBlend = this.properties.getFogBlendRatio();
+        float blendRatio = fogBlend != null ? MathHelper.clamp(fogBlend.floatValue(), 0.0f, 1.0f) : 0.0f;
+
+        float r = (float) fogColor.x * (celestialAngleRadians * 0.94F + 0.06F) * (1.0f - blendRatio) + (float) fogColor.x * blendRatio;
+        float g = (float) fogColor.y * (celestialAngleRadians * 0.94F + 0.06F) * (1.0f - blendRatio) + (float) fogColor.y * blendRatio;
+        float b = (float) fogColor.z * (celestialAngleRadians * 0.91F + 0.09F) * (1.0f - blendRatio) + (float) fogColor.z * blendRatio;
+
         return new Vec3d(r, g, b);
     }
 }

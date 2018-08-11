@@ -56,6 +56,23 @@ public class JEDJsonUtils
         return false;
     }
 
+    public static boolean hasFloat(JsonObject obj, String name)
+    {
+        JsonElement el = obj.get(name);
+
+        if (el != null && el.isJsonPrimitive())
+        {
+            try
+            {
+                el.getAsFloat();
+                return true;
+            }
+            catch (Exception e) {}
+        }
+
+        return false;
+    }
+
     public static boolean hasDouble(JsonObject obj, String name)
     {
         JsonElement el = obj.get(name);

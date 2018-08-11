@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.client.render;
 
 import java.util.Random;
+import org.lwjgl.opengl.GL11;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -38,12 +39,12 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
         public boolean disableSun;
         public boolean disableMoon;
         public boolean disableStars;
-        public float SunScale;
-        public float MoonScale;
-        public Vec3d SunColor;
-        public Vec3d MoonColor;
-    };
-    
+        public float moonScale;
+        public float sunScale;
+        public Vec3d moonColor;
+        public Vec3d sunColor;
+    }
+
     public SkyRenderer(int skyRenderType, SkySettings settings)
     {
         this.vboEnabled = OpenGlHelper.useVbo();
@@ -200,13 +201,15 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
 
         if (this.skySettings.disableSun == false)
         {
-            float sunRed = (float) this.skySettings.SunColor.x;
-            float sunGrb = (float) this.skySettings.SunColor.y;
-            float sunBlu = (float) this.skySettings.SunColor.z;
-            GlStateManager.color(sunRed, sunGrb, sunBlu, rainFade);
-            radius = 30.0D * this.skySettings.SunScale;
+            float sunR = (float) this.skySettings.sunColor.x;
+            float sunG = (float) this.skySettings.sunColor.y;
+            float sunB = (float) this.skySettings.sunColor.z;
+            radius = 30.0D * this.skySettings.sunScale;
+
+            GlStateManager.color(sunR, sunG, sunB, rainFade);
             mc.getTextureManager().bindTexture(SUN_TEXTURES);
-            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+
+            bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
             bufferBuilder.pos(-radius, 100.0D, -radius).tex(0.0D, 0.0D).endVertex();
             bufferBuilder.pos( radius, 100.0D, -radius).tex(1.0D, 0.0D).endVertex();
             bufferBuilder.pos( radius, 100.0D,  radius).tex(1.0D, 1.0D).endVertex();
@@ -216,12 +219,14 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
 
         if (this.skySettings.disableMoon == false)
         {
-            float moonRed = (float) this.skySettings.MoonColor.x;
-            float moonGrb = (float) this.skySettings.MoonColor.y;
-            float moonBlu = (float) this.skySettings.MoonColor.z;
-            GlStateManager.color(moonRed, moonGrb, moonBlu, rainFade);
-            radius = 20.0D * this.skySettings.MoonScale;
+            float moonR = (float) this.skySettings.moonColor.x;
+            float moonG = (float) this.skySettings.moonColor.y;
+            float moonB = (float) this.skySettings.moonColor.z;
+            radius = 20.0D * this.skySettings.moonScale;
+
+            GlStateManager.color(moonR, moonG, moonB, rainFade);
             mc.getTextureManager().bindTexture(MOON_PHASES_TEXTURES);
+
             int i = world.getMoonPhase();
             int k = i % 4;
             int j = i / 4 % 2;
@@ -229,7 +234,8 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
             double f23 = (double)(j + 0) / 2.0D;
             double f24 = (double)(k + 1) / 4.0D;
             double f14 = (double)(j + 1) / 2.0D;
-            bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+
+            bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
             bufferBuilder.pos(-radius, -100.0D,  radius).tex(f24, f14).endVertex();
             bufferBuilder.pos( radius, -100.0D,  radius).tex(f22, f14).endVertex();
             bufferBuilder.pos( radius, -100.0D, -radius).tex(f22, f23).endVertex();

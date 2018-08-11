@@ -83,7 +83,8 @@ public class JEDWorldProperties
     private Vec3d skyColor = null;
     private Vec3d sunColor = null;
 
-    private Float skyBlend = null;
+    private Float fogBlendRatio = null;
+    private Float skyBlendRatio = null;
     private Float moonScale = null;
     private Float sunScale = null;
 
@@ -219,9 +220,11 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
         if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
 
-        if (JEDJsonUtils.hasInteger(obj, "MoonScale"))  { this.moonScale   = JEDJsonUtils.getFloat(obj, "MoonScale"); }
-        if (JEDJsonUtils.hasInteger(obj, "SkyBlend"))   { this.skyBlend    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
-        if (JEDJsonUtils.hasInteger(obj, "SunScale"))   { this.sunScale    = JEDJsonUtils.getFloat(obj, "SunScale"); }
+        if (JEDJsonUtils.hasFloat(obj, "FogBlend"))     { this.fogBlendRatio    = JEDJsonUtils.getFloat(obj, "FogBlend"); }
+        if (JEDJsonUtils.hasFloat(obj, "SkyBlend"))     { this.skyBlendRatio    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
+
+        if (JEDJsonUtils.hasFloat(obj, "MoonScale"))    { this.moonScale        = JEDJsonUtils.getFloat(obj, "MoonScale"); }
+        if (JEDJsonUtils.hasFloat(obj, "SunScale"))     { this.sunScale         = JEDJsonUtils.getFloat(obj, "SunScale"); }
 
         if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
         {
@@ -336,19 +339,22 @@ public class JEDWorldProperties
         if (this.skyRenderType != 0)        { obj.add("SkyRenderType",      new JsonPrimitive(this.skyRenderType)); }
         if (this.skyDisableFlags != 0)      { obj.add("SkyDisableFlags",    new JsonPrimitive(this.skyDisableFlags)); }
         if (this.useCustomDayCycle)         { obj.add("CustomDayCycle",     new JsonPrimitive(this.useCustomDayCycle)); }
-        if (this.skyColor != null)          { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
-        if (this.cloudColor != null)        { obj.add("CloudColor",         new JsonPrimitive(JEDStringUtils.colorToHexString(this.cloudColor))); }
-        if (this.fogColor != null)          { obj.add("FogColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.fogColor))); }
         if (this.hasSkyLight != null)       { obj.add("HasSkyLight",        new JsonPrimitive(this.hasSkyLight)); }
         if (this.hasXZFog != null)          { obj.add("HasXZFog",           new JsonPrimitive(this.hasXZFog)); }
         if (this.horizon != null)           { obj.add("Horizon",            new JsonPrimitive(this.horizon)); }
         if (this.musicType != null)         { obj.add("MusicType",          new JsonPrimitive(this.musicType)); }
 
-        if (this.skyBlend != null)          { obj.add("SkyBlend",           new JsonPrimitive(this.skyBlend)); }
-        if (this.sunColor != null)          { obj.add("SunColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.sunColor))); }
+        if (this.cloudColor != null)        { obj.add("CloudColor",         new JsonPrimitive(JEDStringUtils.colorToHexString(this.cloudColor))); }
+        if (this.fogColor != null)          { obj.add("FogColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.fogColor))); }
         if (this.moonColor != null)         { obj.add("MoonColor",          new JsonPrimitive(JEDStringUtils.colorToHexString(this.moonColor))); }
-        if (this.sunScale != null)          { obj.add("SunScale",           new JsonPrimitive(this.sunScale)); }
+        if (this.skyColor != null)          { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
+        if (this.sunColor != null)          { obj.add("SunColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.sunColor))); }
+
+        if (this.fogBlendRatio != null)     { obj.add("FogBlend",           new JsonPrimitive(this.fogBlendRatio)); }
+        if (this.skyBlendRatio != null)     { obj.add("SkyBlend",           new JsonPrimitive(this.skyBlendRatio)); }
+
         if (this.moonScale != null)         { obj.add("MoonScale",          new JsonPrimitive(this.moonScale)); }
+        if (this.sunScale != null)          { obj.add("SunScale",           new JsonPrimitive(this.sunScale)); }
 
         if (this.isSurfaceWorld != null)        { obj.add("IsSurfaceWorld",         new JsonPrimitive(this.isSurfaceWorld)); }
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
@@ -523,9 +529,15 @@ public class JEDWorldProperties
     }
 
     @Nullable
-    public Float getSkyBlend()
+    public Float getFogBlendRatio()
     {
-        return this.skyBlend;
+        return this.fogBlendRatio;
+    }
+
+    @Nullable
+    public Float getSkyBlendRatio()
+    {
+        return this.skyBlendRatio;
     }
 
     @Nullable
@@ -541,18 +553,17 @@ public class JEDWorldProperties
     }
 
     @Nullable
-    public float getSunScale()
+    public Float getSunScale()
     {
         return this.sunScale;
     }
 
     @Nullable
-    public float getMoonScale()
+    public Float getMoonScale()
     {
         return this.moonScale;
     }
 
-    
     @Nullable
     public Boolean canRespawnHere()
     {

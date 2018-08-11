@@ -34,19 +34,22 @@ public class ClientUtils
         }
         else
         {
-            int skyRenderType   = JEDJsonUtils.hasInteger(obj, "SkyRenderType")   ? JEDJsonUtils.getInteger(obj, "SkyRenderType")   : 0;
+            int skyRenderType = JEDJsonUtils.hasInteger(obj, "SkyRenderType") ? JEDJsonUtils.getInteger(obj, "SkyRenderType") : 0;
+
             if (skyRenderType != 0)
             {
-                SkySettings skySettings = new SkySettings();
                 int skyDisableFlags = JEDJsonUtils.hasInteger(obj, "SkyDisableFlags") ? JEDJsonUtils.getInteger(obj, "SkyDisableFlags") : 0;
-                skySettings.disableSun = (skyDisableFlags & 0x01) != 0;
-                skySettings.disableMoon = (skyDisableFlags & 0x02) != 0;
+                SkySettings skySettings = new SkySettings();
+
+                skySettings.disableSun   = (skyDisableFlags & 0x01) != 0;
+                skySettings.disableMoon  = (skyDisableFlags & 0x02) != 0;
                 skySettings.disableStars = (skyDisableFlags & 0x04) != 0;
-                skySettings.SunScale = JEDJsonUtils.hasInteger(obj, "SunScale") ? MathHelper.clamp(JEDJsonUtils.getFloat(obj, "SunScale"), 0.0f, 16.0f ): 1.0f;
-                skySettings.MoonScale = JEDJsonUtils.hasInteger(obj, "MoonScale") ? MathHelper.clamp(JEDJsonUtils.getFloat(obj, "MoonScale"), 0.0f, 16.0f ) : 1.0f;
-                skySettings.SunColor = JEDJsonUtils.hasString(obj, "SunColor") ? JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")) : new Vec3d(1.0, 1.0, 1.0);
-                skySettings.MoonColor = JEDJsonUtils.hasString(obj, "MoonColor") ? JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")) : new Vec3d(1.0, 1.0, 1.0);
-            	
+
+                skySettings.sunScale  = JEDJsonUtils.hasFloat(obj, "SunScale")   ? MathHelper.clamp(JEDJsonUtils.getFloat(obj, "SunScale"), 0.0f, 16.0f ): 1.0f;
+                skySettings.moonScale = JEDJsonUtils.hasFloat(obj, "MoonScale")  ? MathHelper.clamp(JEDJsonUtils.getFloat(obj, "MoonScale"), 0.0f, 16.0f ) : 1.0f;
+                skySettings.sunColor  = JEDJsonUtils.hasString(obj, "SunColor")  ? JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")) : new Vec3d(1.0, 1.0, 1.0);
+                skySettings.moonColor = JEDJsonUtils.hasString(obj, "MoonColor") ? JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")) : new Vec3d(1.0, 1.0, 1.0);
+
                 provider.setSkyRenderer(new SkyRenderer(skyRenderType, skySettings));
                 success = true;
             }
