@@ -14,15 +14,16 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean unregister;
     private boolean disableTeleportingFrom;
     private boolean disableTeleportingTo;
-    private boolean isTemporaryDimension = false;
+    private boolean isTemporaryDimension;
     private boolean normalBiomes;
     private boolean shouldLoadOnStart;
-    private String biome; // if != null, then use BiomeProviderSingle with this biome
-    private String worldTemplate;
-    private JsonObject jedTag;
-    private JsonObject worldInfoJson;
-    private JsonObject oneTimeWorldInfoJson;
-    private DimensionTypeEntry dimensionTypeEntry;
+    @Nullable private String biome; // if != null, then use BiomeProviderSingle with this biome
+    @Nullable private String worldTemplate;
+    @Nullable private JsonObject jedTag;
+    @Nullable private JsonObject worldInfoJson;
+    @Nullable private JsonObject oneTimeWorldInfoJson;
+    @Nullable private JsonObject spawnStructureJson;
+    @Nullable private DimensionTypeEntry dimensionTypeEntry;
 
     public DimensionConfigEntry(int id)
     {
@@ -97,6 +98,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.getDimensionTypeEntry() != null;
     }
 
+    @Nullable
     public DimensionTypeEntry getDimensionTypeEntry()
     {
         return this.dimensionTypeEntry;
@@ -117,6 +119,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public JsonObject getOneTimeWorldInfoJson()
     {
         return this.oneTimeWorldInfoJson;
+    }
+
+    @Nullable
+    public JsonObject getSpawnStructureJson()
+    {
+        return this.spawnStructureJson;
     }
 
     public void writeToByteBuf(ByteBuf buf)
@@ -171,8 +179,9 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             entry.setDimensionTypeEntry(DimensionTypeEntry.fromJson(dimension, objDimType));
         }
 
-        entry.worldInfoJson =        JEDJsonUtils.getNestedObject(obj, "worldinfo", false);
-        entry.oneTimeWorldInfoJson = JEDJsonUtils.getNestedObject(obj, "worldinfo_onetime", false);
+        entry.worldInfoJson         = JEDJsonUtils.getNestedObject(obj, "worldinfo", false);
+        entry.oneTimeWorldInfoJson  = JEDJsonUtils.getNestedObject(obj, "worldinfo_onetime", false);
+        entry.spawnStructureJson    = JEDJsonUtils.getNestedObject(obj, "spawn_structure", false);
 
         if (obj.has("jed") && obj.get("jed").isJsonObject())
         {
@@ -256,6 +265,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         if (this.oneTimeWorldInfoJson != null)
         {
             jsonEntry.add("worldinfo_onetime",  JEDJsonUtils.deepCopy(this.oneTimeWorldInfoJson));
+        }
+
+        if (this.spawnStructureJson != null)
+        {
+            jsonEntry.add("spawn_structure",  JEDJsonUtils.deepCopy(this.spawnStructureJson));
         }
 
         return jsonEntry;

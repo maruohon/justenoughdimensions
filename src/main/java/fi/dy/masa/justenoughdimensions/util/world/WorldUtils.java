@@ -9,6 +9,7 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import com.google.gson.JsonObject;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
@@ -40,6 +41,9 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraft.world.gen.feature.WorldGeneratorBonusChest;
+import net.minecraft.world.gen.structure.template.PlacementSettings;
+import net.minecraft.world.gen.structure.template.Template;
+import net.minecraft.world.gen.structure.template.TemplateManager;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -52,6 +56,8 @@ import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
 import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
+import fi.dy.masa.justenoughdimensions.config.StructurePlacement;
+import fi.dy.masa.justenoughdimensions.config.StructurePlacement.StructureType;
 import fi.dy.masa.justenoughdimensions.event.DataTracker;
 import fi.dy.masa.justenoughdimensions.network.MessageSyncWorldProperties;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
@@ -317,6 +323,7 @@ public class WorldUtils
             if (isDimensionInit)
             {
                 findAndSetWorldSpawn(world);
+                placeSpawnStructure(world);
             }
         }
     }
@@ -816,6 +823,159 @@ public class WorldUtils
                 break;
             }
         }
+    }
+
+    private static void loadChunks(World world, int chunkX1, int chunkZ1, int chunkX2, int chunkZ2)
+    {
+        final int xStart = Math.min(chunkX1, chunkX2);
+        final int zStart = Math.min(chunkZ1, chunkZ2);
+        final int xEnd = Math.max(chunkX1, chunkX2);
+        final int zEnd = Math.max(chunkZ1, chunkZ2);
+        final int dimension = world.provider.getDimension();
+
+        JustEnoughDimensions.logInfo("Attempting to load chunks [{},{}] to [{},{}] in dimension {}", xStart, zStart, xEnd, zEnd, dimension);
+
+        for (int x = xStart; x <= xEnd; x++)
+        {
+            for (int z = zStart; z <= zEnd; z++)
+            {
+                if (world.isBlockLoaded(new BlockPos(x << 4, 0, z << 4)) == false)
+                {
+                    //JustEnoughDimensions.logInfo("Loading chunk [{},{}] in dimension {}", x, z, dimension);
+                    world.getChunk(x, z);
+                }
+            }
+        }
+    }
+
+    private static void loadChunks(World world, BlockPos pos, BlockPos size, int expand)
+    {
+        int cx1 = (pos.getX() - expand) >> 4;
+        int cz1 = (pos.getZ() - expand) >> 4;
+        int cx2 = (pos.getX() + size.getX() + expand) >> 4;
+        int cz2 = (pos.getZ() + size.getZ() + expand) >> 4;
+
+        WorldUtils.loadChunks(world, cx1, cz1, cx2, cz2);
+    }
+
+    private static void placeSpawnStructure(World world)
+    {
+        final int dimension = world.provider.getDimension();
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
+
+        if (entry != null)
+        {
+            JsonObject spawnStructureJson = entry.getSpawnStructureJson();
+
+            if (spawnStructureJson != null)
+            {
+                StructurePlacement placement = StructurePlacement.fromJson(spawnStructureJson);
+
+                if (placement != null)
+                {
+                    MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+                    StructureType type = StructureType.fromFileName(placement.getFile().getName());
+                    BlockPos pos = world.getSpawnPoint().add(placement.getOffset());
+                    boolean success = false;
+
+                    if (type == StructureType.STRUCTURE)
+                    {
+                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn structure");
+                        success = tryPlaceVanillaStructure(server, world, pos, placement);
+                    }
+                    else if (type == StructureType.SCHEMATIC)
+                    {
+                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn schematic");
+                        success = tryPlaceSchematic(server, world, pos, placement);
+                    }
+                    else if (type == StructureType.INVALID)
+                    {
+                        JustEnoughDimensions.logger.warn("WorldUtils.placeSpawnStructure: Invalid structure type '{}'", placement.getFile().getAbsolutePath());
+                    }
+
+                    if (success)
+                    {
+                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Successfully placed the spawn structure in dimension {}", dimension);
+                    }
+                    else
+                    {
+                        JustEnoughDimensions.logger.warn("WorldUtils.placeSpawnStructure: Failed to place the spawn structure in dimension {}", dimension);
+                    }
+                }
+                else
+                {
+                    JustEnoughDimensions.logger.warn("WorldUtils.placeSpawnStructure: Spawn structure defined but failed to load in dimension {}", dimension);
+                }
+            }
+        }
+    }
+
+    private static boolean tryPlaceVanillaStructure(MinecraftServer server, World world, BlockPos pos, StructurePlacement placement)
+    {
+        File file = placement.getFile();
+
+        if (file.exists() == false)
+        {
+            return false;
+        }
+
+        String name = file.getName();
+        name = name.substring(0, name.lastIndexOf("."));
+        Template template = getTemplateManager().getTemplate(server, new ResourceLocation(name));
+
+        if (template != null)
+        {
+            PlacementSettings placementSettings = new PlacementSettings();
+            placementSettings.setRotation(placement.getRotation());
+            placementSettings.setMirror(placement.getMirror());
+            placementSettings.setReplacedBlock(Blocks.STRUCTURE_VOID);
+
+            if (placement.isCentered())
+            {
+                BlockPos size = Template.transformedBlockPos(placementSettings, template.getSize());
+                pos = pos.add(-(size.getX() / 2), 0, -(size.getZ() / 2));
+            }
+
+            WorldUtils.loadChunks(world, pos, template.getSize(), 16);
+            template.addBlocksToWorld(world, pos, placementSettings, 0x12);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean tryPlaceSchematic(MinecraftServer server, World world, BlockPos pos, StructurePlacement placement)
+    {
+        File file = new File(StructurePlacement.getStructureDirectory(), placement.getFile().getName());
+        Schematic schematic = Schematic.createFromFile(file);
+
+        if (schematic != null)
+        {
+            PlacementSettings placementSettings = new PlacementSettings();
+            placementSettings.setRotation(placement.getRotation());
+            placementSettings.setMirror(placement.getMirror());
+            placementSettings.setReplacedBlock(Blocks.STRUCTURE_VOID);
+            placementSettings.setIgnoreEntities(false);
+
+            if (placement.isCentered())
+            {
+                BlockPos size = Template.transformedBlockPos(placementSettings, schematic.getSize());
+                pos = pos.add(-(size.getX() / 2), 0, -(size.getZ() / 2));
+            }
+
+            WorldUtils.loadChunks(world, pos, schematic.getSize(), 16);
+            schematic.placeSchematicToWorld(world, pos, placementSettings, 2);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static TemplateManager getTemplateManager()
+    {
+        return new TemplateManager(StructurePlacement.getStructureDirectory().toString(), FMLCommonHandler.instance().getDataFixer());
     }
 
     /**

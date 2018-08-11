@@ -76,6 +76,11 @@ public class DimensionConfig
         return instance;
     }
 
+    public File getGlobalJEDConfigDir()
+    {
+        return this.configDirJED;
+    }
+
     public Collection<DimensionConfigEntry> getRegisteredDimensions()
     {
         List<DimensionConfigEntry> list = new ArrayList<>();
