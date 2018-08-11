@@ -53,6 +53,7 @@ public class JEDWorldProperties
     private int skyDisableFlags;
     private int skyRenderType;
     private int voidTeleportInterval = 40;
+
     private float[] customLightBrightnessTable = null;
     private boolean hasPerBiomeFog = false;
     private final IdentityHashMap<Biome, Boolean> foggyBiomes = new IdentityHashMap<>();
@@ -78,7 +79,13 @@ public class JEDWorldProperties
 
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
+    private Vec3d moonColor = null;
     private Vec3d skyColor = null;
+    private Vec3d sunColor = null;
+
+    private Float skyBlend = null;
+    private Float moonScale = null;
+    private Float sunScale = null;
 
     private String cloudRenderer = null;
     private String skyRenderer = null;
@@ -206,9 +213,15 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "MusicType"))           { this.musicType            = JEDJsonUtils.getString(obj, "MusicType"); }
         if (JEDJsonUtils.hasString(obj, "WorldProviderOverride")) { this.worldProviderOverrideClass = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
 
-        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
-        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
         if (JEDJsonUtils.hasString(obj, "CloudColor"))  { this.cloudColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "MoonColor"))   { this.moonColor    = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")); }
+        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
+        if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
+
+        if (JEDJsonUtils.hasInteger(obj, "MoonScale"))  { this.moonScale   = JEDJsonUtils.getFloat(obj, "MoonScale"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyBlend"))   { this.skyBlend    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
+        if (JEDJsonUtils.hasInteger(obj, "SunScale"))   { this.sunScale    = JEDJsonUtils.getFloat(obj, "SunScale"); }
 
         if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
         {
@@ -330,6 +343,12 @@ public class JEDWorldProperties
         if (this.hasXZFog != null)          { obj.add("HasXZFog",           new JsonPrimitive(this.hasXZFog)); }
         if (this.horizon != null)           { obj.add("Horizon",            new JsonPrimitive(this.horizon)); }
         if (this.musicType != null)         { obj.add("MusicType",          new JsonPrimitive(this.musicType)); }
+
+        if (this.skyBlend != null)          { obj.add("SkyBlend",           new JsonPrimitive(this.skyBlend)); }
+        if (this.sunColor != null)          { obj.add("SunColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.sunColor))); }
+        if (this.moonColor != null)         { obj.add("MoonColor",          new JsonPrimitive(JEDStringUtils.colorToHexString(this.moonColor))); }
+        if (this.sunScale != null)          { obj.add("SunScale",           new JsonPrimitive(this.sunScale)); }
+        if (this.moonScale != null)         { obj.add("MoonScale",          new JsonPrimitive(this.moonScale)); }
 
         if (this.isSurfaceWorld != null)        { obj.add("IsSurfaceWorld",         new JsonPrimitive(this.isSurfaceWorld)); }
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
@@ -503,6 +522,37 @@ public class JEDWorldProperties
         return this.cloudColor;
     }
 
+    @Nullable
+    public Float getSkyBlend()
+    {
+        return this.skyBlend;
+    }
+
+    @Nullable
+    public Vec3d getSunColor()
+    {
+        return this.sunColor;
+    }
+
+    @Nullable
+    public Vec3d getMoonColor()
+    {
+        return this.moonColor;
+    }
+
+    @Nullable
+    public float getSunScale()
+    {
+        return this.sunScale;
+    }
+
+    @Nullable
+    public float getMoonScale()
+    {
+        return this.moonScale;
+    }
+
+    
     @Nullable
     public Boolean canRespawnHere()
     {
