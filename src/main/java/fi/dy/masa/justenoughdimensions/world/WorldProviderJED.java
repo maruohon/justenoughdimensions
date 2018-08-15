@@ -631,13 +631,6 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         float celestialAngleRadians = MathHelper.cos(celestialAngle * ((float) Math.PI * 2F)) * 2.0F + 0.5F;
         celestialAngleRadians = MathHelper.clamp(celestialAngleRadians, 0.0F, 1.0F);
 
-        Float fogBlend = this.properties.getFogBlendRatio();
-        float blendRatio = fogBlend != null ? MathHelper.clamp(fogBlend.floatValue(), 0.0f, 1.0f) : 0.0f;
-
-        float r = (float) fogColor.x * (celestialAngleRadians * 0.94F + 0.06F) * (1.0f - blendRatio) + (float) fogColor.x * blendRatio;
-        float g = (float) fogColor.y * (celestialAngleRadians * 0.94F + 0.06F) * (1.0f - blendRatio) + (float) fogColor.y * blendRatio;
-        float b = (float) fogColor.z * (celestialAngleRadians * 0.91F + 0.09F) * (1.0f - blendRatio) + (float) fogColor.z * blendRatio;
-
-        return new Vec3d(r, g, b);
+        return fogColor.scale(celestialAngleRadians);
     }
 }
