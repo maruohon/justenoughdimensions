@@ -83,7 +83,6 @@ public class JEDWorldProperties
     private Vec3d skyColor = null;
     private Vec3d sunColor = null;
 
-    private Float fogBlendRatio = null;
     private Float skyBlendRatio = null;
     private Float moonScale = null;
     private Float sunScale = null;
@@ -220,7 +219,6 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
         if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
 
-        if (JEDJsonUtils.hasFloat(obj, "FogBlend"))     { this.fogBlendRatio    = JEDJsonUtils.getFloat(obj, "FogBlend"); }
         if (JEDJsonUtils.hasFloat(obj, "SkyBlend"))     { this.skyBlendRatio    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
 
         if (JEDJsonUtils.hasFloat(obj, "MoonScale"))    { this.moonScale        = JEDJsonUtils.getFloat(obj, "MoonScale"); }
@@ -350,7 +348,6 @@ public class JEDWorldProperties
         if (this.skyColor != null)          { obj.add("SkyColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.skyColor))); }
         if (this.sunColor != null)          { obj.add("SunColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.sunColor))); }
 
-        if (this.fogBlendRatio != null)     { obj.add("FogBlend",           new JsonPrimitive(this.fogBlendRatio)); }
         if (this.skyBlendRatio != null)     { obj.add("SkyBlend",           new JsonPrimitive(this.skyBlendRatio)); }
 
         if (this.moonScale != null)         { obj.add("MoonScale",          new JsonPrimitive(this.moonScale)); }
@@ -526,12 +523,6 @@ public class JEDWorldProperties
     public Vec3d getCloudColor()
     {
         return this.cloudColor;
-    }
-
-    @Nullable
-    public Float getFogBlendRatio()
-    {
-        return this.fogBlendRatio;
     }
 
     @Nullable
