@@ -8,6 +8,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldProvider;
 import net.minecraftforge.client.IRenderHandler;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import fi.dy.masa.justenoughdimensions.client.render.DummyRenderer;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer;
 import fi.dy.masa.justenoughdimensions.client.render.SkyRenderer.SkySettings;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
@@ -79,22 +80,31 @@ public class ClientUtils
     {
         try
         {
-            @SuppressWarnings("unchecked")
-            Class<? extends IRenderHandler> clazz = (Class<? extends IRenderHandler>) Class.forName(name);
+            IRenderHandler renderer = null;
 
-            if (clazz != null)
+            if ("DummyRenderer".equals(name))
             {
-                IRenderHandler renderer = clazz.newInstance();
+                renderer = new DummyRenderer();
+            }
+            else
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends IRenderHandler> clazz = (Class<? extends IRenderHandler>) Class.forName(name);
 
-                if (renderer != null)
+                if (clazz != null)
                 {
-                    JustEnoughDimensions.logInfo("WorldUtils.setRenderersOnNonJEDWorld(): Setting a custom {} renderer '{}' for dimension {}",
-                            type.getName(), renderer.getClass().getName(), provider.getDimension());
-
-                    setRenderer(provider, renderer, type);
-
-                    return true;
+                    renderer = clazz.newInstance();
                 }
+            }
+
+            if (renderer != null)
+            {
+                JustEnoughDimensions.logInfo("WorldUtils.setRenderersOnNonJEDWorld(): Setting a custom {} renderer '{}' for dimension {}",
+                        type.getName(), renderer.getClass().getName(), provider.getDimension());
+
+                setRenderer(provider, renderer, type);
+
+                return true;
             }
         }
         catch (Exception e)
