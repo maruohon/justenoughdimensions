@@ -493,6 +493,13 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     }
 
     @Override
+    @Nullable
+    public float[] calcSunriseSunsetColors(float celestialAngle, float partialTicks)
+    {
+        return this.properties.getDisableDawnDuskColors() ? null : super.calcSunriseSunsetColors(celestialAngle, partialTicks);
+    }
+
+    @Override
     public Vec3d getSkyColor(Entity entity, float partialTicks)
     {
         Vec3d skyColor = this.properties.getSkyColor();

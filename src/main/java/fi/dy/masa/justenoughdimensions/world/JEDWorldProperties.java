@@ -37,6 +37,7 @@ public class JEDWorldProperties
     @Nullable
     private JsonObject perBiomeFogData;
 
+    private boolean disableDawnDuskColors;
     private boolean forceGameMode;
     private boolean generateFallbackSpawnBlock;
     private boolean useCustomCelestialAngleRange;
@@ -182,6 +183,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "CanRespawnHere"))         { this.canRespawnHere           = JEDJsonUtils.getBoolean(obj, "CanRespawnHere"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanSpawnPeacefulMobs"))   { this.canSpawnPeacefulMobs     = JEDJsonUtils.getBoolean(obj, "CanSpawnPeacefulMobs"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanSpawnHostiles"))       { this.canSpawnHostiles         = JEDJsonUtils.getBoolean(obj, "CanSpawnHostiles"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableDawnDuskColors"))  { this.disableDawnDuskColors    = JEDJsonUtils.getBoolean(obj, "DisableDawnDuskColors"); }
         if (JEDJsonUtils.hasBoolean(obj, "HasSkyLight"))            { this.hasSkyLight              = JEDJsonUtils.getBoolean(obj, "HasSkyLight"); }
         if (JEDJsonUtils.hasBoolean(obj, "IsSurfaceWorld"))         { this.isSurfaceWorld           = JEDJsonUtils.getBoolean(obj, "IsSurfaceWorld"); }
         if (JEDJsonUtils.hasBoolean(obj, "IgnoreSpawnSuitability")) { this.ignoreSpawnSuitability   = JEDJsonUtils.getBoolean(obj, "IgnoreSpawnSuitability"); }
@@ -336,6 +338,7 @@ public class JEDWorldProperties
         if (this.weatherRenderer != null)   { obj.add("WeatherRenderer",    new JsonPrimitive(this.weatherRenderer)); }
         if (this.skyRenderType != 0)        { obj.add("SkyRenderType",      new JsonPrimitive(this.skyRenderType)); }
         if (this.skyDisableFlags != 0)      { obj.add("SkyDisableFlags",    new JsonPrimitive(this.skyDisableFlags)); }
+        if (this.disableDawnDuskColors)     { obj.add("DisableDawnDuskColors", new JsonPrimitive(this.disableDawnDuskColors)); }
         if (this.useCustomDayCycle)         { obj.add("CustomDayCycle",     new JsonPrimitive(this.useCustomDayCycle)); }
         if (this.hasSkyLight != null)       { obj.add("HasSkyLight",        new JsonPrimitive(this.hasSkyLight)); }
         if (this.hasXZFog != null)          { obj.add("HasXZFog",           new JsonPrimitive(this.hasXZFog)); }
@@ -425,6 +428,11 @@ public class JEDWorldProperties
         }
 
         return tagList;
+    }
+
+    public boolean getDisableDawnDuskColors()
+    {
+        return this.disableDawnDuskColors;
     }
 
     public boolean getForceGameMode()
