@@ -18,6 +18,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
+import fi.dy.masa.justenoughdimensions.util.EntityUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
@@ -52,7 +53,7 @@ public class DataTracker
 
     public void playerLoginOrRespawn(EntityPlayer playerIn)
     {
-        if (playerIn.getClass() == EntityPlayerMP.class)
+        if (EntityUtils.isValidPlayerMP(playerIn))
         {
             PlayerData data = this.playerData.get(playerIn.getUniqueID());
 
@@ -86,7 +87,7 @@ public class DataTracker
 
         // If players first join into a ForceGameMode dimension, set a "normal game mode"
         // for them from the main configuration.
-        if (player.getClass() == EntityPlayerMP.class &&
+        if (EntityUtils.isValidPlayerMP(player) &&
             this.dimensionHasForcedGameMode(player.dimension) &&
             this.playerData.containsKey(uuid) == false)
         {
@@ -108,7 +109,7 @@ public class DataTracker
      */
     public void playerChangedDimension(EntityPlayer playerIn, int dimFrom, int dimTo)
     {
-        if (playerIn.getClass() == EntityPlayerMP.class)
+        if (EntityUtils.isValidPlayerMP(playerIn))
         {
             this.storePlayerDimension(playerIn);
 
