@@ -255,14 +255,15 @@ public class JEDEventHandler
     public void onPlayerLoadingEvent(net.minecraftforge.event.entity.player.PlayerEvent.LoadFromFile event)
     {
         // No player file yet, so this is the player's first time joining this server/world
-        if (Configs.enableInitialSpawnDimensionOverride && new File(event.getPlayerDirectory(), event.getPlayerUUID() + ".dat").exists() == false)
+        if (Configs.enableInitialSpawnDimensionOverride &&
+            (new File(event.getPlayerDirectory(), event.getPlayerUUID() + ".dat")).exists() == false)
         {
             World world = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(Configs.initialSpawnDimensionId);
+            EntityPlayer player = event.getEntityPlayer();
 
-            if (world != null)
+            if (world != null && Configs.initialSpawnDimensionId != player.dimension)
             {
                 // Set the player's initial spawn dimension, and move them to the world spawn
-                EntityPlayer player = event.getEntityPlayer();
                 player.dimension = Configs.initialSpawnDimensionId;
                 BlockPos pos;
 

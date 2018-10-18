@@ -54,9 +54,11 @@ public class DataTracker
     {
         if (playerIn.getClass() == EntityPlayerMP.class)
         {
-            if (this.playerData.containsKey(playerIn.getUniqueID()))
+            PlayerData data = this.playerData.get(playerIn.getUniqueID());
+
+            if (data != null)
             {
-                int dimFrom = this.playerData.get(playerIn.getUniqueID()).dimension;
+                int dimFrom = data.dimension;
                 int dimTo = playerIn.getEntityWorld().provider.getDimension();
 
                 if (dimFrom != dimTo)
@@ -88,7 +90,9 @@ public class DataTracker
             this.dimensionHasForcedGameMode(player.dimension) &&
             this.playerData.containsKey(uuid) == false)
         {
-            this.getOrCreatePlayerData(uuid).normalGameMode = Configs.normalGameMode;
+            PlayerData data = this.getOrCreatePlayerData(uuid);
+            data.normalGameMode = Configs.normalGameMode;
+            data.dimension = player.dimension;
             this.dirty = true;
 
             JustEnoughDimensions.logInfo("DataTracker: Set the \"normal game mode\" of player '{}' to '{}' after their initial join to a ForceGameMode dimension {}",
