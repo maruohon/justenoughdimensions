@@ -418,6 +418,8 @@ public class CommandJED extends CommandBase
 
                 JustEnoughDimensions.logger.info("DimensionType.toString(): {}", dimType.toString());
                 JustEnoughDimensions.logger.info("Seed: {}", world.getWorldInfo().getSeed());
+                JustEnoughDimensions.logger.info("getSpawnPoint(): {}", world.getSpawnPoint());
+                JustEnoughDimensions.logger.info("getSpawnCoordinate(): {}", world.provider.getSpawnCoordinate());
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
                 JustEnoughDimensions.logger.info("WorldType: '{}' (class: {})", type.getName(), type.getClass().getName());
