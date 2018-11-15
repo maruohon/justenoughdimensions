@@ -87,7 +87,12 @@ public class DimensionConfig
 
         for (int dim : this.registeredDimensions)
         {
-            list.add(this.dimensions.get(dim));
+            DimensionConfigEntry entry = this.dimensions.get(dim);
+
+            if (entry != null)
+            {
+                list.add(entry);
+            }
         }
 
         return list;
