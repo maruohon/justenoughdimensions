@@ -1,20 +1,27 @@
 package fi.dy.masa.justenoughdimensions.world;
 
+import java.lang.reflect.Field;
 import javax.annotation.Nullable;
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.WorldProviderEnd;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.ClientUtils;
+import fi.dy.masa.justenoughdimensions.util.world.DragonFightManagerDummy;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
@@ -22,6 +29,8 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
+    private static final Field field_dragonFightManager = ReflectionHelper.findField(WorldProviderEnd.class, "field_186064_g", "dragonFightManager");
+
     protected JEDWorldProperties properties;
     private boolean worldInfoSet;
     protected VoidTeleportData voidTeleport = null;
@@ -52,6 +61,36 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
 
             this.skyTeleport =  VoidTeleportData.fromJson(this.properties.getNestedObject("sky_teleport"), this.getDimension());
             this.voidTeleport = VoidTeleportData.fromJson(this.properties.getNestedObject("void_teleport"), this.getDimension());
+
+            if (this.world.isRemote == false && this.properties.getDisableDragon())
+            {
+                NBTTagCompound tag = this.world.getWorldInfo().getDimensionData(dimension);
+
+                try
+                {
+                    JustEnoughDimensions.logInfo("Trying to override the DragonFightManager in dimension {}...", dimension);
+                    field_dragonFightManager.set(this, new DragonFightManagerDummy((WorldServer) this.world, tag.getCompoundTag("DragonFight")));
+                    JustEnoughDimensions.logInfo("Overrode the DragonFightManager with '{}'", DragonFightManagerDummy.class.getName());
+                }
+                catch (Exception e)
+                {
+                    JustEnoughDimensions.logger.warn("Failed to override the DragonFightManager in dimension {}", dimension);
+                }
+            }
+        }
+    }
+
+    @Override
+    public IChunkGenerator createChunkGenerator()
+    {
+        if (this.properties.getDisableEndSpikes())
+        {
+            JustEnoughDimensions.logInfo("Using '{}' in dimension {}", ChunkGeneratorEndJED.class.getName(), this.getDimension());
+            return new ChunkGeneratorEndJED(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed(), this.getSpawnCoordinate());
+        }
+        else
+        {
+            return super.createChunkGenerator();
         }
     }
 

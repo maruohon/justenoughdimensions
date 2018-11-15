@@ -38,6 +38,8 @@ public class JEDWorldProperties
     private JsonObject perBiomeFogData;
 
     private boolean disableDawnDuskColors;
+    private boolean disableDragon;
+    private boolean disableEndSpikes;
     private boolean forceGameMode;
     private boolean generateFallbackSpawnBlock;
     private boolean useCustomCelestialAngleRange;
@@ -184,6 +186,8 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "CanSpawnPeacefulMobs"))   { this.canSpawnPeacefulMobs     = JEDJsonUtils.getBoolean(obj, "CanSpawnPeacefulMobs"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanSpawnHostiles"))       { this.canSpawnHostiles         = JEDJsonUtils.getBoolean(obj, "CanSpawnHostiles"); }
         if (JEDJsonUtils.hasBoolean(obj, "DisableDawnDuskColors"))  { this.disableDawnDuskColors    = JEDJsonUtils.getBoolean(obj, "DisableDawnDuskColors"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableEnderDragon"))     { this.disableDragon            = JEDJsonUtils.getBoolean(obj, "DisableEnderDragon"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableEndSpikes"))       { this.disableEndSpikes         = JEDJsonUtils.getBoolean(obj, "DisableEndSpikes"); }
         if (JEDJsonUtils.hasBoolean(obj, "HasSkyLight"))            { this.hasSkyLight              = JEDJsonUtils.getBoolean(obj, "HasSkyLight"); }
         if (JEDJsonUtils.hasBoolean(obj, "IsSurfaceWorld"))         { this.isSurfaceWorld           = JEDJsonUtils.getBoolean(obj, "IsSurfaceWorld"); }
         if (JEDJsonUtils.hasBoolean(obj, "IgnoreSpawnSuitability")) { this.ignoreSpawnSuitability   = JEDJsonUtils.getBoolean(obj, "IgnoreSpawnSuitability"); }
@@ -433,6 +437,16 @@ public class JEDWorldProperties
     public boolean getDisableDawnDuskColors()
     {
         return this.disableDawnDuskColors;
+    }
+
+    public boolean getDisableDragon()
+    {
+        return this.disableDragon;
+    }
+
+    public boolean getDisableEndSpikes()
+    {
+        return this.disableEndSpikes;
     }
 
     public boolean getForceGameMode()
