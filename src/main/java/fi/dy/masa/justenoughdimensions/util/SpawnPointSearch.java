@@ -42,16 +42,7 @@ public class SpawnPointSearch
 
         if (JEDJsonUtils.hasString(obj, "type"))
         {
-            String str = obj.get("type").getAsString();
-
-            if (str.equals("cavern"))
-            {
-                type = Type.CAVERN;
-            }
-            else if (str.equals("overworld") == false)
-            {
-                JustEnoughDimensions.logger.warn("SpawnPointSearch: Unknown type '{}' specified, falling back to 'overworld'", str);
-            }
+            type = Type.fromString(obj.get("type").getAsString());
         }
         else
         {
@@ -72,6 +63,22 @@ public class SpawnPointSearch
     public enum Type
     {
         OVERWORLD,
-        CAVERN
+        CAVERN,
+        NONE;
+
+        public static Type fromString(String name)
+        {
+            for (Type type : values())
+            {
+                if (type.name().equalsIgnoreCase(name))
+                {
+                    return type;
+                }
+            }
+
+            JustEnoughDimensions.logger.warn("SpawnPointSearch: Unknown type '{}' specified, falling back to 'overworld'", name);
+
+            return OVERWORLD;
+        }
     }
 }

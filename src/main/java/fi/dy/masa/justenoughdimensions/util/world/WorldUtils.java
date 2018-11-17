@@ -530,8 +530,11 @@ public class WorldUtils
             pos = findSuitableSpawnpoint(world);
         }
 
-        world.setSpawnPoint(pos);
-        JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+        if (world.getSpawnPoint().equals(pos) == false)
+        {
+            world.setSpawnPoint(pos);
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
+        }
 
         WorldBorder border = world.getWorldBorder();
 
@@ -554,15 +557,17 @@ public class WorldUtils
         if (searchType != null)
         {
             JustEnoughDimensions.logInfo("WordlUtils.findSuitableSpawnpoint: Using a customized spawn point search type '{}' for DIM {}",
-                    searchType.toString(), world.provider.getDimension());
+                    searchType.toString(), provider.getDimension());
 
-            if (searchType.getType() == SpawnPointSearch.Type.OVERWORLD)
+            switch (searchType.getType())
             {
-                return findOverworldSpawnpoint(world);
-            }
-            else if (searchType.getType() == SpawnPointSearch.Type.CAVERN)
-            {
-                return findCavernSpawnpoint(world);
+                case OVERWORLD:
+                    return findOverworldSpawnpoint(world);
+                case CAVERN:
+                    return findCavernSpawnpoint(world);
+                case NONE:
+                    JustEnoughDimensions.logInfo("WorldUtils.findSuitableSpawnpoint: SpawnPointSearch.Type == NONE, using the existing spawn point in DIM {}", provider.getDimension());
+                    return world.getSpawnPoint();
             }
         }
 
