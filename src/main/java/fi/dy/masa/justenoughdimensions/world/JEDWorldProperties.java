@@ -45,6 +45,7 @@ public class JEDWorldProperties
     private boolean useCustomCelestialAngleRange;
     private boolean useCustomDayCycle;
     private boolean useCustomDayTimeRange;
+    private boolean worldBorderCenteredOnSpawn;
     private float celestialAngleMin = 0.0f;
     private float celestialAngleMax = 1.0f;
     private int cloudHeight = 128;
@@ -195,6 +196,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "CanDoLightning"))         { this.canDoLightning           = JEDJsonUtils.getBoolean(obj, "CanDoLightning"); }
         if (JEDJsonUtils.hasBoolean(obj, "CanDoRainSnowIce"))       { this.canDoRainSnowIce         = JEDJsonUtils.getBoolean(obj, "CanDoRainSnowIce"); }
         if (JEDJsonUtils.hasBoolean(obj, "ShouldClientCheckLight")) { this.shouldClientCheckLight   = JEDJsonUtils.getBoolean(obj, "ShouldClientCheckLight"); }
+        if (JEDJsonUtils.hasBoolean(obj, "WorldBorderCenteredOnSpawn")) { this.worldBorderCenteredOnSpawn = JEDJsonUtils.getBoolean(obj, "WorldBorderCenteredOnSpawn"); }
         if (JEDJsonUtils.hasBoolean(obj, "GenerateFallbackSpawnBlock")) { this.generateFallbackSpawnBlock = JEDJsonUtils.getBoolean(obj, "GenerateFallbackSpawnBlock"); }
         
         if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
@@ -467,6 +469,11 @@ public class JEDWorldProperties
     public boolean getUseCustomDayTimeRange()
     {
         return this.useCustomDayTimeRange;
+    }
+
+    public boolean shouldWorldBorderBeCenteredOnSpawn()
+    {
+        return this.worldBorderCenteredOnSpawn;
     }
 
     public int getDayLength()

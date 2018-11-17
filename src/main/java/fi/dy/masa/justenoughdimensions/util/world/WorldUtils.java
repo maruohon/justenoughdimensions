@@ -505,6 +505,7 @@ public class WorldUtils
         WorldProvider provider = world.provider;
         NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
         BlockPos pos = world.getSpawnPoint();
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
 
         if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnZ"))
         {
@@ -527,7 +528,7 @@ public class WorldUtils
         else
         {
             JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
-            pos = findSuitableSpawnpoint(world);
+            pos = findSuitableSpawnpoint(world, props);
         }
 
         if (world.getSpawnPoint().equals(pos) == false)
@@ -538,7 +539,13 @@ public class WorldUtils
 
         WorldBorder border = world.getWorldBorder();
 
-        if (border.contains(pos) == false)
+        if (props != null && props.shouldWorldBorderBeCenteredOnSpawn())
+        {
+            pos = world.getSpawnPoint();
+            border.setCenter(pos.getX(), pos.getZ());
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} to the world's spawn", provider.getDimension());
+        }
+        else if (border.contains(pos) == false)
         {
             border.setCenter(pos.getX(), pos.getZ());
             JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
@@ -549,7 +556,12 @@ public class WorldUtils
     @Nonnull
     public static BlockPos findSuitableSpawnpoint(World world)
     {
-        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
+        return findSuitableSpawnpoint(world, JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension()));
+    }
+
+    @Nonnull
+    private static BlockPos findSuitableSpawnpoint(World world, @Nullable JEDWorldProperties props)
+    {
         SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         WorldProvider provider = world.provider;
         BlockPos pos;
