@@ -68,26 +68,26 @@ public class JEDEventHandler
     public void onWorldLoad(WorldEvent.Load event)
     {
         World world = event.getWorld();
+        int dimension = world.provider.getDimension();
+
+        JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", dimension);
 
         if (world.isRemote == false)
         {
-            JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
-
             overrideWorldInfoAndBiomeProvider(world);
 
             WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
             WorldUtils.findAndSetWorldSpawnIfApplicable(world);
+            WorldUtils.centerWorldBorderIfApplicable(world);
 
             if (Configs.enableSeparateWorldBorders)
             {
                 WorldBorderUtils.removeOverworldBorderListener(world);
-                world.getWorldBorder().addListener(new JEDBorderListener(world.provider.getDimension()));
+                world.getWorldBorder().addListener(new JEDBorderListener(dimension));
             }
         }
         else
         {
-            JustEnoughDimensions.logInfo("WorldEvent.Load - DIM: {}", world.provider.getDimension());
-
             WorldUtils.overrideWorldProviderIfApplicable(world);
         }
     }
@@ -95,11 +95,9 @@ public class JEDEventHandler
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event)
     {
-        final int dimension = event.getWorld().provider.getDimension();
-
         if (event.getWorld().isRemote == false)
         {
-            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", dimension);
+            JustEnoughDimensions.logInfo("WorldEvent.Unload - DIM: {}", event.getWorld().provider.getDimension());
             WorldUtils.removeTemporaryWorldIfApplicable(event.getWorld());
         }
     }

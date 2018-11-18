@@ -500,12 +500,26 @@ public class WorldUtils
         }
     }
 
+    public static void centerWorldBorderIfApplicable(World world)
+    {
+        int dimension = world.provider.getDimension();
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dimension);
+        WorldBorder border = world.getWorldBorder();
+        BlockPos spawn = world.getSpawnPoint();
+
+        if (props != null && props.shouldWorldBorderBeCenteredOnSpawn() &&
+            (spawn.getX() != border.getCenterX() || spawn.getZ() != border.getCenterZ()))
+        {
+            border.setCenter(spawn.getX(), spawn.getZ());
+            JustEnoughDimensions.logInfo("WorldUtils.centerWorldBorderIfApplicable: Moved the WorldBorder of dimension {} to the spawn point @ {}", dimension, spawn);
+        }
+    }
+
     public static void findAndSetWorldSpawn(World world)
     {
         WorldProvider provider = world.provider;
         NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
         BlockPos pos = world.getSpawnPoint();
-        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
 
         if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnZ"))
         {
@@ -528,7 +542,7 @@ public class WorldUtils
         else
         {
             JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
-            pos = findSuitableSpawnpoint(world, props);
+            pos = findSuitableSpawnpoint(world);
         }
 
         if (world.getSpawnPoint().equals(pos) == false)
@@ -539,13 +553,7 @@ public class WorldUtils
 
         WorldBorder border = world.getWorldBorder();
 
-        if (props != null && props.shouldWorldBorderBeCenteredOnSpawn())
-        {
-            pos = world.getSpawnPoint();
-            border.setCenter(pos.getX(), pos.getZ());
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} to the world's spawn", provider.getDimension());
-        }
-        else if (border.contains(pos) == false)
+        if (border.contains(pos) == false)
         {
             border.setCenter(pos.getX(), pos.getZ());
             JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
@@ -556,12 +564,7 @@ public class WorldUtils
     @Nonnull
     public static BlockPos findSuitableSpawnpoint(World world)
     {
-        return findSuitableSpawnpoint(world, JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension()));
-    }
-
-    @Nonnull
-    private static BlockPos findSuitableSpawnpoint(World world, @Nullable JEDWorldProperties props)
-    {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
         SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         WorldProvider provider = world.provider;
         BlockPos pos;
