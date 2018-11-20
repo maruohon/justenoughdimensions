@@ -51,6 +51,10 @@ public class VoidTeleport
                 {
                     entity.fallDistance = 0f;
                 }
+                else if (voidTeleport.getFallDistance() >= 0)
+                {
+                    entity.fallDistance = voidTeleport.getFallDistance();
+                }
 
                 CommandTeleportJED.instance().teleportEntityToLocation(entity, data, server);
             }
@@ -67,6 +71,7 @@ public class VoidTeleport
         private final TeleportType type;
         private final int destDimension;
         private double triggerY = -10;
+        private float fallDistance = -1;
         private Vec3d scale;
         private Vec3d offset;
         private Vec3d targetPosition;
@@ -92,6 +97,15 @@ public class VoidTeleport
         public boolean getRemoveFallDamage()
         {
             return this.removeFallDamage;
+        }
+
+        /**
+         * Returns a value < 0 if the value hasn't been set
+         * @return
+         */
+        public float getFallDistance()
+        {
+            return this.fallDistance;
         }
 
         public Vec3d getTargetPosition(Vec3d originalPosition, WorldServer targetWorld)
@@ -193,6 +207,7 @@ public class VoidTeleport
 
                         data.findSurface = JEDJsonUtils.getBooleanOrDefault(obj, "find_surface", false);
                         data.removeFallDamage = JEDJsonUtils.getBooleanOrDefault(obj, "remove_fall_damage", false);
+                        data.fallDistance = JEDJsonUtils.getFloatOrDefault(obj, "fall_distance", -1);
 
                         if (type == TeleportType.SCALED_LOCATION)
                         {
