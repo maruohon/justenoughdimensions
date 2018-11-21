@@ -3,6 +3,7 @@ package fi.dy.masa.justenoughdimensions.util.world;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -51,9 +52,25 @@ public class VoidTeleport
                 {
                     entity.fallDistance = 0f;
                 }
-                else if (voidTeleport.getFallDistance() >= 0)
+                else
                 {
-                    entity.fallDistance = voidTeleport.getFallDistance();
+                    float fallDistance = voidTeleport.getFallDistance() >= 0 ? voidTeleport.getFallDistance() : entity.fallDistance;
+
+                    if (entity instanceof EntityLivingBase)
+                    {
+                        EntityLivingBase living = (EntityLivingBase) entity;
+                        float minHealth = voidTeleport.getMinimumHealthLeft();
+
+                        if (minHealth >= 0)
+                        {
+                            fallDistance = Math.min(fallDistance, (living.getHealth() - minHealth) + 3);
+                        }
+                    }
+
+                    if (fallDistance >= 0)
+                    {
+                        entity.fallDistance = fallDistance;
+                    }
                 }
 
                 CommandTeleportJED.instance().teleportEntityToLocation(entity, data, server);
@@ -75,6 +92,7 @@ public class VoidTeleport
         private Vec3d scale;
         private Vec3d offset;
         private Vec3d targetPosition;
+        private float minHealthLeft = -1;
         private boolean findSurface;
         private boolean removeFallDamage;
 
@@ -106,6 +124,15 @@ public class VoidTeleport
         public float getFallDistance()
         {
             return this.fallDistance;
+        }
+
+        /**
+         * Returns a value < 0 if the value hasn't been set
+         * @return
+         */
+        public float getMinimumHealthLeft()
+        {
+            return this.minHealthLeft;
         }
 
         public Vec3d getTargetPosition(Vec3d originalPosition, WorldServer targetWorld)
@@ -208,6 +235,7 @@ public class VoidTeleport
                         data.findSurface = JEDJsonUtils.getBooleanOrDefault(obj, "find_surface", false);
                         data.removeFallDamage = JEDJsonUtils.getBooleanOrDefault(obj, "remove_fall_damage", false);
                         data.fallDistance = JEDJsonUtils.getFloatOrDefault(obj, "fall_distance", -1);
+                        data.minHealthLeft = JEDJsonUtils.getFloatOrDefault(obj, "minimum_health_left", -1);
 
                         if (type == TeleportType.SCALED_LOCATION)
                         {
