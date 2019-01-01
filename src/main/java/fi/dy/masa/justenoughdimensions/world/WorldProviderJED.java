@@ -529,9 +529,12 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         float lightLevel = MathHelper.cos(this.world.getCelestialAngleRadians(partialTicks)) * 2.0F + 0.5F;
         lightLevel = MathHelper.clamp(lightLevel, 0.0F, 1.0F);
 
-        r = r * lightLevel;
-        g = g * lightLevel;
-        b = b * lightLevel;
+        Float lightBlend = this.properties.getSkyColorLightBlendRatio();
+        float lightBlendRatio = lightBlend != null ? MathHelper.clamp(lightBlend.floatValue(), 0.0f, 1.0f) : 1.0f;
+
+        r = r * lightLevel * lightBlendRatio + r * (1.0f - lightBlendRatio);
+        g = g * lightLevel * lightBlendRatio + g * (1.0f - lightBlendRatio);
+        b = b * lightLevel * lightBlendRatio + b * (1.0f - lightBlendRatio);
 
         float rain = this.world.getRainStrength(partialTicks);
 

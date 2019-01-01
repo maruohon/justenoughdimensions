@@ -90,6 +90,7 @@ public class JEDWorldProperties
     private Float skyBlendRatio = null;
     private Float moonScale = null;
     private Float sunScale = null;
+    private Float skyColorLightBlendRatio = null;
 
     private String cloudRenderer = null;
     private String skyRenderer = null;
@@ -228,9 +229,9 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
 
         if (JEDJsonUtils.hasFloat(obj, "SkyBlend"))     { this.skyBlendRatio    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
-
         if (JEDJsonUtils.hasFloat(obj, "MoonScale"))    { this.moonScale        = JEDJsonUtils.getFloat(obj, "MoonScale"); }
         if (JEDJsonUtils.hasFloat(obj, "SunScale"))     { this.sunScale         = JEDJsonUtils.getFloat(obj, "SunScale"); }
+        if (JEDJsonUtils.hasFloat(obj, "SkyLightBlend")){ this.skyColorLightBlendRatio = JEDJsonUtils.getFloat(obj, "SkyLightBlend"); }
 
         if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
         {
@@ -358,9 +359,9 @@ public class JEDWorldProperties
         if (this.sunColor != null)          { obj.add("SunColor",           new JsonPrimitive(JEDStringUtils.colorToHexString(this.sunColor))); }
 
         if (this.skyBlendRatio != null)     { obj.add("SkyBlend",           new JsonPrimitive(this.skyBlendRatio)); }
-
         if (this.moonScale != null)         { obj.add("MoonScale",          new JsonPrimitive(this.moonScale)); }
         if (this.sunScale != null)          { obj.add("SunScale",           new JsonPrimitive(this.sunScale)); }
+        if (this.skyColorLightBlendRatio != null) { obj.add("SkyLightBlend", new JsonPrimitive(this.skyColorLightBlendRatio)); }
 
         if (this.isSurfaceWorld != null)        { obj.add("IsSurfaceWorld",         new JsonPrimitive(this.isSurfaceWorld)); }
         if (this.shouldClientCheckLight != null){ obj.add("ShouldClientCheckLight", new JsonPrimitive(this.shouldClientCheckLight)); }
@@ -558,6 +559,12 @@ public class JEDWorldProperties
     public Float getSkyBlendRatio()
     {
         return this.skyBlendRatio;
+    }
+
+    @Nullable
+    public Float getSkyColorLightBlendRatio()
+    {
+        return this.skyColorLightBlendRatio;
     }
 
     @Nullable
