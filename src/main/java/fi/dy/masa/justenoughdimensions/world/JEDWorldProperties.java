@@ -40,6 +40,7 @@ public class JEDWorldProperties
     private boolean disableDawnDuskColors;
     private boolean disableDragon;
     private boolean disableEndSpikes;
+    private boolean dontAdvanceWeatherWhenSleeping;
     private boolean forceGameMode;
     private boolean generateFallbackSpawnBlock;
     private boolean useCustomCelestialAngleRange;
@@ -199,6 +200,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasBoolean(obj, "ShouldClientCheckLight")) { this.shouldClientCheckLight   = JEDJsonUtils.getBoolean(obj, "ShouldClientCheckLight"); }
         if (JEDJsonUtils.hasBoolean(obj, "WorldBorderCenteredOnSpawn")) { this.worldBorderCenteredOnSpawn = JEDJsonUtils.getBoolean(obj, "WorldBorderCenteredOnSpawn"); }
         if (JEDJsonUtils.hasBoolean(obj, "GenerateFallbackSpawnBlock")) { this.generateFallbackSpawnBlock = JEDJsonUtils.getBoolean(obj, "GenerateFallbackSpawnBlock"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DontAdvanceWeatherWhenSleeping")) { this.dontAdvanceWeatherWhenSleeping = JEDJsonUtils.getBoolean(obj, "DontAdvanceWeatherWhenSleeping"); }
         
         if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
         if (JEDJsonUtils.hasInteger(obj, "NightLength"))        { this.nightLength          = JEDJsonUtils.getInteger(obj, "NightLength"); }
@@ -475,6 +477,11 @@ public class JEDWorldProperties
     public boolean shouldWorldBorderBeCenteredOnSpawn()
     {
         return this.worldBorderCenteredOnSpawn;
+    }
+
+    public boolean getDontAdvanceWeatherWhenSleeping()
+    {
+        return this.dontAdvanceWeatherWhenSleeping;
     }
 
     public int getDayLength()

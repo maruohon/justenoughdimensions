@@ -265,6 +265,15 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         super.setWorldTime(time);
     }
 
+    @Override
+    public void resetRainAndThunder()
+    {
+        if (this.properties.getDontAdvanceWeatherWhenSleeping() == false)
+        {
+            super.resetRainAndThunder();
+        }
+    }
+
     public static long getNewWorldTime(long nextTime, long currentTime, JEDWorldProperties properties)
     {
         // The time is incremented normally (ie. not using '/time set' etc.)
