@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
+import fi.dy.masa.justenoughdimensions.client.render.ShaderCheck;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.command.CommandTeleportJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
@@ -61,6 +62,7 @@ public class JustEnoughDimensions
 
         Configs.loadConfigsFromMainConfigFile(event.getModConfigurationDirectory());
         PacketHandler.init();
+        ShaderCheck.init();
         proxy.registerEventHandlers();
         channels = NetworkRegistry.INSTANCE.newChannel("JEDChannel", DimensionSyncChannelHandler.instance);
 
