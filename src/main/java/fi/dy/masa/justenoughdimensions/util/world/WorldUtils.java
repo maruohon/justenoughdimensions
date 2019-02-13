@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nonnull;
@@ -422,6 +423,12 @@ public class WorldUtils
                                 dimension, biomeProvider.getClass().getName(), entry.getBiome());
                     }
                 }
+                else if (entry.getBiomeProvider() != null)
+                {
+                    JustEnoughDimensions.logInfo("WorldUtils.overrideBiomeProvider: Trying to create a BiomeProvider for dimension {} from the class name '{}'",
+                            dimension, entry.getBiomeProvider());
+                    biomeProvider = createBiomeProviderForName(entry.getBiomeProvider(), world);
+                }
                 else if (entry.shouldUseNormalBiomes() && world.provider.getBiomeProvider() instanceof BiomeProviderSingle)
                 {
                     biomeProvider = new BiomeProvider(world.getWorldInfo());
@@ -443,6 +450,36 @@ public class WorldUtils
                 }
             }
         }
+    }
+
+    @Nullable
+    public static BiomeProvider createBiomeProviderForName(String name, World world)
+    {
+        try
+        {
+            @SuppressWarnings("unchecked")
+            Class<? extends BiomeProvider> clazz = (Class<? extends BiomeProvider>) Class.forName(name);
+            BiomeProvider provider = clazz.getConstructor(WorldInfo.class).newInstance(world.getWorldInfo());
+
+            try
+            {
+                // This is for Painted Biomes compatibility as of PB 0.6.0
+                Method method = clazz.getDeclaredMethod("init", World.class);
+                method.invoke(provider, world);
+            }
+            catch (Exception e)
+            {
+                // ignore
+            }
+
+            return provider;
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("WorldUtils.createBiomeProviderForName(): Failed to create a BiomeProvider from class name '{}' ({})", name, e.getClass().getName());
+        }
+
+        return null;
     }
 
     public static void reCreateChunkGenerator(World world, boolean generatorChangedForOverworld)

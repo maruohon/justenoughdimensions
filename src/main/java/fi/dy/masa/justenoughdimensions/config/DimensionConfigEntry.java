@@ -18,6 +18,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     private boolean normalBiomes;
     private boolean shouldLoadOnStart;
     @Nullable private String biome; // if != null, then use BiomeProviderSingle with this biome
+    @Nullable private String biomeProvider; // if != null, then try to construct a BiomeProvider by that class name
     @Nullable private String worldTemplate;
     @Nullable private JsonObject jedTag;
     @Nullable private JsonObject worldInfoJson;
@@ -74,6 +75,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     public String getBiome()
     {
         return this.biome;
+    }
+
+    @Nullable
+    public String getBiomeProvider()
+    {
+        return this.biomeProvider;
     }
 
     @Nullable
@@ -170,7 +177,8 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         entry.disableTeleportingFrom = JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_from", false);
         entry.disableTeleportingTo =   JEDJsonUtils.getBooleanOrDefault(obj, "disable_teleporting_to", false);
         entry.isTemporaryDimension =   JEDJsonUtils.getBooleanOrDefault(obj, "temporary_dimension", false);
-        entry.biome = JEDJsonUtils.getStringOrDefault(obj, "biome", null, false);
+        entry.biome         = JEDJsonUtils.getStringOrDefault(obj, "biome", null, false);
+        entry.biomeProvider = JEDJsonUtils.getStringOrDefault(obj, "biomeprovider", null, false);
         entry.worldTemplate = JEDJsonUtils.getStringOrDefault(obj, "world_template", null, false);
 
         if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
@@ -242,6 +250,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("biome", this.biome);
         }
 
+        if (this.biomeProvider != null)
+        {
+            jsonEntry.addProperty("biomeprovider", this.biomeProvider);
+        }
+
         if (this.worldTemplate != null)
         {
             jsonEntry.addProperty("world_template", this.worldTemplate);
@@ -277,10 +290,10 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
 
     public String getDescription()
     {
-        return String.format("{id=%d,override=%s,unregister=%s,load_on_start=%s,biome=%s,world_template=%s," +
+        return String.format("{id=%d,override=%s,unregister=%s,load_on_start=%s,biome=%s,biomeprovider=%s,world_template=%s," +
                              "disable_teleporting_from=%s,disable_teleporting_to=%s,temporary_dimension=%s,DimensionTypeEntry:[%s]}",
-                this.dimension, this.override, this.unregister, this.shouldLoadOnStart, this.biome, this.worldTemplate,
-                this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
+                this.dimension, this.override, this.unregister, this.shouldLoadOnStart, this.biome, this.biomeProvider,
+                this.worldTemplate, this.disableTeleportingFrom, this.disableTeleportingTo, this.isTemporaryDimension,
                 this.dimensionTypeEntry != null ? this.dimensionTypeEntry.getDescription() : "N/A");
     }
 

@@ -83,6 +83,23 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
                     JustEnoughDimensions.logger.warn("Failed to find a biome by the name '{}' for dimension {}", entry.getBiome(), this.getDimension());
                 }
             }
+            else if (entry.getBiomeProvider() != null)
+            {
+                JustEnoughDimensions.logInfo("WorldProviderJED.setBiomeProviderIfConfigured(): Trying to create a BiomeProvider for dimension {} from the class name '{}'",
+                        this.getDimension(), entry.getBiomeProvider());
+                BiomeProvider provider = WorldUtils.createBiomeProviderForName(entry.getBiomeProvider(), this.world);
+
+                if (provider != null)
+                {
+                    this.biomeProvider = provider;
+                    JustEnoughDimensions.logInfo("WorldProviderJED.setBiomeProviderIfConfigured(): BiomeProvider created from the class name '{}'",
+                            entry.getBiomeProvider());
+                }
+                else
+                {
+                    JustEnoughDimensions.logger.warn("Failed to create a BiomeProvider from the class name '{}'", entry.getBiomeProvider());
+                }
+            }
             else if (entry.shouldUseNormalBiomes() && this.biomeProvider instanceof BiomeProviderSingle)
             {
                 this.biomeProvider = new BiomeProvider(this.world.getWorldInfo());
