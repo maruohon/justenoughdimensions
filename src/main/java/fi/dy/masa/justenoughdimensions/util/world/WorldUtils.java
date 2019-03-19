@@ -313,22 +313,6 @@ public class WorldUtils
         }
     }
 
-    public static void findAndSetWorldSpawnIfApplicable(World world)
-    {
-        final int dimension = world.provider.getDimension();
-
-        if (Configs.enableSeparateWorldInfo && DimensionConfig.instance().useCustomWorldInfoFor(dimension))
-        {
-            final boolean isDimensionInit = WorldFileUtils.jedLevelFileExists(world) == false;
-
-            if (isDimensionInit)
-            {
-                findAndSetWorldSpawn(world);
-                placeSpawnStructure(world);
-            }
-        }
-    }
-
     /*
     public static void overrideWorldProviderSettings(World world, WorldProvider provider)
     {
@@ -552,49 +536,64 @@ public class WorldUtils
         }
     }
 
-    public static void findAndSetWorldSpawn(World world)
+    public static void findAndSetWorldSpawnIfApplicable(World world)
     {
-        WorldProvider provider = world.provider;
-        NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, provider.getDimension(), false, false);
-        BlockPos pos = world.getSpawnPoint();
+        if (WorldFileUtils.jedLevelFileExists(world) == false)
+        {
+            findAndSetWorldSpawn(world);
+        }
+    }
+
+    private static void findAndSetWorldSpawn(World world)
+    {
+        final int dimension = world.provider.getDimension();
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dimension);
+        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
+        NBTTagCompound nbt = WorldInfoUtils.getWorldInfoTag(world, dimension, false, false);
+        @Nullable BlockPos newSpawn = null;
 
         if (nbt.hasKey("SpawnX") && nbt.hasKey("SpawnZ"))
         {
             if (nbt.hasKey("SpawnY"))
             {
-                pos = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
+                newSpawn = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
                 JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: An exact spawn point {} defined in the " +
-                                             "dimension config for dimension {}, skipping the search", pos, provider.getDimension());
-                generateFallbackSpawnBlockIfEnabled(world, pos);
+                                             "dimension config for dimension {}, skipping the search", newSpawn, dimension);
+                generateFallbackSpawnBlockIfEnabled(world, newSpawn);
             }
             else
             {
-                pos = new BlockPos(nbt.getInteger("SpawnX"), 72, nbt.getInteger("SpawnZ"));
+                newSpawn = new BlockPos(nbt.getInteger("SpawnX"), 72, nbt.getInteger("SpawnZ"));
                 JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: A spawn point XZ-location 'x = {}, z = {}' defined in the " +
                                              "dimension config for dimension {}, searching for a suitable y-location",
-                                             pos.getX(), pos.getZ(), provider.getDimension());
-                pos = getSuitableSpawnBlockInColumn(world, pos, true, true);
+                                             newSpawn.getX(), newSpawn.getZ(), dimension);
+                newSpawn = getSuitableSpawnBlockInColumn(world, newSpawn, true, true);
             }
         }
-        else
+        else if ((dimension != 0 && Configs.enableSeparateWorldInfo &&
+                  DimensionConfig.instance().useCustomWorldInfoFor(dimension)) ||
+                 (searchType != null && searchType.getType() != SpawnPointSearch.Type.NONE))
         {
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", provider.getDimension());
-            pos = findSuitableSpawnpoint(world);
+            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Trying to find a world spawn for dimension {}...", dimension);
+            newSpawn = findSuitableSpawnpoint(world, searchType);
         }
 
-        if (world.getSpawnPoint().equals(pos) == false)
+        if (newSpawn != null)
         {
-            world.setSpawnPoint(pos);
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", provider.getDimension(), pos);
-        }
+            if (world.getSpawnPoint().equals(newSpawn) == false)
+            {
+                world.setSpawnPoint(newSpawn);
+                JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Set the world spawnpoint of dimension {} to {}", dimension, newSpawn);
+            }
 
-        WorldBorder border = world.getWorldBorder();
+            WorldBorder border = world.getWorldBorder();
 
-        if (border.contains(pos) == false)
-        {
-            border.setCenter(pos.getX(), pos.getZ());
-            JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
-                                         "to the world's spawn, because the spawn was outside the border", provider.getDimension());
+            if (border.contains(newSpawn) == false)
+            {
+                border.setCenter(newSpawn.getX(), newSpawn.getZ());
+                JustEnoughDimensions.logInfo("WorldUtils.findAndSetWorldSpawn: Moved the WorldBorder of dimension {} " +
+                                             "to the world's spawn, because the spawn was outside the border", dimension);
+            }
         }
     }
 
@@ -603,6 +602,13 @@ public class WorldUtils
     {
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
         SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
+
+        return findSuitableSpawnpoint(world, searchType);
+    }
+
+    @Nonnull
+    public static BlockPos findSuitableSpawnpoint(World world, @Nullable SpawnPointSearch searchType)
+    {
         WorldProvider provider = world.provider;
         BlockPos pos;
 
@@ -614,9 +620,9 @@ public class WorldUtils
             switch (searchType.getType())
             {
                 case OVERWORLD:
-                    return findOverworldSpawnpoint(world);
+                    return findOverworldSpawnpoint(world, searchType);
                 case CAVERN:
-                    return findCavernSpawnpoint(world);
+                    return findCavernSpawnpoint(world, searchType);
                 case NONE:
                     JustEnoughDimensions.logInfo("WorldUtils.findSuitableSpawnpoint: SpawnPointSearch.Type == NONE, using the existing spawn point in DIM {}", provider.getDimension());
                     return world.getSpawnPoint();
@@ -640,7 +646,7 @@ public class WorldUtils
                  provider instanceof WorldProviderHell ||
                  provider instanceof WorldProviderHellJED)
         {
-            pos = findCavernSpawnpoint(world);
+            pos = findCavernSpawnpoint(world, searchType);
         }
         else if (world.getWorldInfo().getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
         {
@@ -649,7 +655,7 @@ public class WorldUtils
         // Mostly overworld type dimensions
         else
         {
-            pos = findOverworldSpawnpoint(world);
+            pos = findOverworldSpawnpoint(world, searchType);
         }
 
         generateFallbackSpawnBlockIfEnabled(world, pos);
@@ -658,10 +664,8 @@ public class WorldUtils
     }
 
     @Nonnull
-    private static BlockPos findCavernSpawnpoint(World world)
+    private static BlockPos findCavernSpawnpoint(World world, @Nullable SpawnPointSearch searchType)
     {
-        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world.provider.getDimension());
-        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         @Nullable final Integer yRangeMax = searchType != null ? searchType.getMaxY() : null;
         final int minY = searchType != null && searchType.getMinY() != null ? Math.max(1, searchType.getMinY()) : 30;
         Random random = new Random(world.getSeed());
@@ -712,14 +716,12 @@ public class WorldUtils
     }
 
     @Nonnull
-    private static BlockPos findOverworldSpawnpoint(World world)
+    private static BlockPos findOverworldSpawnpoint(World world, @Nullable SpawnPointSearch searchType)
     {
         WorldProvider provider = world.provider;
         BiomeProvider biomeProvider = provider.getBiomeProvider();
         List<Biome> list = biomeProvider.getBiomesToSpawnIn();
         Random random = new Random(world.getSeed());
-        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(provider.getDimension());
-        SpawnPointSearch searchType = props != null ? props.getSpawnPointSearchType() : null;
         int x = 8;
         int z = 8;
         final int minY = searchType != null && searchType.getMinY() != null ? Math.max(1, searchType.getMinY()) : 1;
@@ -915,12 +917,13 @@ public class WorldUtils
         WorldUtils.loadChunks(world, cx1, cz1, cx2, cz2);
     }
 
-    private static void placeSpawnStructure(World world)
+    public static void placeSpawnStructureIfApplicable(World world)
     {
         final int dimension = world.provider.getDimension();
+        final boolean isDimensionInit = WorldFileUtils.jedLevelFileExists(world) == false;
         DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(dimension);
 
-        if (entry != null)
+        if (isDimensionInit && entry != null)
         {
             JsonObject spawnStructureJson = entry.getSpawnStructureJson();
 

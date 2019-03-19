@@ -284,17 +284,17 @@ public class WorldFileUtils
         info.setBorderLerpTarget(world.getWorldBorder().getTargetSize());
         info.setBorderLerpTime(world.getWorldBorder().getTimeUntilTarget());
 
-        NBTTagCompound rootTag = new NBTTagCompound();
-        NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
-        rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
-
-        if (world.getSaveHandler() instanceof SaveHandler)
-        {
-            FMLCommonHandler.instance().handleWorldDataSave((SaveHandler) world.getSaveHandler(), info, rootTag);
-        }
-
         try
         {
+            NBTTagCompound rootTag = new NBTTagCompound();
+            NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
+            rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
+
+            if (world.getSaveHandler() instanceof SaveHandler)
+            {
+                FMLCommonHandler.instance().handleWorldDataSave((SaveHandler) world.getSaveHandler(), info, rootTag);
+            }
+
             File fileNew = new File(worldDir, JED_LEVEL_FILENAME + "_new");
             File fileOld = new File(worldDir, JED_LEVEL_FILENAME + "_old");
             File fileCurrent = new File(worldDir, JED_LEVEL_FILENAME);
@@ -330,10 +330,7 @@ public class WorldFileUtils
 
     public static void saveCustomWorldInfoToFile(World world)
     {
-        int dimension = world.provider.getDimension();
-
-        if (Configs.enableSeparateWorldInfo && world.isRemote == false &&
-            DimensionConfig.instance().useCustomWorldInfoFor(dimension))
+        if (Configs.enableSeparateWorldInfo && world.isRemote == false)
         {
             saveWorldInfoToFile(world, getWorldDirectory(world));
         }

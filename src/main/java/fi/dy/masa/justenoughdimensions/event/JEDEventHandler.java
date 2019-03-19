@@ -75,9 +75,15 @@ public class JEDEventHandler
         if (world.isRemote == false)
         {
             overrideWorldInfoAndBiomeProvider(world);
-
             WorldFileUtils.createTemporaryWorldMarkerIfApplicable(world);
-            WorldUtils.findAndSetWorldSpawnIfApplicable(world);
+
+            // For the overworld the spawn point search happens from WorldEvent.CreateSpawnPosition
+            if (world.provider.getDimension() != 0)
+            {
+                WorldUtils.findAndSetWorldSpawnIfApplicable(world);
+                WorldUtils.placeSpawnStructureIfApplicable(world);
+            }
+
             WorldUtils.centerWorldBorderIfApplicable(world);
 
             if (Configs.enableSeparateWorldBorders)
@@ -117,15 +123,23 @@ public class JEDEventHandler
         // created dimension, see overrideBiomeProviderAndFindSpawn().
         if (world.provider.getDimension() == 0)
         {
-            WorldUtils.findAndSetWorldSpawn(world);
+            BlockPos origSpawn = world.getSpawnPoint();
 
-            if (event.getSettings().isBonusChestEnabled())
+            WorldUtils.findAndSetWorldSpawnIfApplicable(world);
+            WorldUtils.placeSpawnStructureIfApplicable(world);
+
+            // The spawn point was set/moved
+            if (origSpawn.equals(world.getSpawnPoint()) == false)
             {
-                JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Generating a bonus chest");
-                WorldUtils.createBonusChest(world);
-            }
+                if (event.getSettings().isBonusChestEnabled())
+                {
+                    JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Generating a bonus chest");
+                    WorldUtils.createBonusChest(world);
+                }
 
-            event.setCanceled(true);
+                JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Canceling the normal spawn point search, as JED set the world spawn");
+                event.setCanceled(true);
+            }
         }
     }
 
