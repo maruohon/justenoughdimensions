@@ -175,6 +175,14 @@ public class DimensionConfig
 
         if (dimNBT != null)
         {
+            // Support randomized seeds that get randomized every time the values are applied
+            if (dimNBT.hasKey("RandomSeed", Constants.NBT.TAG_STRING))
+            {
+                dimNBT = dimNBT.copy();
+                dimNBT.removeTag("RandomSeed");
+                dimNBT.setLong("RandomSeed", JustEnoughDimensions.RAND.nextLong());
+            }
+
             tagIn.merge(dimNBT);
         }
     }
@@ -528,17 +536,19 @@ public class DimensionConfig
         if (root.has("dimensions") && root.get("dimensions").isJsonArray())
         {
             JsonArray array = rootElement.getAsJsonObject().get("dimensions").getAsJsonArray();
-            JsonObject object;
             int count = 0;
 
             for (JsonElement el : array)
             {
-                object = el.getAsJsonObject();
-
-                if (object.has("dim") && object.get("dim").isJsonPrimitive())
+                if (el.isJsonObject())
                 {
-                    this.parseDimensionConfigEntry(object.get("dim").getAsInt(), object);
-                    count++;
+                    JsonObject object = el.getAsJsonObject();
+
+                    if (object.has("dim") && object.get("dim").isJsonPrimitive())
+                    {
+                        this.parseDimensionConfigEntry(object.get("dim").getAsInt(), object);
+                        count++;
+                    }
                 }
             }
 
@@ -832,7 +842,15 @@ public class DimensionConfig
             catch (NumberFormatException e)
             {
                 String seedStr = element.getAsString();
-                return new NBTTagLong(seedStr.isEmpty() ? JustEnoughDimensions.RAND.nextLong() : seedStr.hashCode());
+
+                if (seedStr.isEmpty())
+                {
+                    return new NBTTagString("RAND");
+                }
+                else
+                {
+                    return new NBTTagLong(seedStr.hashCode());
+                }
             }
         }
         else if (element.isJsonObject())
