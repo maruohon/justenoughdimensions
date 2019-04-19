@@ -11,8 +11,7 @@ import net.minecraft.world.border.IBorderListener;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.event.JEDBorderListener;
@@ -26,10 +25,10 @@ public class WorldBorderUtils
     {
         try
         {
-            field_WorldBorder_listeners = ReflectionHelper.findField(WorldBorder.class, "field_177758_a", "listeners");
-            field_WorldServerMulti_borderListener = ReflectionHelper.findField(WorldServerMulti.class, "borderListener");
+            field_WorldBorder_listeners = ObfuscationReflectionHelper.findField(WorldBorder.class, "field_177758_a"); // listeners
+            field_WorldServerMulti_borderListener = ObfuscationReflectionHelper.findField(WorldServerMulti.class, "borderListener"); // borderListener
         }
-        catch (UnableToFindFieldException e)
+        catch (Exception e)
         {
             JustEnoughDimensions.logger.error("WorldBorderUtils: Reflection failed!!", e);
         }

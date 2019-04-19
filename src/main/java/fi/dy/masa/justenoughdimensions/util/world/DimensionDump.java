@@ -1,17 +1,13 @@
 package fi.dy.masa.justenoughdimensions.util.world;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import net.minecraft.world.DimensionType;
-import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
 
 public class DimensionDump extends DataDump
 {
-    private static final Field field_worldProvider = ReflectionHelper.findField(DimensionType.class, "field_186077_g", "clazz");
-
     private DimensionDump(int columns)
     {
         super(columns);
@@ -19,7 +15,6 @@ public class DimensionDump extends DataDump
         this.setSort(false);
     }
 
-    @SuppressWarnings("unchecked")
     public static List<String> getFormattedRegisteredDimensionsDump()
     {
         DimensionDump dimensionDump = new DimensionDump(6);
@@ -43,7 +38,7 @@ public class DimensionDump extends DataDump
 
             try
             {
-                worldProviderClass = ((Class<? extends WorldProvider>) field_worldProvider.get(type)).getSimpleName();
+                worldProviderClass = DimensionTypeEntry.getProviderClassFrom(type).getSimpleName();
             }
             catch (Exception e)
             {
@@ -63,7 +58,6 @@ public class DimensionDump extends DataDump
         return dimensionDump.getLines();
     }
 
-    @SuppressWarnings("unchecked")
     public static List<String> getFormattedLoadedDimensionsDump()
     {
         DimensionDump dimensionDump = new DimensionDump(7);
@@ -89,7 +83,7 @@ public class DimensionDump extends DataDump
 
             try
             {
-                worldProviderClass = ((Class<? extends WorldProvider>) field_worldProvider.get(type)).getSimpleName();
+                worldProviderClass = DimensionTypeEntry.getProviderClassFrom(type).getSimpleName();
             }
             catch (Exception e)
             {

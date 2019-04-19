@@ -16,7 +16,7 @@ import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -29,7 +29,7 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {
-    private static final Field field_dragonFightManager = ReflectionHelper.findField(WorldProviderEnd.class, "field_186064_g", "dragonFightManager");
+    private static final Field field_dragonFightManager = ObfuscationReflectionHelper.findField(WorldProviderEnd.class, "field_186064_g"); // dragonFightManager
 
     protected JEDWorldProperties properties;
     private boolean worldInfoSet;

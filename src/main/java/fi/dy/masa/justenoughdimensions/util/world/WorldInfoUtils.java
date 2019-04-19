@@ -11,8 +11,7 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
@@ -27,9 +26,9 @@ public class WorldInfoUtils
     {
         try
         {
-            field_worldInfo = ReflectionHelper.findField(World.class, "field_72986_A", "worldInfo");
+            field_worldInfo = ObfuscationReflectionHelper.findField(World.class, "field_72986_A"); // worldInfo
         }
-        catch (UnableToFindFieldException e)
+        catch (Exception e)
         {
             JustEnoughDimensions.logger.error("WorldInfoUtils: Reflection failed!!", e);
         }

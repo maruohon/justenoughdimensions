@@ -49,8 +49,7 @@ import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToFindFieldException;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.CommandJED;
 import fi.dy.masa.justenoughdimensions.config.Configs;
@@ -82,11 +81,11 @@ public class WorldUtils
         {
             //field_WorldProvider_terrainType = ReflectionHelper.findField(WorldProvider.class, "field_76577_b", "terrainType");
             //field_WorldProvider_generatorSettings = ReflectionHelper.findField(WorldProvider.class, "field_82913_c", "generatorSettings");
-            field_World_provider = ReflectionHelper.findField(World.class, "field_73011_w", "provider");
-            field_WorldProvider_biomeProvider = ReflectionHelper.findField(WorldProvider.class, "field_76578_c", "biomeProvider");
-            field_ChunkProviderServer_chunkGenerator = ReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c", "chunkGenerator");
+            field_World_provider                     = ObfuscationReflectionHelper.findField(World.class, "field_73011_w"); // provider
+            field_WorldProvider_biomeProvider        = ObfuscationReflectionHelper.findField(WorldProvider.class, "field_76578_c"); // biomeProvider
+            field_ChunkProviderServer_chunkGenerator = ObfuscationReflectionHelper.findField(ChunkProviderServer.class, "field_186029_c"); // chunkGenerator
         }
-        catch (UnableToFindFieldException e)
+        catch (Exception e)
         {
             JustEnoughDimensions.logger.error("WorldUtils: Reflection failed!!", e);
         }

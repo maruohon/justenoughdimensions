@@ -24,7 +24,6 @@ import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDifficulty;
@@ -36,6 +35,7 @@ import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDWorldBorder;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig.WorldInfoType;
+import fi.dy.masa.justenoughdimensions.config.DimensionTypeEntry;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.world.DimensionDump;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
@@ -407,7 +407,7 @@ public class CommandJED extends CommandBase
                 String clazzName = "?";
                 try
                 {
-                    Class <? extends WorldProvider > clazz = ReflectionHelper.getPrivateValue(DimensionType.class, dimType, "field_186077_g", "clazz");
+                    Class <? extends WorldProvider > clazz = DimensionTypeEntry.getProviderClassFrom(dimType);
                     clazzName = clazz.getName();
                 }
                 catch (Exception e) {}

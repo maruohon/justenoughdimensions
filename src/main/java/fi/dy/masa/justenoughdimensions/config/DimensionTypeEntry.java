@@ -12,8 +12,8 @@ import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldProviderHell;
 import net.minecraft.world.WorldProviderSurface;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 
 public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
 {
+    private static final Field field_DimensionType_clazz = ObfuscationReflectionHelper.findField(DimensionType.class, "field_186077_g"); // clazz
     private static final List<DimensionType> DIMENSION_TYPE_CACHE = new ArrayList<>();
 
     private int dimensionTypeId;
@@ -34,7 +35,6 @@ public class DimensionTypeEntry implements Comparable<DimensionTypeEntry>
     private boolean forceRegister;
     private boolean allowDifferentId = true;
     private boolean requireExactMatch;
-    private static final Field field_DimensionType_clazz = ReflectionHelper.findField(DimensionType.class, "field_186077_g", "clazz");
 
     public static void cache(DimensionType entry)
     {

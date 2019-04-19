@@ -23,8 +23,7 @@ import net.minecraft.world.WorldProviderEnd;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.end.DragonFightManager;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper.UnableToAccessFieldException;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils;
 import fi.dy.masa.justenoughdimensions.util.MethodHandleUtils.UnableToFindMethodHandleException;
@@ -346,13 +345,14 @@ public class CommandTeleportJED extends CommandBase
         {
             try
             {
-                BossInfoServer bossInfo = ReflectionHelper.getPrivateValue(DragonFightManager.class, manager, "field_186109_c", "bossInfo");
+                BossInfoServer bossInfo = ObfuscationReflectionHelper.getPrivateValue(DragonFightManager.class, manager, "field_186109_c"); // bossInfo
+
                 if (bossInfo != null)
                 {
                     bossInfo.removePlayer(player);
                 }
             }
-            catch (UnableToAccessFieldException e)
+            catch (Exception e)
             {
                 JustEnoughDimensions.logger.warn("tpj: Failed to get DragonFightManager#bossInfo");
             }
