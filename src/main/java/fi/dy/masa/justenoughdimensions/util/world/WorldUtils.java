@@ -995,7 +995,7 @@ public class WorldUtils
                 pos = pos.add(-(size.getX() / 2), 0, -(size.getZ() / 2));
             }
 
-            WorldUtils.loadChunks(world, pos, template.getSize(), 16);
+            WorldUtils.loadChunks(world, pos, template.getSize(), placement.getLoadRangeAround());
             template.addBlocksToWorld(world, pos, placementSettings, 0x12);
 
             return true;
@@ -1023,7 +1023,7 @@ public class WorldUtils
                 pos = pos.add(-(size.getX() / 2), 0, -(size.getZ() / 2));
             }
 
-            WorldUtils.loadChunks(world, pos, schematic.getSize(), 16);
+            WorldUtils.loadChunks(world, pos, schematic.getSize(), placement.getLoadRangeAround());
             schematic.placeSchematicToWorld(world, pos, placementSettings, 2);
 
             return true;

@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 
 public class StructurePlacement
@@ -18,14 +19,16 @@ public class StructurePlacement
     private final BlockPos offset;
     private final Rotation rotation;
     private final Mirror mirror;
+    private final int loadRangeAround;
 
-    private StructurePlacement(File file, Rotation rotation, Mirror mirror, boolean centered, BlockPos offset)
+    private StructurePlacement(File file, Rotation rotation, Mirror mirror, boolean centered, BlockPos offset, int loadRangeAround)
     {
         this.file = file;
         this.rotation = rotation;
         this.mirror = mirror;
         this.centered = centered;
         this.offset = offset;
+        this.loadRangeAround = loadRangeAround;
     }
 
     public static File getStructureDirectory()
@@ -56,6 +59,11 @@ public class StructurePlacement
     public BlockPos getOffset()
     {
         return this.offset;
+    }
+
+    public int getLoadRangeAround()
+    {
+        return this.loadRangeAround;
     }
 
     private static Rotation getRotationFromName(String name)
@@ -102,6 +110,7 @@ public class StructurePlacement
             Rotation rotation = Rotation.NONE;
             Mirror mirror = Mirror.NONE;
             BlockPos offset = BlockPos.ORIGIN;
+            int loadAround = MathHelper.clamp(JEDJsonUtils.getIntegerOrDefault(obj, "load_around", 16), 0, 128);
 
             if (JEDJsonUtils.hasString(obj, "rotation"))
             {
@@ -123,7 +132,7 @@ public class StructurePlacement
                 }
             }
 
-            return new StructurePlacement(file, rotation, mirror, centered, offset);
+            return new StructurePlacement(file, rotation, mirror, centered, offset, loadAround);
         }
 
         return null;
