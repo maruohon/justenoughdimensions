@@ -31,7 +31,6 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 public class WorldProviderJED extends WorldProviderSurface implements IWorldProviderJED
 {
     protected JEDWorldProperties properties;
-    private boolean worldInfoSet;
     protected boolean canRespawnHere;
     protected boolean isSurfaceWorld;
     protected boolean hasXZFog;
@@ -39,11 +38,19 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     protected VoidTeleportData voidTeleport = null;
     protected VoidTeleportData skyTeleport = null;
     protected int teleportCounter;
+    private boolean worldInfoSet;
+    private boolean shouldSkipSpawnSearch;
 
     @Override
     public boolean getWorldInfoHasBeenSet()
     {
         return this.worldInfoSet;
+    }
+
+    @Override
+    public boolean getShouldSkipSpawnSearch()
+    {
+        return this.shouldSkipSpawnSearch;
     }
 
     @Override
@@ -119,7 +126,13 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         // constructor, and there the world has just been set.
         if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
+            // Setting the WorldInfo here happens way before the WorldEvent.CreateSpawnPosition event fires,
+            // so we have to internally keep track of whether the spawn point was moved due to being set via the config.
+            BlockPos spawnOrig = this.getSpawnPoint();
+
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
+            this.shouldSkipSpawnSearch = spawnOrig.equals(this.getSpawnPoint()) == false;
+
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             //WorldUtils.overrideWorldProviderSettings(this.world, this);
             this.worldInfoSet = true;

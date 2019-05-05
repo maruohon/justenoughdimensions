@@ -208,6 +208,8 @@ public class WorldInfoUtils
             String generatorOptions = hasGeneratorOptions ? nbt.getString("generatorOptions") : info.getGeneratorOptions();
             settings.setGeneratorOptions(generatorOptions);
 
+            JustEnoughDimensions.logInfo("WorldInfoUtils.applyValuesToExistingWorldInfo: Applying seed or generator options in dim {}", dimension);
+
             // We need to cache and restore this, the populateFromWorldSettings() call will reset it to false
             boolean allowCommands = info.areCommandsAllowed();
             info.populateFromWorldSettings(settings);
@@ -221,6 +223,7 @@ public class WorldInfoUtils
 
             if (worldTypeNew.equals(worldTypeOld) == false)
             {
+                JustEnoughDimensions.logInfo("WorldInfoUtils.applyValuesToExistingWorldInfo: Changing WorldType in dim {} to {}", dimension, worldTypeNew.getName());
                 info.setTerrainType(worldTypeNew);
                 generatorChanged = true;
             }
@@ -255,7 +258,9 @@ public class WorldInfoUtils
             nbt.hasKey("SpawnY", Constants.NBT.TAG_INT) &&
             nbt.hasKey("SpawnZ", Constants.NBT.TAG_INT))
         {
-            info.setSpawn(new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ")));
+            BlockPos spawn = new BlockPos(nbt.getInteger("SpawnX"), nbt.getInteger("SpawnY"), nbt.getInteger("SpawnZ"));
+            JustEnoughDimensions.logInfo("WorldInfoUtils.applyValuesToExistingWorldInfo: Setting spawn point of dim {} to {}", dimension, spawn);
+            info.setSpawn(spawn);
         }
 
         if (nbt.hasKey("GameRules", Constants.NBT.TAG_COMPOUND))

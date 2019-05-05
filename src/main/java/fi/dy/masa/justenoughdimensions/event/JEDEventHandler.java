@@ -32,6 +32,7 @@ import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.IWorldProviderJED;
 import fi.dy.masa.justenoughdimensions.world.WorldInfoJED;
 
 public class JEDEventHandler
@@ -112,6 +113,8 @@ public class JEDEventHandler
     public void onWorldCreateSpawn(WorldEvent.CreateSpawnPosition event)
     {
         World world = event.getWorld();
+        BlockPos origSpawn = world.getSpawnPoint();
+
         JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - DIM: {}", world.provider.getDimension());
 
         overrideWorldInfoAndBiomeProvider(world);
@@ -123,23 +126,22 @@ public class JEDEventHandler
         // created dimension, see overrideBiomeProviderAndFindSpawn().
         if (world.provider.getDimension() == 0)
         {
-            BlockPos origSpawn = world.getSpawnPoint();
-
             WorldUtils.findAndSetWorldSpawnIfApplicable(world);
             WorldUtils.placeSpawnStructureIfApplicable(world);
+        }
 
-            // The spawn point was set/moved
-            if (origSpawn.equals(world.getSpawnPoint()) == false)
+        // The spawn point was set/moved
+        if (origSpawn.equals(world.getSpawnPoint()) == false ||
+            (world.provider instanceof IWorldProviderJED) && ((IWorldProviderJED) world.provider).getShouldSkipSpawnSearch())
+        {
+            if (event.getSettings().isBonusChestEnabled())
             {
-                if (event.getSettings().isBonusChestEnabled())
-                {
-                    JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Generating a bonus chest");
-                    WorldUtils.createBonusChest(world);
-                }
-
-                JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Canceling the normal spawn point search, as JED set the world spawn");
-                event.setCanceled(true);
+                JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Generating a bonus chest");
+                WorldUtils.createBonusChest(world);
             }
+
+            JustEnoughDimensions.logInfo("WorldEvent.CreateSpawnPosition - Canceling the normal spawn point search, as JED set the world spawn");
+            event.setCanceled(true);
         }
     }
 

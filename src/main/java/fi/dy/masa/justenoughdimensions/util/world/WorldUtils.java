@@ -939,12 +939,12 @@ public class WorldUtils
 
                     if (type == StructureType.STRUCTURE)
                     {
-                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn structure");
+                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn structure at {}", pos);
                         success = tryPlaceVanillaStructure(server, world, pos, placement);
                     }
                     else if (type == StructureType.SCHEMATIC)
                     {
-                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn schematic");
+                        JustEnoughDimensions.logInfo("WorldUtils.placeSpawnStructure: Trying to place the spawn schematic at {}", pos);
                         success = tryPlaceSchematic(server, world, pos, placement);
                     }
                     else if (type == StructureType.INVALID)

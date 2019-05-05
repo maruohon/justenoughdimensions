@@ -32,15 +32,22 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     private static final Field field_dragonFightManager = ObfuscationReflectionHelper.findField(WorldProviderEnd.class, "field_186064_g"); // dragonFightManager
 
     protected JEDWorldProperties properties;
-    private boolean worldInfoSet;
     protected VoidTeleportData voidTeleport = null;
     protected VoidTeleportData skyTeleport = null;
     protected int teleportCounter;
+    private boolean worldInfoSet;
+    private boolean shouldSkipSpawnSearch;
 
     @Override
     public boolean getWorldInfoHasBeenSet()
     {
         return this.worldInfoSet;
+    }
+
+    @Override
+    public boolean getShouldSkipSpawnSearch()
+    {
+        return this.shouldSkipSpawnSearch;
     }
 
     @Override
@@ -55,7 +62,11 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
         // constructor, and there the world has just been set.
         if (this.world != null && this.getWorldInfoHasBeenSet() == false)
         {
+            BlockPos spawnOrig = this.getSpawnPoint();
+
             WorldInfoUtils.loadAndSetCustomWorldInfo(this.world);
+            this.shouldSkipSpawnSearch = spawnOrig.equals(this.getSpawnPoint()) == false;
+
             this.hasSkyLight = this.properties.getHasSkyLight() != null ? this.properties.getHasSkyLight().booleanValue() : this.hasSkyLight;
             this.worldInfoSet = true;
 
