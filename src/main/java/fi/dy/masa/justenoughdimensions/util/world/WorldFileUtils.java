@@ -15,9 +15,8 @@ import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraft.world.storage.SaveHandler;
+import net.minecraft.world.storage.ThreadedFileIOBase;
 import net.minecraft.world.storage.WorldInfo;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
@@ -284,48 +283,55 @@ public class WorldFileUtils
         info.setBorderLerpTarget(world.getWorldBorder().getTargetSize());
         info.setBorderLerpTime(world.getWorldBorder().getTimeUntilTarget());
 
-        try
+        NBTTagCompound rootTag = new NBTTagCompound();
+        NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
+        rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
+
+        ThreadedFileIOBase.getThreadedIOInstance().queueIO(() ->
         {
-            NBTTagCompound rootTag = new NBTTagCompound();
-            NBTTagCompound playerNBT = world.getMinecraftServer().getPlayerList().getHostPlayerData();
-            rootTag.setTag("Data", info.cloneNBTCompound(playerNBT));
-
-            if (world.getSaveHandler() instanceof SaveHandler)
+            try
             {
-                FMLCommonHandler.instance().handleWorldDataSave((SaveHandler) world.getSaveHandler(), info, rootTag);
+                /*
+                if (world.getSaveHandler() instanceof SaveHandler)
+                {
+                    FMLCommonHandler.instance().handleWorldDataSave((SaveHandler) world.getSaveHandler(), info, rootTag);
+                }
+                */
+
+                File fileNew = new File(worldDir, JED_LEVEL_FILENAME + "_new");
+                File fileOld = new File(worldDir, JED_LEVEL_FILENAME + "_old");
+                File fileCurrent = new File(worldDir, JED_LEVEL_FILENAME);
+                CompressedStreamTools.writeCompressed(rootTag, new FileOutputStream(fileNew));
+
+                if (fileOld.exists())
+                {
+                    fileOld.delete();
+                }
+
+                fileCurrent.renameTo(fileOld);
+
+                if (fileCurrent.exists())
+                {
+                    JustEnoughDimensions.logger.error("Failed to rename file '{}' to '{}'", fileCurrent.getAbsolutePath(), fileOld.getAbsolutePath());
+                    return false;
+                }
+
+                fileNew.renameTo(fileCurrent);
+
+                if (fileNew.exists())
+                {
+                    JustEnoughDimensions.logger.error("Failed to rename file '{}' to '{}'", fileNew.getAbsolutePath(), fileCurrent.getAbsolutePath());
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.error("WorldFileUtils.saveWorldInfoToFile(): Failed to save world "+
+                                                  "info to file for dimension {}", world.provider.getDimension(), e);
             }
 
-            File fileNew = new File(worldDir, JED_LEVEL_FILENAME + "_new");
-            File fileOld = new File(worldDir, JED_LEVEL_FILENAME + "_old");
-            File fileCurrent = new File(worldDir, JED_LEVEL_FILENAME);
-            CompressedStreamTools.writeCompressed(rootTag, new FileOutputStream(fileNew));
-
-            if (fileOld.exists())
-            {
-                fileOld.delete();
-            }
-
-            fileCurrent.renameTo(fileOld);
-
-            if (fileCurrent.exists())
-            {
-                JustEnoughDimensions.logger.error("Failed to rename file '{}' to '{}'", fileCurrent.getAbsolutePath(), fileOld.getAbsolutePath());
-                return;
-            }
-
-            fileNew.renameTo(fileCurrent);
-
-            if (fileNew.exists())
-            {
-                JustEnoughDimensions.logger.error("Failed to rename file '{}' to '{}'", fileNew.getAbsolutePath(), fileCurrent.getAbsolutePath());
-                return;
-            }
-        }
-        catch (Exception e)
-        {
-            JustEnoughDimensions.logger.error("WorldFileUtils.saveWorldInfoToFile(): Failed to save world "+
-                                              "info to file for dimension {}", world.provider.getDimension(), e);
-        }
+            return false;
+        });
     }
 
     public static void saveCustomWorldInfoToFile(World world)

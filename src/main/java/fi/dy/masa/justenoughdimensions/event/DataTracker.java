@@ -14,6 +14,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.GameType;
+import net.minecraft.world.storage.ThreadedFileIOBase;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
@@ -267,18 +268,34 @@ public class DataTracker
                     return;
                 }
 
-                File fileTmp = new File(jedDataDir, "data_tracker.dat.tmp");
-                File fileReal = new File(jedDataDir, "data_tracker.dat");
-                FileOutputStream os = new FileOutputStream(fileTmp);
-                CompressedStreamTools.writeCompressed(this.writeToNBT(new NBTTagCompound()), os);
-                os.close();
+                final NBTTagCompound nbt = this.writeToNBT(new NBTTagCompound());
 
-                if (fileReal.exists())
+                ThreadedFileIOBase.getThreadedIOInstance().queueIO(() ->
                 {
-                    fileReal.delete();
-                }
+                    File fileTmp = new File(jedDataDir, "data_tracker.dat.tmp");
+                    File fileReal = new File(jedDataDir, "data_tracker.dat");
 
-                fileTmp.renameTo(fileReal);
+                    try
+                    {
+                        FileOutputStream os = new FileOutputStream(fileTmp);
+                        CompressedStreamTools.writeCompressed(nbt, os);
+                        os.close();
+
+                        if (fileReal.exists())
+                        {
+                            fileReal.delete();
+                        }
+
+                        fileTmp.renameTo(fileReal);
+                    }
+                    catch (Exception e)
+                    {
+                        JustEnoughDimensions.logger.warn("Failed to write DataTracker data to file", e);
+                    }
+
+                    return false;
+                });
+
                 this.dirty = false;
             }
             catch (Exception e)
