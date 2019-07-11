@@ -81,6 +81,7 @@ public class WorldProviderHellJED extends WorldProviderJED
     @Override
     public IChunkGenerator createChunkGenerator()
     {
-        return new ChunkGeneratorHell(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed());
+        IChunkGenerator generator = createChunkGeneratorInstance(this.world, this);
+        return generator != null ? generator : new ChunkGeneratorHell(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed());
     }
 }
