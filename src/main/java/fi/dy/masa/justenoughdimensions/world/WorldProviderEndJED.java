@@ -94,9 +94,16 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public IChunkGenerator createChunkGenerator()
     {
+        IChunkGenerator generator = WorldProviderJED.createChunkGeneratorInstance(this.world, this);
+
+        if (generator != null)
+        {
+            return generator;
+        }
+
         if (this.properties.getDisableEndSpikes())
         {
-            JustEnoughDimensions.logInfo("Using '{}' in dimension {}", ChunkGeneratorEndJED.class.getName(), this.getDimension());
+            JustEnoughDimensions.logInfo("Using ChunkGenerator '{}' in dimension {}", ChunkGeneratorEndJED.class.getName(), this.getDimension());
             return new ChunkGeneratorEndJED(this.world, this.world.getWorldInfo().isMapFeaturesEnabled(), this.world.getSeed(), this.getSpawnCoordinate());
         }
         else

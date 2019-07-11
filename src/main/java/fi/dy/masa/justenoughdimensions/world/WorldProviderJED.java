@@ -12,10 +12,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldProviderSurface;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -27,6 +29,7 @@ import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.gen.ChunkGeneratorFlatJED;
 
 public class WorldProviderJED extends WorldProviderSurface implements IWorldProviderJED
 {
@@ -182,6 +185,65 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         }
 
         return type != null ? type : super.getDimensionType();
+    }
+
+    @Override
+    public IChunkGenerator createChunkGenerator()
+    {
+        IChunkGenerator generator = createChunkGeneratorInstance(this.world, this);
+        return generator != null ? generator : super.createChunkGenerator();
+    }
+
+    @Nullable
+    public static IChunkGenerator createChunkGeneratorInstance(World world, WorldProvider provider)
+    {
+        DimensionConfigEntry entry = DimensionConfig.instance().getDimensionConfigFor(provider.getDimension());
+
+        if (entry != null && entry.getChunkGeneratorClass() != null)
+        {
+            String generatorClassName = entry.getChunkGeneratorClass();
+            long seed = world.getSeed();
+            boolean features = world.getWorldInfo().isMapFeaturesEnabled();
+            String generatorOptions = world.getWorldInfo().getGeneratorOptions();
+            Exception exc = null;
+
+            if (generatorClassName.equals("ChunkGeneratorFlatJED"))
+            {
+                return new ChunkGeneratorFlatJED(world, seed, features, generatorOptions);
+            }
+
+            try
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends IChunkGenerator> clazz = (Class<? extends IChunkGenerator>) Class.forName(generatorClassName);
+
+                try
+                {
+                    return clazz.getConstructor(World.class, long.class, boolean.class, String.class)
+                            .newInstance(world, seed, features, generatorOptions);
+                } catch (NoSuchMethodException e) { }
+
+                try
+                {
+                    return clazz.getConstructor(World.class, boolean.class, long.class)
+                            .newInstance(world, features, seed);
+                } catch (NoSuchMethodException e) { }
+
+                try
+                {
+                    return clazz.getConstructor(World.class, boolean.class, long.class, BlockPos.class)
+                            .newInstance(world, features, seed, provider.getSpawnCoordinate());
+                } catch (NoSuchMethodException e) { }
+            }
+            catch (Exception e)
+            {
+                exc = e;
+            }
+
+            JustEnoughDimensions.logger.error("Failed to find or create a ChunkGenerator by the name '{}'", generatorClassName, exc);
+        }
+
+        return null;
     }
 
     @Override
