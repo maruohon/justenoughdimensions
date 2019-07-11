@@ -234,6 +234,12 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
                     return clazz.getConstructor(World.class, boolean.class, long.class, BlockPos.class)
                             .newInstance(world, features, seed, provider.getSpawnCoordinate());
                 } catch (NoSuchMethodException e) { }
+
+                try
+                {
+                    return clazz.getConstructor(World.class, long.class)
+                            .newInstance(world, seed);
+                } catch (NoSuchMethodException e) { }
             }
             catch (Exception e)
             {
