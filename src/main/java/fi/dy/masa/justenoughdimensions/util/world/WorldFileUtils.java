@@ -17,7 +17,6 @@ import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ThreadedFileIOBase;
 import net.minecraft.world.storage.WorldInfo;
-import net.minecraftforge.fml.common.Loader;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
@@ -132,19 +131,14 @@ public class WorldFileUtils
                 {
                     File levelFile = new File(templateWorld, "level.dat");
                     boolean hasLevelFile = levelFile.exists() && levelFile.isFile() && levelFile.canRead();
-                    boolean worldUtilsPresent = Loader.isModLoaded("worldutils");
 
-                    // For non-overworld templates, we can do block ID conversion if World Utils is present.
                     // For overworld templates, a level.dat is required to get the ID map.
-                    // TODO 1.13: This restriction and ID conversion can be removed in 1.13 thanks to the per-chunk BlockState palette.
-                    if ((dimension == 0 && hasLevelFile) || (dimension != 0 && worldUtilsPresent))
+                    if (dimension != 0 || hasLevelFile)
                     {
                         JustEnoughDimensions.logInfo("Copying a template world from '{}' to '{}'",
                                 templateWorld.getAbsolutePath(), dimensionDir.getAbsolutePath());
 
                         FileUtils.copyDirectory(templateWorld, dimensionDir, FILE_FILTER_NO_LEVEL, true);
-
-                        // TODO add block ID conversion stuff - Use a command from World Utils directly (to-be-implemented too...)?
 
                         if (hasLevelFile && dimension == 0)
                         {
@@ -155,12 +149,6 @@ public class WorldFileUtils
                     {
                         // TODO 1.13: Remove
                         JustEnoughDimensions.logger.warn("Template world '{}' doesn't have the level.dat file (required for the ID map)",
-                                templateWorld.getAbsolutePath());
-                    }
-                    else if (dimension != 0 && worldUtilsPresent == false)
-                    {
-                        // TODO 1.13: Remove
-                        JustEnoughDimensions.logger.warn("Template world '{}' can't be block-ID-converted because the World Utils mod isn't present",
                                 templateWorld.getAbsolutePath());
                     }
                 }
