@@ -15,6 +15,7 @@ import net.minecraft.world.gen.MapGenBase;
 import net.minecraft.world.gen.MapGenCaves;
 import net.minecraft.world.gen.feature.WorldGenDungeons;
 import net.minecraft.world.gen.feature.WorldGenLakes;
+import net.minecraft.world.gen.structure.MapGenNetherBridge;
 import net.minecraft.world.gen.structure.MapGenStructure;
 import net.minecraft.world.gen.structure.MapGenVillage;
 import net.minecraftforge.event.ForgeEventFactory;
@@ -56,6 +57,11 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
 
             this.hasDecoration = ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82697_g").getBoolean(this);
             this.hasDungeons = ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82702_h").getBoolean(this);
+
+            if (map.containsKey("netherfortress"))
+            {
+                this.structureGenerators.put("Fortress", (MapGenNetherBridge) net.minecraftforge.event.terraingen.TerrainGen.getModdedMapGen(new MapGenNetherBridge(), net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.NETHER_BRIDGE));
+            }
 
             this.generateCaves = map.containsKey("caves");
             this.doModPopulation = ! map.containsKey("no_mod_population");
