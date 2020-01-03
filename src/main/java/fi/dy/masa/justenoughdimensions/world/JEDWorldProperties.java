@@ -23,6 +23,7 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.util.JEDJsonUtils;
 import fi.dy.masa.justenoughdimensions.util.JEDStringUtils;
+import fi.dy.masa.justenoughdimensions.util.PlayerInventoryStorage;
 import fi.dy.masa.justenoughdimensions.util.SpawnPointSearch;
 
 public class JEDWorldProperties
@@ -63,10 +64,10 @@ public class JEDWorldProperties
     private boolean hasPerBiomeFog = false;
     private final IdentityHashMap<Biome, Boolean> foggyBiomes = new IdentityHashMap<>();
 
+    private WorldProvider.WorldSleepResult canSleepHere = null;
     private Boolean canDoLightning = null;
     private Boolean canDoRainSnowIce = null;
     private Boolean canRespawnHere = null;
-    private WorldProvider.WorldSleepResult canSleepHere = null;
     private Boolean canSpawnHostiles = null;
     private Boolean canSpawnPeacefulMobs = null;
     private Boolean hasSkyLight = null;
@@ -75,10 +76,10 @@ public class JEDWorldProperties
     private Boolean isSurfaceWorld = null;
     private Boolean shouldClientCheckLight = null;
 
+    private Integer respawnDimension = null;
     private Integer averageGroundLevel = null;
     private Double horizon = null;
     private Double movementFactor = null;
-    private Integer respawnDimension = null;
     private Float sunBrightnessFactor = null;
     private Float sunBrightness = null;
 
@@ -96,6 +97,7 @@ public class JEDWorldProperties
     private String cloudRenderer = null;
     private String skyRenderer = null;
     private String weatherRenderer = null;
+    private String playerInventoryGroup = PlayerInventoryStorage.DEFAULT_PLAYER_INVENTORY_GROUP;
 
     private String musicType = null;
     private String worldProviderOverrideClass = null;
@@ -221,6 +223,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SkyRenderer"))         { this.skyRenderer          = JEDJsonUtils.getString(obj, "SkyRenderer"); }
         if (JEDJsonUtils.hasString(obj, "CloudRenderer"))       { this.cloudRenderer        = JEDJsonUtils.getString(obj, "CloudRenderer"); }
         if (JEDJsonUtils.hasString(obj, "WeatherRenderer"))     { this.weatherRenderer      = JEDJsonUtils.getString(obj, "WeatherRenderer"); }
+        if (JEDJsonUtils.hasString(obj, "PlayerInventoryGroup")){ this.playerInventoryGroup = JEDJsonUtils.getString(obj, "PlayerInventoryGroup"); }
         if (JEDJsonUtils.hasString(obj, "MusicType"))           { this.musicType            = JEDJsonUtils.getString(obj, "MusicType"); }
         if (JEDJsonUtils.hasString(obj, "WorldProviderOverride")) { this.worldProviderOverrideClass = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
 
@@ -713,6 +716,12 @@ public class JEDWorldProperties
     public boolean generateFallbackSpawnBlock()
     {
         return this.generateFallbackSpawnBlock;
+    }
+
+    public String getPlayerInventoryGroup(int dimension)
+    {
+        // Allow automatically setting the value to per-dimension groups by setting an empty name
+        return this.playerInventoryGroup.isEmpty() ? ("dim_" + dimension) : this.playerInventoryGroup;
     }
 
     @Nullable

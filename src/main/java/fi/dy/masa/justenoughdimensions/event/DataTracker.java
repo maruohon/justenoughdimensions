@@ -20,6 +20,7 @@ import net.minecraftforge.common.util.Constants;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.Configs;
 import fi.dy.masa.justenoughdimensions.util.EntityUtils;
+import fi.dy.masa.justenoughdimensions.util.PlayerInventoryStorage;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
@@ -151,6 +152,22 @@ public class DataTracker
                     this.restoreStoredGameModeIfExists(player);
                 }
             }
+
+            if (Configs.enablePlayerInventoryGroups)
+            {
+                String groupFrom = this.getPlayerInventoryGroup(dimFrom);
+                String groupTo = this.getPlayerInventoryGroup(dimTo);
+
+                if (groupTo.equals(groupFrom) == false)
+                {
+                    JustEnoughDimensions.logInfo("DataTracker: Swapping the player inventories of player '{}' from group '{}' to group '{}'",
+                            playerIn.getName(), groupFrom, groupTo);
+
+                    PlayerInventoryStorage.INSTANCE.writePlayerInventoryDataForGroup(playerIn, groupFrom);
+                    PlayerInventoryStorage.INSTANCE.readPlayerInventoryDataForGroup(playerIn, groupTo);
+                    playerIn.inventoryContainer.detectAndSendChanges();
+                }
+            }
         }
     }
 
@@ -158,6 +175,12 @@ public class DataTracker
     {
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dimension);
         return props != null && props.getForceGameMode();
+    }
+
+    private String getPlayerInventoryGroup(int dimension)
+    {
+        JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(dimension);
+        return props != null ? props.getPlayerInventoryGroup(dimension) : PlayerInventoryStorage.DEFAULT_PLAYER_INVENTORY_GROUP;
     }
 
     private void storeNonForcedGameMode(EntityPlayerMP player)

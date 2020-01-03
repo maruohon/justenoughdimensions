@@ -29,6 +29,7 @@ import fi.dy.masa.justenoughdimensions.network.DimensionSyncChannelHandler;
 import fi.dy.masa.justenoughdimensions.network.PacketHandler;
 import fi.dy.masa.justenoughdimensions.proxy.CommonProxy;
 import fi.dy.masa.justenoughdimensions.reference.Reference;
+import fi.dy.masa.justenoughdimensions.util.PlayerInventoryStorage;
 import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
@@ -73,6 +74,7 @@ public class JustEnoughDimensions
         File worldDir = new File(((AnvilSaveConverter) event.getServer().getActiveAnvilConverter()).savesDirectory, event.getServer().getFolderName());
         Configs.loadConfigsFromPerWorldConfigIfEnabled(worldDir);
         DimensionConfig.instance().readDimensionConfig(worldDir);
+        PlayerInventoryStorage.INSTANCE.setWorldDir(worldDir);
         DataTracker.getInstance().readFromDisk(worldDir);
         lastWorldDir = worldDir;
 

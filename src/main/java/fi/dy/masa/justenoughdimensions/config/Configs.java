@@ -32,6 +32,7 @@ public class Configs
     public static boolean enableLoggingInfo;
     public static boolean enableOverrideBiomeProvider;
     public static boolean enableOverrideWorldProvider;
+    public static boolean enablePlayerInventoryGroups;
     public static boolean enableReplacingRegisteredDimensions;
     public static boolean enableSeparateWorldBorders;
     public static boolean enableSeparateWorldInfo;
@@ -218,6 +219,16 @@ public class Configs
                         "you have to use an \"existing_dimensiontype\" key in the \"dimensiontype\" object, instead of\n" +
                         "registering/defining a new custom entry as you would do normally.");
         enableOverrideWorldProvider = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enablePlayerInventoryGroups", false).setRequiresMcRestart(false);
+        prop.setComment("Enables \"player inventory groups\".\n" +
+                        "These groups can be used to separate the player inventories in some dimensions\n" +
+                        "or groups of dimensions. Whenever a player switches dimensions, if the groups\n" +
+                        "in the from and to dimensions are different, then the player inventories will be\n" +
+                        "stored and swapped. The groups can be set in \"jed\": { \"PlayerInventoryGroup\": \"FooBar\" }.\n" +
+                        "You can use an empty string value to automatically set it to \"dim_<id>\".\n" +
+                        "The default group name for dimensions that don't define anything for it is \"__default\".");
+        enablePlayerInventoryGroups = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableReplacingRegisteredDimensions", true).setRequiresMcRestart(false);
         prop.setComment("If enabled, then an 'override: true' boolean value for the dimension in\n" +
