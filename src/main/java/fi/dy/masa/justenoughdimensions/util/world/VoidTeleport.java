@@ -80,7 +80,7 @@ public class VoidTeleport
         catch (Exception e)
         {
             JustEnoughDimensions.logger.warn("Failed to \"void teleport\" entity '{}' (@ {}) from dimension '{}'",
-                    entity.getName(), entity.getPositionVector(), originalDimension);
+                    entity.getName(), entity.getPositionVector(), originalDimension, e);
         }
     }
 
@@ -92,7 +92,6 @@ public class VoidTeleport
         private float fallDistance = -1;
         private float minHealthLeft = -1;
         @Nullable private Vec3d scale;
-        @Nullable private Vec3d offset;
         @Nullable private Vec3d targetPosition;
         @Nullable private String[] relativePositionArgs;
         private boolean findSurface;
@@ -146,8 +145,13 @@ public class VoidTeleport
                 case SAME_LOCATION:
                     break;
 
-                case OFFSET_LOCATION:
-                    newPos = originalPosition.add(this.offset);
+                case FIXED_LOCATION:
+                    newPos =  this.targetPosition;
+                    break;
+
+                case SPAWN:
+                    BlockPos spawn = WorldUtils.getWorldSpawn(targetWorld);
+                    newPos =  new Vec3d(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
                     break;
 
                 case SCALED_LOCATION:
@@ -156,17 +160,15 @@ public class VoidTeleport
                                         originalPosition.z * this.scale.z);
                     break;
 
-                case FIXED_LOCATION:
-                    newPos =  this.targetPosition;
-                    break;
-
                 case RELATIVE_LOCATION:
-                    newPos = this.parseCoordinate(originalPosition);
+                    newPos = this.parseRelativeCoordinate(originalPosition);
                     break;
 
-                case SPAWN:
-                    BlockPos spawn = WorldUtils.getWorldSpawn(targetWorld);
-                    newPos =  new Vec3d(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
+                case SCALED_RELATIVE_LOCATION:
+                    newPos =  new Vec3d(originalPosition.x * this.scale.x,
+                                        originalPosition.y * this.scale.y,
+                                        originalPosition.z * this.scale.z);
+                    newPos = this.parseRelativeCoordinate(newPos);
                     break;
             }
 
@@ -190,11 +192,6 @@ public class VoidTeleport
             this.scale = scale;
         }
 
-        private void setOffset(Vec3d offset)
-        {
-            this.offset = offset;
-        }
-
         private void setTargetPosition(Vec3d position)
         {
             this.targetPosition = position;
@@ -213,7 +210,7 @@ public class VoidTeleport
             this.relativePositionArgs = parts;
         }
 
-        private Vec3d parseCoordinate(Vec3d posBase)
+        private Vec3d parseRelativeCoordinate(Vec3d posBase)
         {
             try
             {
@@ -225,7 +222,7 @@ public class VoidTeleport
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.warn("VoidTeleportData.parseCoordinate(): Failed to calculate the relative coordinate");
+                JustEnoughDimensions.logger.warn("VoidTeleportData.parseRelativeCoordinate(): Failed to calculate the relative coordinate");
             }
 
             return posBase;
@@ -278,9 +275,10 @@ public class VoidTeleport
                         {
                             data.setScale(JEDJsonUtils.getVec3dOrDefault(obj, "scale", new Vec3d(1, 1, 1)));
                         }
-                        else if (type == TeleportType.OFFSET_LOCATION)
+                        else if (type == TeleportType.SCALED_RELATIVE_LOCATION)
                         {
-                            data.setOffset(JEDJsonUtils.getVec3dOrDefault(obj, "offset", new Vec3d(0, 128, 0)));
+                            data.setScale(JEDJsonUtils.getVec3dOrDefault(obj, "scale", new Vec3d(1, 1, 1)));
+                            data.setRelativePosition(JEDJsonUtils.getStringOrDefault(obj, "relative_location", "", true));
                         }
                         else if (type == TeleportType.FIXED_LOCATION)
                         {
@@ -314,11 +312,11 @@ public class VoidTeleport
 
     public enum TeleportType
     {
-        SAME_LOCATION,
-        OFFSET_LOCATION,
-        SCALED_LOCATION,
         FIXED_LOCATION,
         RELATIVE_LOCATION,
+        SAME_LOCATION,
+        SCALED_LOCATION,
+        SCALED_RELATIVE_LOCATION,
         SPAWN;
 
         public static TeleportType fromName(String name)
