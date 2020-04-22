@@ -95,7 +95,7 @@ public class JEDEventHandler
         }
         else
         {
-            WorldUtils.overrideWorldProviderIfApplicable(world);
+            WorldUtils.overrideWorldProviderIfApplicable(world, false);
         }
     }
 
@@ -153,7 +153,7 @@ public class JEDEventHandler
 
         if (Configs.enableOverrideWorldProvider)
         {
-            WorldUtils.overrideWorldProviderIfApplicable(world);
+            WorldUtils.overrideWorldProviderIfApplicable(world, true);
         }
 
         if (Configs.enableSeparateWorldInfo)

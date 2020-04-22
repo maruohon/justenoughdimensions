@@ -335,50 +335,114 @@ public class WorldUtils
     }
     */
 
-    public static void overrideWorldProviderIfApplicable(World world)
+    public static void overrideWorldProviderIfApplicable(World world, boolean tryStealChunkGenerator)
     {
         JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
 
-        if (props != null && props.overrideWorldProvider())
+        if (props == null)
         {
-            String newClassName = props.getWorldProviderOverrideClassName();
-            Class<? extends WorldProvider> newProviderClass = DimensionTypeEntry.getProviderClass(newClassName);
+            return;
+        }
 
-            if (newProviderClass != null && newProviderClass != world.provider.getClass())
+        WorldProvider originalWorldProvider = world.provider;
+        String worldProviderClassName = props.getChunkGeneratorFactoryWorldProviderClassName();
+        IChunkGenerator chunkGenerator = null;
+        boolean useFactory = false;
+
+        // If there is a "chunk generator factory" defined, first temporarily override the World Provider with that type,
+        // and then steal the ChunkGenerator from that provider and use that after changing to the final World Provider.
+        if (worldProviderClassName != null &&
+            world.getChunkProvider() instanceof ChunkProviderServer &&
+            overrideWorldProvider(world, worldProviderClassName, false))
+        {
+            chunkGenerator = ((ChunkProviderServer) world.getChunkProvider()).chunkGenerator;
+            useFactory = true;
+        }
+
+        final int dimension = world.provider.getDimension();
+        worldProviderClassName = props.getWorldProviderOverrideClassName();
+
+        if (worldProviderClassName != null)
+        {
+            overrideWorldProvider(world, worldProviderClassName, false);
+        }
+        else if (useFactory)
+        {
+            overrideWorldProvider(dimension, world, originalWorldProvider, dimension == 0);
+        }
+
+        if (useFactory && chunkGenerator != null)
+        {
+            overrideChunkGenerator(dimension, (ChunkProviderServer) world.getChunkProvider(), chunkGenerator);
+        }
+    }
+
+    private static boolean overrideWorldProvider(World world, String newClassName, boolean isChunkGenFactory)
+    {
+        Class<? extends WorldProvider> newProviderClass = DimensionTypeEntry.getProviderClass(newClassName);
+
+        if (newProviderClass == null)
+        {
+            JustEnoughDimensions.logger.warn("WorldUtils.overrideWorldProvider: Failed to create a WorldProvider from name '{}'", newClassName);
+            return false;
+        }
+
+        final int dim = world.provider.getDimension();
+
+        if (newProviderClass != world.provider.getClass())
+        {
+            String oldName = world.provider.getClass().getName();
+
+            if (isChunkGenFactory)
             {
-                final int dim = world.provider.getDimension();
-                String oldName = world.provider.getClass().getName();
+                JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Trying to create a temporary WorldProvider (to create a ChunkGenerator with) of type '{}' in dimension {} with '{}'", oldName, dim, newClassName);
+            }
+            else
+            {
                 JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Trying to override the WorldProvider of type '{}' in dimension {} with '{}'", oldName, dim, newClassName);
-
-                try
-                {
-                    Constructor <? extends WorldProvider> constructor = newProviderClass.getConstructor();
-                    WorldProvider newProvider = constructor.newInstance();
-
-                    try
-                    {
-                        field_World_provider.set(world, newProvider);
-                        world.provider.setWorld(world);
-                        world.provider.setDimension(dim);
-
-                        JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Overrode the WorldProvider in dimension {} with '{}'", dim, newClassName);
-
-                        reCreateChunkGenerator(world, dim == 0);
-                    }
-                    catch (Exception e)
-                    {
-                        JustEnoughDimensions.logger.error("WorldUtils.overrideWorldProvider: Failed to override the WorldProvider of dimension {}", dim);
-                    }
-
-                    return;
-                }
-                catch (Exception e)
-                {
-                }
             }
 
-            JustEnoughDimensions.logger.warn("WorldUtils.overrideWorldProvider: Failed to create a WorldProvider from name '{}', or it was already that type", newClassName);
+            try
+            {
+                Constructor <? extends WorldProvider> constructor = newProviderClass.getConstructor();
+                WorldProvider newProvider = constructor.newInstance();
+
+                overrideWorldProvider(dim, world, newProvider, dim == 0);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+            }
         }
+        else
+        {
+            JustEnoughDimensions.logger.warn("WorldUtils.overrideWorldProvider: The WorldProvider in dim '{}' was already of the type '{}'", dim, newClassName);
+        }
+
+        return false;
+    }
+
+    private static boolean overrideWorldProvider(int dim, World world, WorldProvider newProvider, boolean generatorChangedForOverworld)
+    {
+        try
+        {
+            field_World_provider.set(world, newProvider);
+            world.provider.setWorld(world);
+            world.provider.setDimension(dim);
+
+            JustEnoughDimensions.logInfo("WorldUtils.overrideWorldProvider: Overrode the WorldProvider in dimension {} with '{}'", dim, newProvider.getClass().getName());
+
+            reCreateChunkGenerator(world, generatorChangedForOverworld);
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.error("WorldUtils.overrideWorldProvider: Failed to override the WorldProvider of dimension {}", dim);
+        }
+
+        return false;
     }
 
     public static void overrideBiomeProvider(World world)
@@ -498,26 +562,35 @@ public class WorldUtils
             ChunkProviderServer chunkProviderServer = (ChunkProviderServer) world.getChunkProvider();
             IChunkGenerator newChunkGenerator = world.provider.createChunkGenerator();
 
-            if (newChunkGenerator == null)
-            {
-                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {}", dimension);
-                return;
-            }
-
-            try
-            {
-                field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkGenerator);
-
-                JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Re-created/overwrote the ChunkProvider " +
-                                             "(of type '{}') in dimension {} with '{}'",
-                        chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
-            }
-            catch (Exception e)
-            {
-                JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {} with {}",
-                        dimension, newChunkGenerator.getClass().getName(), e);
-            }
+            overrideChunkGenerator(dimension, chunkProviderServer, newChunkGenerator);
         }
+    }
+
+    private static boolean overrideChunkGenerator(int dimension, ChunkProviderServer chunkProviderServer, IChunkGenerator newChunkGenerator)
+    {
+        if (newChunkGenerator == null)
+        {
+            JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {}", dimension);
+            return false;
+        }
+
+        try
+        {
+            field_ChunkProviderServer_chunkGenerator.set(chunkProviderServer, newChunkGenerator);
+
+            JustEnoughDimensions.logInfo("WorldUtils.reCreateChunkProvider: Re-created/overwrote the ChunkProvider " +
+                                         "(of type '{}') in dimension {} with '{}'",
+                    chunkProviderServer.chunkGenerator.getClass().getName(), dimension, newChunkGenerator.getClass().getName());
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("Failed to re-create the ChunkProvider for dimension {} with {}",
+                    dimension, newChunkGenerator.getClass().getName(), e);
+        }
+
+        return false;
     }
 
     public static void centerWorldBorderIfApplicable(World world)

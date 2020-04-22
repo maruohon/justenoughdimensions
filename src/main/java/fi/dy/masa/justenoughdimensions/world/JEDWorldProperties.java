@@ -103,6 +103,7 @@ public class JEDWorldProperties
 
     private String musicType = null;
     private String worldProviderOverrideClass = null;
+    private String chunkGeneratorFactoryWorldProviderClassName = null;
 
     private SpawnPointSearch spawnPointSearchType = null;
 
@@ -233,6 +234,7 @@ public class JEDWorldProperties
         if (JEDJsonUtils.hasString(obj, "SkyRenderer"))                     { this.skyRenderer                      = JEDJsonUtils.getString(obj, "SkyRenderer"); }
         if (JEDJsonUtils.hasString(obj, "WeatherRenderer"))                 { this.weatherRenderer                  = JEDJsonUtils.getString(obj, "WeatherRenderer"); }
         if (JEDJsonUtils.hasString(obj, "WorldProviderOverride"))           { this.worldProviderOverrideClass       = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
+        if (JEDJsonUtils.hasString(obj, "ChunkGenFactoryWorldProvider"))    { this.chunkGeneratorFactoryWorldProviderClassName = JEDJsonUtils.getString(obj, "ChunkGenFactoryWorldProvider"); }
 
         if (JEDJsonUtils.hasString(obj, "CloudColor"))                      { this.cloudColor                       = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
         if (JEDJsonUtils.hasString(obj, "FogColor"))                        { this.fogColor                         = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
@@ -744,14 +746,15 @@ public class JEDWorldProperties
         return this.spawnPointSearchType;
     }
 
-    public boolean overrideWorldProvider()
-    {
-        return this.worldProviderOverrideClass != null;
-    }
-
     @Nullable
     public String getWorldProviderOverrideClassName()
     {
         return this.worldProviderOverrideClass;
+    }
+
+    @Nullable
+    public String getChunkGeneratorFactoryWorldProviderClassName()
+    {
+        return this.chunkGeneratorFactoryWorldProviderClassName;
     }
 }
