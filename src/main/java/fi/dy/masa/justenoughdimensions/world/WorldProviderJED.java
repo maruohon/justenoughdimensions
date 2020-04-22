@@ -255,13 +255,14 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     @Override
     public WorldSleepResult canSleepAt(EntityPlayer player, BlockPos pos)
     {
-        return this.properties.canSleepHere() != null ? this.properties.canSleepHere() : super.canSleepAt(player, pos);
+        WorldSleepResult val = this.properties.canSleepHere();
+        return val != null ? val : super.canSleepAt(player, pos);
     }
 
     @Override
     public boolean canRespawnHere()
     {
-        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : this.canRespawnHere;
+        return getBooleanOrDefault(this.properties.canRespawnHere(), this.canRespawnHere);
     }
 
     @Override
@@ -496,21 +497,23 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     @Override
     public boolean canDoLightning(net.minecraft.world.chunk.Chunk chunk)
     {
-        return this.properties.canDoLightning() != null ? this.properties.canDoLightning().booleanValue() : true;
+        return getBooleanOrDefault(this.properties.canDoLightning(), true);
     }
 
     @Override
     public boolean canDoRainSnowIce(net.minecraft.world.chunk.Chunk chunk)
     {
-        return this.properties.canDoRainSnowIce() != null ? this.properties.canDoRainSnowIce().booleanValue() : true;
+        return getBooleanOrDefault(this.properties.canDoRainSnowIce(), true);
     }
 
     @Override
     public boolean canBlockFreeze(BlockPos pos, boolean noWaterAdj)
     {
-        if (this.properties.canDoRainSnowIce() != null)
+        Boolean val = this.properties.canDoRainSnowIce();
+
+        if (val != null)
         {
-            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canBlockFreeze(this.world, pos, noWaterAdj);
+            return val.booleanValue() && WorldUtils.canBlockFreeze(this.world, pos, noWaterAdj);
         }
 
         return super.canBlockFreeze(pos, noWaterAdj);
@@ -519,12 +522,20 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
     @Override
     public boolean canSnowAt(BlockPos pos, boolean checkLight)
     {
-        if (this.properties.canDoRainSnowIce() != null)
+        Boolean val = this.properties.canDoRainSnowIce();
+
+        if (val != null)
         {
-            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canSnowAt(this.world, pos);
+            return val.booleanValue() && WorldUtils.canSnowAt(this.world, pos);
         }
 
         return super.canSnowAt(pos, checkLight);
+    }
+
+    @Override
+    public boolean doesWaterVaporize()
+    {
+        return getBooleanOrDefault(this.properties.doesWaterVaporize(), super.doesWaterVaporize());
     }
 
     @Override
@@ -535,43 +546,43 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             return this.properties.doesBiomeHaveFog(this.world.getBiome(new BlockPos(x, 0, z)));
         }
 
-        return this.properties.getHasXZFog() != null ? this.properties.getHasXZFog().booleanValue() : this.hasXZFog;
+        return getBooleanOrDefault(this.properties.getHasXZFog(), this.hasXZFog);
     }
 
     @Override
     public boolean isSurfaceWorld()
     {
-        return this.properties.isSurfaceWorld() != null ? this.properties.isSurfaceWorld().booleanValue() : this.isSurfaceWorld;
+        return getBooleanOrDefault(this.properties.isSurfaceWorld(), this.isSurfaceWorld);
     }
 
     @Override
     public int getAverageGroundLevel()
     {
-        return this.properties.getAverageGroundLevel() != null ? this.properties.getAverageGroundLevel().intValue() : super.getAverageGroundLevel();
+        return getIntegerOrDefault(this.properties.getAverageGroundLevel(), super.getAverageGroundLevel());
     }
 
     @Override
     public double getHorizon()
     {
-        return this.properties.getHorizon() != null ? this.properties.getHorizon().doubleValue() : super.getHorizon();
+        return getDoubleOrDefault(this.properties.getHorizon(), super.getHorizon());
     }
 
     @Override
     public double getMovementFactor()
     {
-        return this.properties.getMovementFactor() != null ? this.properties.getMovementFactor().doubleValue() : this.movementFactor;
+        return getDoubleOrDefault(this.properties.getMovementFactor(), this.movementFactor);
     }
 
     @Override
     public float getSunBrightness(float partialTicks)
     {
-        return this.properties.getSunBrightness() != null ? this.properties.getSunBrightness().floatValue() : super.getSunBrightness(partialTicks);
+        return getFloatOrDefault(this.properties.getSunBrightness(), super.getSunBrightness(partialTicks));
     }
 
     @Override
     public float getSunBrightnessFactor(float partialTicks)
     {
-        return this.properties.getSunBrightnessFactor() != null ? this.properties.getSunBrightnessFactor().floatValue() : super.getSunBrightnessFactor(partialTicks);
+        return getFloatOrDefault(this.properties.getSunBrightnessFactor(), super.getSunBrightnessFactor(partialTicks));
     }
 
     @Override
@@ -749,5 +760,25 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
         celestialAngleRadians = MathHelper.clamp(celestialAngleRadians, 0.0F, 1.0F);
 
         return fogColor.scale(celestialAngleRadians);
+    }
+
+    public static boolean getBooleanOrDefault(@Nullable Boolean value, boolean defaultValue)
+    {
+        return value != null ? value.booleanValue() : defaultValue;
+    }
+
+    public static int getIntegerOrDefault(@Nullable Integer value, int defaultValue)
+    {
+        return value != null ? value.intValue() : defaultValue;
+    }
+
+    public static float getFloatOrDefault(@Nullable Float value, float defaultValue)
+    {
+        return value != null ? value.floatValue() : defaultValue;
+    }
+
+    public static double getDoubleOrDefault(@Nullable Double value, double defaultValue)
+    {
+        return value != null ? value.doubleValue() : defaultValue;
     }
 }

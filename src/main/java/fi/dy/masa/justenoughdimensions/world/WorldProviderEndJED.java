@@ -138,13 +138,14 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public WorldSleepResult canSleepAt(EntityPlayer player, BlockPos pos)
     {
-        return this.properties.canSleepHere() != null ? this.properties.canSleepHere() : super.canSleepAt(player, pos);
+        WorldSleepResult val = this.properties.canSleepHere();
+        return val != null ? val : super.canSleepAt(player, pos);
     }
 
     @Override
     public boolean canRespawnHere()
     {
-        return this.properties.canRespawnHere() != null ? this.properties.canRespawnHere() : false;
+        return WorldProviderJED.getBooleanOrDefault(this.properties.canRespawnHere(), false);
     }
 
     @Override
@@ -269,21 +270,23 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public boolean canDoLightning(net.minecraft.world.chunk.Chunk chunk)
     {
-        return this.properties.canDoLightning() != null ? this.properties.canDoLightning().booleanValue() : false;
+        return WorldProviderJED.getBooleanOrDefault(this.properties.canDoLightning(), false);
     }
 
     @Override
     public boolean canDoRainSnowIce(net.minecraft.world.chunk.Chunk chunk)
     {
-        return this.properties.canDoRainSnowIce() != null ? this.properties.canDoRainSnowIce().booleanValue() : false;
+        return WorldProviderJED.getBooleanOrDefault(this.properties.canDoRainSnowIce(), false);
     }
 
     @Override
     public boolean canBlockFreeze(BlockPos pos, boolean noWaterAdj)
     {
-        if (this.properties.canDoRainSnowIce() != null)
+        Boolean val = this.properties.canDoRainSnowIce();
+
+        if (val != null)
         {
-            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canBlockFreeze(this.world, pos, noWaterAdj);
+            return val.booleanValue() && WorldUtils.canBlockFreeze(this.world, pos, noWaterAdj);
         }
 
         return super.canBlockFreeze(pos, noWaterAdj);
@@ -292,65 +295,68 @@ public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProvi
     @Override
     public boolean canSnowAt(BlockPos pos, boolean checkLight)
     {
-        if (this.properties.canDoRainSnowIce() != null)
+        Boolean val = this.properties.canDoRainSnowIce();
+
+        if (val != null)
         {
-            return this.properties.canDoRainSnowIce().booleanValue() && WorldUtils.canSnowAt(this.world, pos);
+            return val.booleanValue() && WorldUtils.canSnowAt(this.world, pos);
         }
 
         return super.canSnowAt(pos, checkLight);
     }
 
     @Override
+    public boolean doesWaterVaporize()
+    {
+        return WorldProviderJED.getBooleanOrDefault(this.properties.doesWaterVaporize(), super.doesWaterVaporize());
+    }
+
+    @Override
     public boolean doesXZShowFog(int x, int z)
     {
-        return this.properties.getHasXZFog() != null ? this.properties.getHasXZFog().booleanValue() : super.doesXZShowFog(x, z);
+        return WorldProviderJED.getBooleanOrDefault(this.properties.getHasXZFog(), super.doesXZShowFog(x, z));
     }
 
     @Override
     public boolean isSurfaceWorld()
     {
-        return this.properties.isSurfaceWorld() != null ? this.properties.isSurfaceWorld().booleanValue() : false;
+        return WorldProviderJED.getBooleanOrDefault(this.properties.isSurfaceWorld(), false);
     }
 
     @Override
     public int getAverageGroundLevel()
     {
-        return this.properties.getAverageGroundLevel() != null ? this.properties.getAverageGroundLevel().intValue() : super.getAverageGroundLevel();
+        return WorldProviderJED.getIntegerOrDefault(this.properties.getAverageGroundLevel(), super.getAverageGroundLevel());
     }
 
     @Override
     public double getHorizon()
     {
-        return this.properties.getHorizon() != null ? this.properties.getHorizon().doubleValue() : super.getHorizon();
+        return WorldProviderJED.getDoubleOrDefault(this.properties.getHorizon(), super.getHorizon());
     }
 
     @Override
     public double getMovementFactor()
     {
-        return this.properties.getMovementFactor() != null ? this.properties.getMovementFactor().doubleValue() : 1.0D;
+        return WorldProviderJED.getDoubleOrDefault(this.properties.getMovementFactor(), 1.0D);
     }
 
     @Override
     public float getSunBrightness(float partialTicks)
     {
-        return this.properties.getSunBrightness() != null ? this.properties.getSunBrightness().floatValue() : super.getSunBrightness(partialTicks);
+        return WorldProviderJED.getFloatOrDefault(this.properties.getSunBrightness(), super.getSunBrightness(partialTicks));
     }
 
     @Override
     public float getSunBrightnessFactor(float partialTicks)
     {
-        return this.properties.getSunBrightnessFactor() != null ? this.properties.getSunBrightnessFactor().floatValue() : super.getSunBrightnessFactor(partialTicks);
+        return WorldProviderJED.getFloatOrDefault(this.properties.getSunBrightnessFactor(), super.getSunBrightnessFactor(partialTicks));
     }
 
     @Override
     public boolean shouldClientCheckLighting()
     {
-        if (this.properties.shouldClientCheckLight() != null)
-        {
-            return this.properties.shouldClientCheckLight().booleanValue();
-        }
-
-        return true;
+        return WorldProviderJED.getBooleanOrDefault(this.properties.shouldClientCheckLight(), true);
     }
 
     @Override

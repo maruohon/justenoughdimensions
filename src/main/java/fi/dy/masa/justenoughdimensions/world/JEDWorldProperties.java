@@ -75,24 +75,26 @@ public class JEDWorldProperties
     private Boolean ignoreSpawnSuitability = null;
     private Boolean isSurfaceWorld = null;
     private Boolean shouldClientCheckLight = null;
+    private Boolean waterVaporizes = null;
 
-    private Integer respawnDimension = null;
     private Integer averageGroundLevel = null;
+    private Integer respawnDimension = null;
+
     private Double horizon = null;
     private Double movementFactor = null;
+
+    private Float moonScale = null;
+    private Float skyBlendRatio = null;
+    private Float skyColorLightBlendRatio = null;
     private Float sunBrightnessFactor = null;
     private Float sunBrightness = null;
+    private Float sunScale = null;
 
     private Vec3d cloudColor = null;
     private Vec3d fogColor = null;
     private Vec3d moonColor = null;
     private Vec3d skyColor = null;
     private Vec3d sunColor = null;
-
-    private Float skyBlendRatio = null;
-    private Float moonScale = null;
-    private Float sunScale = null;
-    private Float skyColorLightBlendRatio = null;
 
     private String cloudRenderer = null;
     private String skyRenderer = null;
@@ -185,58 +187,58 @@ public class JEDWorldProperties
         this.colorData = JEDJsonUtils.getNestedObject(obj, "Colors", false);
         this.perBiomeFogData = JEDJsonUtils.getNestedObject(obj, "FoggyBiomes", false);
 
-        if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))          { this.forceGameMode            = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))         { this.useCustomDayCycle        = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CanRespawnHere"))         { this.canRespawnHere           = JEDJsonUtils.getBoolean(obj, "CanRespawnHere"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnPeacefulMobs"))   { this.canSpawnPeacefulMobs     = JEDJsonUtils.getBoolean(obj, "CanSpawnPeacefulMobs"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnHostiles"))       { this.canSpawnHostiles         = JEDJsonUtils.getBoolean(obj, "CanSpawnHostiles"); }
-        if (JEDJsonUtils.hasBoolean(obj, "DisableDawnDuskColors"))  { this.disableDawnDuskColors    = JEDJsonUtils.getBoolean(obj, "DisableDawnDuskColors"); }
-        if (JEDJsonUtils.hasBoolean(obj, "DisableEnderDragon"))     { this.disableDragon            = JEDJsonUtils.getBoolean(obj, "DisableEnderDragon"); }
-        if (JEDJsonUtils.hasBoolean(obj, "DisableEndSpikes"))       { this.disableEndSpikes         = JEDJsonUtils.getBoolean(obj, "DisableEndSpikes"); }
-        if (JEDJsonUtils.hasBoolean(obj, "HasSkyLight"))            { this.hasSkyLight              = JEDJsonUtils.getBoolean(obj, "HasSkyLight"); }
-        if (JEDJsonUtils.hasBoolean(obj, "IsSurfaceWorld"))         { this.isSurfaceWorld           = JEDJsonUtils.getBoolean(obj, "IsSurfaceWorld"); }
-        if (JEDJsonUtils.hasBoolean(obj, "IgnoreSpawnSuitability")) { this.ignoreSpawnSuitability   = JEDJsonUtils.getBoolean(obj, "IgnoreSpawnSuitability"); }
-        if (JEDJsonUtils.hasBoolean(obj, "HasXZFog"))               { this.hasXZFog                 = JEDJsonUtils.getBoolean(obj, "HasXZFog"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CanDoLightning"))         { this.canDoLightning           = JEDJsonUtils.getBoolean(obj, "CanDoLightning"); }
-        if (JEDJsonUtils.hasBoolean(obj, "CanDoRainSnowIce"))       { this.canDoRainSnowIce         = JEDJsonUtils.getBoolean(obj, "CanDoRainSnowIce"); }
-        if (JEDJsonUtils.hasBoolean(obj, "ShouldClientCheckLight")) { this.shouldClientCheckLight   = JEDJsonUtils.getBoolean(obj, "ShouldClientCheckLight"); }
-        if (JEDJsonUtils.hasBoolean(obj, "WorldBorderCenteredOnSpawn")) { this.worldBorderCenteredOnSpawn = JEDJsonUtils.getBoolean(obj, "WorldBorderCenteredOnSpawn"); }
-        if (JEDJsonUtils.hasBoolean(obj, "GenerateFallbackSpawnBlock")) { this.generateFallbackSpawnBlock = JEDJsonUtils.getBoolean(obj, "GenerateFallbackSpawnBlock"); }
-        if (JEDJsonUtils.hasBoolean(obj, "DontAdvanceWeatherWhenSleeping")) { this.dontAdvanceWeatherWhenSleeping = JEDJsonUtils.getBoolean(obj, "DontAdvanceWeatherWhenSleeping"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanDoLightning"))                 { this.canDoLightning                   = JEDJsonUtils.getBoolean(obj, "CanDoLightning"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanDoRainSnowIce"))               { this.canDoRainSnowIce                 = JEDJsonUtils.getBoolean(obj, "CanDoRainSnowIce"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanRespawnHere"))                 { this.canRespawnHere                   = JEDJsonUtils.getBoolean(obj, "CanRespawnHere"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnHostiles"))               { this.canSpawnHostiles                 = JEDJsonUtils.getBoolean(obj, "CanSpawnHostiles"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CanSpawnPeacefulMobs"))           { this.canSpawnPeacefulMobs             = JEDJsonUtils.getBoolean(obj, "CanSpawnPeacefulMobs"); }
+        if (JEDJsonUtils.hasBoolean(obj, "CustomDayCycle"))                 { this.useCustomDayCycle                = JEDJsonUtils.getBoolean(obj, "CustomDayCycle"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableDawnDuskColors"))          { this.disableDawnDuskColors            = JEDJsonUtils.getBoolean(obj, "DisableDawnDuskColors"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableEnderDragon"))             { this.disableDragon                    = JEDJsonUtils.getBoolean(obj, "DisableEnderDragon"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DisableEndSpikes"))               { this.disableEndSpikes                 = JEDJsonUtils.getBoolean(obj, "DisableEndSpikes"); }
+        if (JEDJsonUtils.hasBoolean(obj, "DontAdvanceWeatherWhenSleeping")) { this.dontAdvanceWeatherWhenSleeping   = JEDJsonUtils.getBoolean(obj, "DontAdvanceWeatherWhenSleeping"); }
+        if (JEDJsonUtils.hasBoolean(obj, "ForceGameMode"))                  { this.forceGameMode                    = JEDJsonUtils.getBoolean(obj, "ForceGameMode"); }
+        if (JEDJsonUtils.hasBoolean(obj, "GenerateFallbackSpawnBlock"))     { this.generateFallbackSpawnBlock       = JEDJsonUtils.getBoolean(obj, "GenerateFallbackSpawnBlock"); }
+        if (JEDJsonUtils.hasBoolean(obj, "HasSkyLight"))                    { this.hasSkyLight                      = JEDJsonUtils.getBoolean(obj, "HasSkyLight"); }
+        if (JEDJsonUtils.hasBoolean(obj, "HasXZFog"))                       { this.hasXZFog                         = JEDJsonUtils.getBoolean(obj, "HasXZFog"); }
+        if (JEDJsonUtils.hasBoolean(obj, "IgnoreSpawnSuitability"))         { this.ignoreSpawnSuitability           = JEDJsonUtils.getBoolean(obj, "IgnoreSpawnSuitability"); }
+        if (JEDJsonUtils.hasBoolean(obj, "IsSurfaceWorld"))                 { this.isSurfaceWorld                   = JEDJsonUtils.getBoolean(obj, "IsSurfaceWorld"); }
+        if (JEDJsonUtils.hasBoolean(obj, "ShouldClientCheckLight"))         { this.shouldClientCheckLight           = JEDJsonUtils.getBoolean(obj, "ShouldClientCheckLight"); }
+        if (JEDJsonUtils.hasBoolean(obj, "WaterVaporizes"))                 { this.waterVaporizes                   = JEDJsonUtils.getBoolean(obj, "WaterVaporizes"); }
+        if (JEDJsonUtils.hasBoolean(obj, "WorldBorderCenteredOnSpawn"))     { this.worldBorderCenteredOnSpawn       = JEDJsonUtils.getBoolean(obj, "WorldBorderCenteredOnSpawn"); }
         
-        if (JEDJsonUtils.hasInteger(obj, "DayLength"))          { this.dayLength            = JEDJsonUtils.getInteger(obj, "DayLength"); }
-        if (JEDJsonUtils.hasInteger(obj, "NightLength"))        { this.nightLength          = JEDJsonUtils.getInteger(obj, "NightLength"); }
-        if (JEDJsonUtils.hasInteger(obj, "DayCycleIncrement"))  { this.dayCycleIncrement    = JEDJsonUtils.getInteger(obj, "DayCycleIncrement"); }
-        if (JEDJsonUtils.hasInteger(obj, "CloudHeight"))        { this.cloudHeight          = JEDJsonUtils.getInteger(obj, "CloudHeight"); }
-        if (JEDJsonUtils.hasInteger(obj, "SkyRenderType"))      { this.skyRenderType        = JEDJsonUtils.getInteger(obj, "SkyRenderType"); }
-        if (JEDJsonUtils.hasInteger(obj, "SkyDisableFlags"))    { this.skyDisableFlags      = JEDJsonUtils.getInteger(obj, "SkyDisableFlags"); }
-        if (JEDJsonUtils.hasInteger(obj, "RespawnDimension"))   { this.respawnDimension     = JEDJsonUtils.getInteger(obj, "RespawnDimension"); }
-        if (JEDJsonUtils.hasInteger(obj, "AverageGroundLevel")) { this.averageGroundLevel   = JEDJsonUtils.getInteger(obj, "AverageGroundLevel"); }
-        if (JEDJsonUtils.hasInteger(obj, "VoidTeleportInterval")) { this.voidTeleportInterval = JEDJsonUtils.getInteger(obj, "VoidTeleportInterval"); }
+        if (JEDJsonUtils.hasInteger(obj, "DayLength"))                      { this.dayLength                        = JEDJsonUtils.getInteger(obj, "DayLength"); }
+        if (JEDJsonUtils.hasInteger(obj, "NightLength"))                    { this.nightLength                      = JEDJsonUtils.getInteger(obj, "NightLength"); }
+        if (JEDJsonUtils.hasInteger(obj, "DayCycleIncrement"))              { this.dayCycleIncrement                = JEDJsonUtils.getInteger(obj, "DayCycleIncrement"); }
+        if (JEDJsonUtils.hasInteger(obj, "CloudHeight"))                    { this.cloudHeight                      = JEDJsonUtils.getInteger(obj, "CloudHeight"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyRenderType"))                  { this.skyRenderType                    = JEDJsonUtils.getInteger(obj, "SkyRenderType"); }
+        if (JEDJsonUtils.hasInteger(obj, "SkyDisableFlags"))                { this.skyDisableFlags                  = JEDJsonUtils.getInteger(obj, "SkyDisableFlags"); }
+        if (JEDJsonUtils.hasInteger(obj, "RespawnDimension"))               { this.respawnDimension                 = JEDJsonUtils.getInteger(obj, "RespawnDimension"); }
+        if (JEDJsonUtils.hasInteger(obj, "AverageGroundLevel"))             { this.averageGroundLevel               = JEDJsonUtils.getInteger(obj, "AverageGroundLevel"); }
+        if (JEDJsonUtils.hasInteger(obj, "VoidTeleportInterval"))           { this.voidTeleportInterval             = JEDJsonUtils.getInteger(obj, "VoidTeleportInterval"); }
 
-        if (JEDJsonUtils.hasInteger(obj, "SunBrightnessFactor")){ this.sunBrightnessFactor  = JEDJsonUtils.getFloat(obj, "SunBrightnessFactor"); }
-        if (JEDJsonUtils.hasInteger(obj, "SunBrightness"))      { this.sunBrightness        = JEDJsonUtils.getFloat(obj, "SunBrightness"); }
+        if (JEDJsonUtils.hasDouble(obj, "Horizon"))                         { this.horizon                          = JEDJsonUtils.getDouble(obj, "Horizon"); }
+        if (JEDJsonUtils.hasDouble(obj, "MovementFactor"))                  { this.movementFactor                   = JEDJsonUtils.getDouble(obj, "MovementFactor"); }
 
-        if (JEDJsonUtils.hasInteger(obj, "Horizon"))            { this.horizon              = JEDJsonUtils.getDouble(obj, "Horizon"); }
-        if (JEDJsonUtils.hasInteger(obj, "MovementFactor"))     { this.movementFactor       = JEDJsonUtils.getDouble(obj, "MovementFactor"); }
+        if (JEDJsonUtils.hasFloat(obj, "MoonScale"))                        { this.moonScale                        = JEDJsonUtils.getFloat(obj, "MoonScale"); }
+        if (JEDJsonUtils.hasFloat(obj, "SkyBlend"))                         { this.skyBlendRatio                    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
+        if (JEDJsonUtils.hasFloat(obj, "SkyLightBlend"))                    { this.skyColorLightBlendRatio          = JEDJsonUtils.getFloat(obj, "SkyLightBlend"); }
+        if (JEDJsonUtils.hasFloat(obj, "SunBrightness"))                    { this.sunBrightness                    = JEDJsonUtils.getFloat(obj, "SunBrightness"); }
+        if (JEDJsonUtils.hasFloat(obj, "SunBrightnessFactor"))              { this.sunBrightnessFactor              = JEDJsonUtils.getFloat(obj, "SunBrightnessFactor"); }
+        if (JEDJsonUtils.hasFloat(obj, "SunScale"))                         { this.sunScale                         = JEDJsonUtils.getFloat(obj, "SunScale"); }
 
-        if (JEDJsonUtils.hasString(obj, "SkyRenderer"))         { this.skyRenderer          = JEDJsonUtils.getString(obj, "SkyRenderer"); }
-        if (JEDJsonUtils.hasString(obj, "CloudRenderer"))       { this.cloudRenderer        = JEDJsonUtils.getString(obj, "CloudRenderer"); }
-        if (JEDJsonUtils.hasString(obj, "WeatherRenderer"))     { this.weatherRenderer      = JEDJsonUtils.getString(obj, "WeatherRenderer"); }
-        if (JEDJsonUtils.hasString(obj, "PlayerInventoryGroup")){ this.playerInventoryGroup = JEDJsonUtils.getString(obj, "PlayerInventoryGroup"); }
-        if (JEDJsonUtils.hasString(obj, "MusicType"))           { this.musicType            = JEDJsonUtils.getString(obj, "MusicType"); }
-        if (JEDJsonUtils.hasString(obj, "WorldProviderOverride")) { this.worldProviderOverrideClass = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
+        if (JEDJsonUtils.hasString(obj, "CloudRenderer"))                   { this.cloudRenderer                    = JEDJsonUtils.getString(obj, "CloudRenderer"); }
+        if (JEDJsonUtils.hasString(obj, "MusicType"))                       { this.musicType                        = JEDJsonUtils.getString(obj, "MusicType"); }
+        if (JEDJsonUtils.hasString(obj, "PlayerInventoryGroup"))            { this.playerInventoryGroup             = JEDJsonUtils.getString(obj, "PlayerInventoryGroup"); }
+        if (JEDJsonUtils.hasString(obj, "SkyRenderer"))                     { this.skyRenderer                      = JEDJsonUtils.getString(obj, "SkyRenderer"); }
+        if (JEDJsonUtils.hasString(obj, "WeatherRenderer"))                 { this.weatherRenderer                  = JEDJsonUtils.getString(obj, "WeatherRenderer"); }
+        if (JEDJsonUtils.hasString(obj, "WorldProviderOverride"))           { this.worldProviderOverrideClass       = JEDJsonUtils.getString(obj, "WorldProviderOverride"); }
 
-        if (JEDJsonUtils.hasString(obj, "CloudColor"))  { this.cloudColor   = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
-        if (JEDJsonUtils.hasString(obj, "FogColor"))    { this.fogColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
-        if (JEDJsonUtils.hasString(obj, "MoonColor"))   { this.moonColor    = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")); }
-        if (JEDJsonUtils.hasString(obj, "SkyColor"))    { this.skyColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
-        if (JEDJsonUtils.hasString(obj, "SunColor"))    { this.sunColor     = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
-
-        if (JEDJsonUtils.hasFloat(obj, "SkyBlend"))     { this.skyBlendRatio    = JEDJsonUtils.getFloat(obj, "SkyBlend"); }
-        if (JEDJsonUtils.hasFloat(obj, "MoonScale"))    { this.moonScale        = JEDJsonUtils.getFloat(obj, "MoonScale"); }
-        if (JEDJsonUtils.hasFloat(obj, "SunScale"))     { this.sunScale         = JEDJsonUtils.getFloat(obj, "SunScale"); }
-        if (JEDJsonUtils.hasFloat(obj, "SkyLightBlend")){ this.skyColorLightBlendRatio = JEDJsonUtils.getFloat(obj, "SkyLightBlend"); }
+        if (JEDJsonUtils.hasString(obj, "CloudColor"))                      { this.cloudColor                       = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "CloudColor")); }
+        if (JEDJsonUtils.hasString(obj, "FogColor"))                        { this.fogColor                         = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "FogColor")); }
+        if (JEDJsonUtils.hasString(obj, "MoonColor"))                       { this.moonColor                        = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "MoonColor")); }
+        if (JEDJsonUtils.hasString(obj, "SkyColor"))                        { this.skyColor                         = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SkyColor")); }
+        if (JEDJsonUtils.hasString(obj, "SunColor"))                        { this.sunColor                         = JEDStringUtils.hexStringToColor(JEDJsonUtils.getString(obj, "SunColor")); }
 
         if (JEDJsonUtils.hasString(obj, "CanSleepHere"))
         {
@@ -711,6 +713,12 @@ public class JEDWorldProperties
     public Boolean shouldClientCheckLight()
     {
         return this.shouldClientCheckLight;
+    }
+
+    @Nullable
+    public Boolean doesWaterVaporize()
+    {
+        return this.waterVaporizes;
     }
 
     public boolean generateFallbackSpawnBlock()
