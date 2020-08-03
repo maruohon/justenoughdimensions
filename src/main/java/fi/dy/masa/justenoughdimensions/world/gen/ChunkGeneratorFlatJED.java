@@ -1,5 +1,6 @@
 package fi.dy.masa.justenoughdimensions.world.gen;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,6 +26,8 @@ import net.minecraft.world.gen.structure.MapGenStructure;
 import net.minecraft.world.gen.structure.MapGenVillage;
 import net.minecraft.world.gen.structure.StructureOceanMonument;
 import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraftforge.event.terraingen.InitMapGenEvent;
+import net.minecraftforge.event.terraingen.TerrainGen;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 
@@ -32,14 +35,12 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
 {
     protected final World world;
     protected final Random random;
-    protected final MapGenCaves caveGenerator = new MapGenCaves();
+    protected final ArrayList<MapGenBase> structureGenerators = new ArrayList<>();
     protected IBlockState[] cachedBlockIDs;
-    protected Map<String, MapGenStructure> structureGenerators;
     protected WorldGenLakes waterLakeGenerator;
     protected WorldGenLakes lavaLakeGenerator;
     protected boolean hasDecoration;
     protected boolean hasDungeons;
-    protected boolean generateCaves;
     protected boolean doModPopulation;
 
     @SuppressWarnings("unchecked")
@@ -57,19 +58,49 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
             Map<String, Map<String, String>> map = flatWorldGenInfo.getWorldFeatures();
 
             this.cachedBlockIDs = (IBlockState[]) ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82700_c").get(this);
-            this.structureGenerators = (Map<String, MapGenStructure>) ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82696_f").get(this);
             this.waterLakeGenerator = (WorldGenLakes) ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82703_i").get(this);
             this.lavaLakeGenerator = (WorldGenLakes) ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82701_j").get(this);
 
             this.hasDecoration = ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82697_g").getBoolean(this);
             this.hasDungeons = ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82702_h").getBoolean(this);
 
-            if (map.containsKey("netherfortress"))
+            if (map.containsKey("caves"))
             {
-                this.structureGenerators.put("Fortress", (MapGenNetherBridge) net.minecraftforge.event.terraingen.TerrainGen.getModdedMapGen(new MapGenNetherBridge(), net.minecraftforge.event.terraingen.InitMapGenEvent.EventType.NETHER_BRIDGE));
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(new MapGenCaves(), InitMapGenEvent.EventType.CAVE));
             }
 
-            this.generateCaves = map.containsKey("caves");
+            if (map.containsKey("netherfortress"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(new MapGenNetherBridge(), InitMapGenEvent.EventType.NETHER_BRIDGE));
+            }
+
+            Map<String, MapGenStructure> structureGenerators = (Map<String, MapGenStructure>) ObfuscationReflectionHelper.findField(ChunkGeneratorFlat.class, "field_82696_f").get(this);
+
+            if (structureGenerators.containsKey("Village"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(structureGenerators.get("Village"), InitMapGenEvent.EventType.VILLAGE));
+            }
+
+            if (structureGenerators.containsKey("Temple"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(structureGenerators.get("Temple"), InitMapGenEvent.EventType.SCATTERED_FEATURE));
+            }
+
+            if (structureGenerators.containsKey("Mineshaft"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(structureGenerators.get("Mineshaft"), InitMapGenEvent.EventType.MINESHAFT));
+            }
+
+            if (structureGenerators.containsKey("Stronghold"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(structureGenerators.get("Stronghold"), InitMapGenEvent.EventType.STRONGHOLD));
+            }
+
+            if (structureGenerators.containsKey("Monument"))
+            {
+                this.structureGenerators.add(TerrainGen.getModdedMapGen(structureGenerators.get("Monument"), InitMapGenEvent.EventType.OCEAN_MONUMENT));
+            }
+
             this.doModPopulation = ! map.containsKey("no_mod_population");
         }
         catch (Exception e)
@@ -99,18 +130,13 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
             }
         }
 
-        if (this.generateCaves)
-        {
-            this.caveGenerator.generate(this.world, x, z, chunkPrimer);
-        }
-
-        for (MapGenBase structureGen : this.structureGenerators.values())
+        for (MapGenBase structureGen : this.structureGenerators)
         {
             structureGen.generate(this.world, x, z, chunkPrimer);
         }
 
         Chunk chunk = new Chunk(this.world, chunkPrimer, x, z);
-        Biome[] biomeArray = this.world.getBiomeProvider().getBiomes((Biome[]) null, x * 16, z * 16, 16, 16);
+        Biome[] biomeArray = this.world.getBiomeProvider().getBiomes(null, x * 16, z * 16, 16, 16);
         byte[] biomeByteArray = chunk.getBiomeArray();
 
         for (int i = 0; i < biomeByteArray.length; ++i)
@@ -145,9 +171,9 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
             ForgeEventFactory.onChunkPopulate(true, this, this.world, this.random, chunkX, chunkZ, villageGenerated);
         }
 
-        for (MapGenStructure structure : this.structureGenerators.values())
+        for (MapGenBase structure : this.structureGenerators)
         {
-            boolean success = structure.generateStructure(this.world, this.random, chunkPos);
+            boolean success = structure instanceof MapGenStructure && ((MapGenStructure) structure).generateStructure(this.world, this.random, chunkPos);
 
             if (structure instanceof MapGenVillage)
             {
@@ -196,32 +222,39 @@ public class ChunkGeneratorFlatJED extends ChunkGeneratorFlat
     {
         if (creatureType == EnumCreatureType.MONSTER)
         {
-            for (MapGenStructure gen : this.structureGenerators.values())
+            for (MapGenBase gen : this.structureGenerators)
             {
                 if (gen instanceof MapGenNetherBridge)
                 {
-                    if (gen.isInsideStructure(pos))
+                    MapGenNetherBridge bridge = (MapGenNetherBridge) gen;
+
+                    if (bridge.isInsideStructure(pos))
                     {
-                        return ((MapGenNetherBridge) gen).getSpawnList();
+                        return bridge.getSpawnList();
                     }
 
-                    if (this.world.getBlockState(pos.down()).getBlock() == Blocks.NETHER_BRICK && gen.isPositionInStructure(this.world, pos))
+                    if (this.world.getBlockState(pos.down()).getBlock() == Blocks.NETHER_BRICK &&
+                        bridge.isPositionInStructure(this.world, pos))
                     {
-                        return ((MapGenNetherBridge) gen).getSpawnList();
+                        return bridge.getSpawnList();
                     }
                 }
                 else if (gen instanceof MapGenScatteredFeature)
                 {
-                    if (((MapGenScatteredFeature) gen).isSwampHut(pos))
+                    MapGenScatteredFeature temple = (MapGenScatteredFeature) gen;
+
+                    if (temple.isSwampHut(pos))
                     {
-                        return ((MapGenScatteredFeature) gen).getMonsters();
+                        return temple.getMonsters();
                     }
                 }
                 else if (gen instanceof StructureOceanMonument)
                 {
-                    if (((StructureOceanMonument) gen).isPositionInStructure(this.world, pos))
+                    StructureOceanMonument monument = (StructureOceanMonument) gen;
+
+                    if (monument.isPositionInStructure(this.world, pos))
                     {
-                        return ((StructureOceanMonument) gen).getMonsters();
+                        return monument.getMonsters();
                     }
                 }
             }
