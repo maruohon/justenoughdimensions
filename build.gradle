@@ -123,3 +123,9 @@ if (project.hasProperty("signJarKeyStore")) {
 
     build.dependsOn signJar
 }
+
+// Set uft-8 encoding (Should be in here by default...)
+compileJava.options.encoding = 'UTF-8'
+
+// Uncomment for Intellij Resource-Testing (Intellij only, else not recommend )
+// sourceSets {main { output.resourcesDir = output.classesDir }}
