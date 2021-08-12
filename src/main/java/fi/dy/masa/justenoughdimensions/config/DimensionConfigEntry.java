@@ -20,6 +20,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     @Nullable private String biome; // if != null, then use BiomeProviderSingle with this biome
     @Nullable private String biomeProvider; // if != null, then try to construct a BiomeProvider by that class name
     @Nullable private String chunkGenerator; // if != null, then try to construct am IChunkGenerator by that class name
+    @Nullable private String postDimensionDeletionCommand;
     @Nullable private String worldTemplate;
     @Nullable private JsonObject jedTag;
     @Nullable private JsonObject worldInfoJson;
@@ -96,6 +97,12 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.worldTemplate;
     }
 
+    @Nullable
+    public String getPostDimensionDeletionCommand()
+    {
+        return this.postDimensionDeletionCommand;
+    }
+
     public void setOverride(boolean override)
     {
         this.override = override;
@@ -118,7 +125,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         return this.dimensionTypeEntry;
     }
 
-    public void setDimensionTypeEntry(DimensionTypeEntry entry)
+    public void setDimensionTypeEntry(@Nullable DimensionTypeEntry entry)
     {
         this.dimensionTypeEntry = entry;
     }
@@ -187,6 +194,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
         entry.biome         = JEDJsonUtils.getStringOrDefault(obj, "biome", null, false);
         entry.biomeProvider = JEDJsonUtils.getStringOrDefault(obj, "biomeprovider", null, false);
         entry.chunkGenerator = JEDJsonUtils.getStringOrDefault(obj, "chunkgenerator", null, false);
+        entry.postDimensionDeletionCommand = JEDJsonUtils.getStringOrDefault(obj, "post_deletion_command", null, false);
         entry.worldTemplate = JEDJsonUtils.getStringOrDefault(obj, "world_template", null, false);
 
         if (obj.has("dimensiontype") && obj.get("dimensiontype").isJsonObject())
@@ -268,6 +276,11 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
             jsonEntry.addProperty("chunkgenerator", this.chunkGenerator);
         }
 
+        if (this.postDimensionDeletionCommand != null)
+        {
+            jsonEntry.addProperty("post_deletion_command", this.postDimensionDeletionCommand);
+        }
+
         if (this.worldTemplate != null)
         {
             jsonEntry.addProperty("world_template", this.worldTemplate);
@@ -326,7 +339,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + dimension;
+        result = prime * result + this.dimension;
         return result;
     }
 
@@ -335,7 +348,7 @@ public class DimensionConfigEntry implements Comparable<DimensionConfigEntry>
     {
         if (this == other) { return true; }
         if (other == null) { return false; }
-        if (getClass() != other.getClass()) { return false; }
+        if (this.getClass() != other.getClass()) { return false; }
 
         return this.getDimension() == ((DimensionConfigEntry) other).getDimension();
     }

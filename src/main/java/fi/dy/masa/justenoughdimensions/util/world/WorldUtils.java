@@ -215,12 +215,23 @@ public class WorldUtils
 
                 try
                 {
-                    if (world != null && (world instanceof WorldServer))
+                    if (world instanceof WorldServer)
                     {
-                        ((WorldServer) world).flush();
+                        WorldServer worldServer = (WorldServer) world; 
+                        worldServer.getChunkProvider().queueUnloadAll();
+                        worldServer.saveAllChunks(true, null);
+                        worldServer.flush();
                     }
 
                     FileUtils.deleteDirectory(worldDir);
+
+                    MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+                    String cmd = entry.getPostDimensionDeletionCommand();
+
+                    if (server != null && cmd != null)
+                    {
+                        server.getCommandManager().executeCommand(server, cmd);
+                    }
 
                     return true;
                 }
