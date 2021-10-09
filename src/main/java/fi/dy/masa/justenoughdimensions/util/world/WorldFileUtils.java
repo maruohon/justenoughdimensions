@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import com.google.common.io.Files;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.datafix.FixTypes;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunkProvider;
@@ -26,13 +28,7 @@ import fi.dy.masa.justenoughdimensions.reference.Reference;
 public class WorldFileUtils
 {
     private static final String JED_LEVEL_FILENAME = "jed_level.dat";
-    private static final FileFilter FILE_FILTER_NO_LEVEL = new FileFilter()
-    {
-        public boolean accept(File name)
-        {
-            return name.getName().equals("level.dat") == false;
-        }
-    };
+    private static final FileFilter FILE_FILTER_NO_LEVEL = (file) -> file.getName().equals("level.dat") == false;
 
     @Nullable
     public static File getWorldDirectory(World world)
@@ -218,11 +214,11 @@ public class WorldFileUtils
         return regionDir.exists() == false;
     }
 
-    public static NBTTagCompound loadWorldInfoFromFile(World world, @Nullable File worldDir)
+    public static NBTTagCompound loadWorldInfoNbtFromFile(World world, @Nullable File worldDir)
     {
         if (worldDir == null)
         {
-            JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoFromFile(): null worldDir");
+            JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoNbtFromFile(): null worldDir");
             return null;
         }
 
@@ -232,24 +228,94 @@ public class WorldFileUtils
         {
             try
             {
+                JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoNbtFromFile(): Reading WorldInfo NBT from file '{}'",
+                                             levelFile.getAbsolutePath());
                 NBTTagCompound nbt = CompressedStreamTools.readCompressed(new FileInputStream(levelFile));
                 nbt = world.getMinecraftServer().getDataFixer().process(FixTypes.LEVEL, nbt.getCompoundTag("Data"));
-                //FMLCommonHandler.instance().handleWorldDataLoad((SaveHandler) world.getSaveHandler(), info, nbt);
-                JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoFromFile(): Read world info from file '{}'", levelFile.getPath());
                 return nbt;
             }
             catch (Exception e)
             {
-                JustEnoughDimensions.logger.warn("Exception reading " + levelFile.getPath(), e);
-                return null;
+                JustEnoughDimensions.logger.warn("WorldFileUtils.loadWorldInfoNbtFromFile(): Exception reading NBT from file '{}'",
+                                                 levelFile.getAbsolutePath(), e);
             }
-
-            //return SaveFormatOld.loadAndFix(fileLevel, world.getMinecraftServer().getDataFixer(), (SaveHandler) world.getSaveHandler());
         }
 
-        JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoFromFile(): '{}' didn't exist for dimension {}",
+        JustEnoughDimensions.logInfo("WorldFileUtils.loadWorldInfoNbtFromFile(): '{}' didn't exist for dimension {}",
                 JED_LEVEL_FILENAME, world.provider.getDimension());
         return null;
+    }
+
+    @Nullable
+    public static NBTTagCompound readNbtFromFile(File file)
+    {
+        if (file.exists())
+        {
+            try (FileInputStream is = new FileInputStream(file))
+            {
+                JustEnoughDimensions.logInfo("WorldFileUtils.readNbtFromFile(): Reading NBT from file '{}'",
+                                             file.getAbsolutePath());
+                NBTTagCompound nbt = CompressedStreamTools.readCompressed(is);
+                return nbt;
+            }
+            catch (Exception e)
+            {
+                JustEnoughDimensions.logger.warn("WorldFileUtils.readNbtFromFile(): Exception reading NBT from file '{}'",
+                                                 file.getAbsolutePath(), e);
+            }
+        }
+
+        return null;
+    }
+
+    public static boolean writeNbtToFile(File file, NBTTagCompound nbt)
+    {
+        try (FileOutputStream os = new FileOutputStream(file))
+        {
+            JustEnoughDimensions.logInfo("WorldFileUtils.writeNbtToFile(): Writing NBT to file '{}'",
+                                         file.getAbsolutePath());
+            CompressedStreamTools.writeCompressed(nbt, os);
+        }
+        catch (Exception e)
+        {
+            JustEnoughDimensions.logger.warn("WorldFileUtils.writeNbtToFile(): Exception writing NBT to file '{}'",
+                                             file.getAbsolutePath(), e);
+            return false;
+        }
+
+        return true;
+    }
+
+    public static void overrideValuesInWorldInfo(File levelFile, MinecraftServer server, Consumer<NBTTagCompound> dataModifier)
+    {
+        JustEnoughDimensions.logInfo("WorldFileUtils.overrideValuesInWorldInfo(): Attempting to override values in file '{}'",
+                                     levelFile.getAbsolutePath());
+
+        NBTTagCompound nbt = readNbtFromFile(levelFile);
+
+        if (nbt == null)
+        {
+            return;
+        }
+
+        try
+        {
+            NBTTagCompound worldInfoTag = server.getDataFixer().process(FixTypes.LEVEL, nbt.getCompoundTag("Data"));
+            dataModifier.accept(worldInfoTag);
+
+            nbt.setTag("Data", worldInfoTag);
+
+            if (writeNbtToFile(levelFile, nbt))
+            {
+                JustEnoughDimensions.logInfo("WorldFileUtils.overrideValuesInWorldInfo(): Successfully overrode values in file '{}'",
+                                             levelFile.getAbsolutePath());
+                return;
+            }
+        }
+        catch (Exception ignore) {}
+
+        JustEnoughDimensions.logger.warn("WorldFileUtils.overrideValuesInWorldInfo(): Failed to override values in file '{}'",
+                                         levelFile.getAbsolutePath());
     }
 
     private static void saveWorldInfoToFile(World world, @Nullable File worldDir)

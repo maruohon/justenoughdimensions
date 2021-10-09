@@ -43,6 +43,7 @@ public class Configs
     public static boolean usePerWorldDimensionConfig;
     public static boolean usePerWorldMainConfig;
 
+    public static String generatorSettingsOverride = "";
     public static int initialSpawnDimensionId;
     public static GameType normalGameMode = GameType.SURVIVAL;
 
@@ -251,6 +252,13 @@ public class Configs
                         "This works even if the dimension in question isn't registered by this mod\n" +
                         "(so vanilla, or other mod dimensions can have it too).");
         enableSeparateWorldInfo = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "generatorSettingsOverride", "").setRequiresMcRestart(false);
+        prop.setComment("If this is non-empty, then the 'generator-settings' value on the DedicatedServer\n" +
+                        "or the 'generatorOptions' value in the 'level.dat' file in single player\n" +
+                        "will be set to this value early during the server start.\n" +
+                        "This is required to be able to select a Topography preset via JED configs.");
+        generatorSettingsOverride = prop.getString();
 
         prop = conf.get(CATEGORY_GENERIC, "initialSpawnDimensionId", 0).setRequiresWorldRestart(true).setRequiresMcRestart(false);
         prop.setComment("If enabled with the enableInitialSpawnDimensionOverride option, this will be used as the initial spawn dimension ID");

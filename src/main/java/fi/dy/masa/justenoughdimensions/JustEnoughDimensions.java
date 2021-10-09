@@ -32,6 +32,7 @@ import fi.dy.masa.justenoughdimensions.reference.Reference;
 import fi.dy.masa.justenoughdimensions.util.PlayerInventoryStorage;
 import fi.dy.masa.justenoughdimensions.util.world.WorldBorderUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldFileUtils;
+import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderEndJED;
 import fi.dy.masa.justenoughdimensions.world.WorldProviderHellJED;
@@ -77,6 +78,8 @@ public class JustEnoughDimensions
         PlayerInventoryStorage.INSTANCE.setWorldDir(worldDir);
         DataTracker.getInstance().readFromDisk(worldDir);
         lastWorldDir = worldDir;
+
+        WorldInfoUtils.overrideServerGeneratorSettings(event.getServer());
 
         // This needs to be here so that we are able to override existing dimensions before
         // they get loaded during server start.

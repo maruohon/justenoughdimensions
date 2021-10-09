@@ -2,6 +2,7 @@ package fi.dy.masa.justenoughdimensions.util.world;
 
 import java.lang.reflect.Field;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.GameType;
@@ -37,7 +38,6 @@ public class WorldInfoUtils
     /**
      * Overrides the current WorldInfo with WorldInfoJED.
      * @param world
-     * @param dimension
      */
     public static void loadAndSetCustomWorldInfo(World world)
     {
@@ -82,8 +82,6 @@ public class WorldInfoUtils
 
     /**
      * Creates a new WorldInfoJED object for the given dimension.
-     * @param world
-     * @param dimension
      * @return the created WorldInfoJED instance
      */
     private static WorldInfoJED createCustomWorldInfoFor(World world, int dimension)
@@ -96,15 +94,10 @@ public class WorldInfoUtils
      * Returns the NBTTagCompound for creating a new WorldInfo instance for the given World.
      * If both <i>readFromDisk</i> and <i>inheritFromOverworld</i> are false, then the returned tag
      * will only contain the values defined in the "worldinfo" objects in the dimension config.
-     * @param world
-     * @param dimension
-     * @param readFromDisk
-     * @param inheritFromOverworld
-     * @return
      */
     public static NBTTagCompound getWorldInfoTag(World world, int dimension, boolean readFromDisk, boolean inheritFromOverworld)
     {
-        NBTTagCompound nbt = readFromDisk ? WorldFileUtils.loadWorldInfoFromFile(world, WorldFileUtils.getWorldDirectory(world)) : null;
+        NBTTagCompound nbt = readFromDisk ? WorldFileUtils.loadWorldInfoNbtFromFile(world, WorldFileUtils.getWorldDirectory(world)) : null;
         final boolean isDimensionInit = readFromDisk ? nbt == null : WorldFileUtils.jedLevelFileExists(world) == false;
 
         // No level.dat exists for this dimension yet
@@ -293,5 +286,10 @@ public class WorldInfoUtils
         }
 
         return worldType;
+    }
+
+    public static void overrideServerGeneratorSettings(MinecraftServer server)
+    {
+        JustEnoughDimensions.proxy.overrideServerGeneratorSettings(server);
     }
 }
