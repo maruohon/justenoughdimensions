@@ -60,6 +60,9 @@ public class SkyRenderer extends net.minecraftforge.client.IRenderHandler
     @Override
     public void render(float partialTicks, WorldClient world, Minecraft mc)
     {
+        if(ShaderCheck.isShaderOn()) { //It's preferable not to draw the sky than fight Optifine 
+            return;
+        }
         if (this.skyRenderType == 2)
         {
             this.renderSkyEnd(mc);
