@@ -26,6 +26,7 @@ import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.gen.ChunkGeneratorEndJED;
 
 public class WorldProviderEndJED extends WorldProviderEnd implements IWorldProviderJED
 {

@@ -1,10 +1,12 @@
-package fi.dy.masa.justenoughdimensions.world;
+package fi.dy.masa.justenoughdimensions.world.gen;
 
 import java.util.Random;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkGeneratorEnd;
+
+import fi.dy.masa.justenoughdimensions.world.JEDWorldProperties;
 
 public class ChunkGeneratorEndJED extends ChunkGeneratorEnd
 {
