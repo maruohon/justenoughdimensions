@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.world;
 
 import javax.annotation.Nullable;
+
 import net.minecraft.client.audio.MusicTicker.MusicType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -21,6 +22,7 @@ import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfig;
 import fi.dy.masa.justenoughdimensions.config.DimensionConfigEntry;
@@ -29,6 +31,7 @@ import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport;
 import fi.dy.masa.justenoughdimensions.util.world.VoidTeleport.VoidTeleportData;
 import fi.dy.masa.justenoughdimensions.util.world.WorldInfoUtils;
 import fi.dy.masa.justenoughdimensions.util.world.WorldUtils;
+import fi.dy.masa.justenoughdimensions.world.gen.ChunkGeneratorEndJED;
 import fi.dy.masa.justenoughdimensions.world.gen.ChunkGeneratorFlatJED;
 
 public class WorldProviderJED extends WorldProviderSurface implements IWorldProviderJED
@@ -210,6 +213,10 @@ public class WorldProviderJED extends WorldProviderSurface implements IWorldProv
             if (generatorClassName.equals("ChunkGeneratorFlatJED"))
             {
                 return new ChunkGeneratorFlatJED(world, seed, features, generatorOptions);
+            }
+            else if (generatorClassName.equals("ChunkGeneratorEndJED"))
+            {
+                return new ChunkGeneratorEndJED(world, features, seed, provider.getSpawnCoordinate(), generatorOptions);
             }
 
             try
