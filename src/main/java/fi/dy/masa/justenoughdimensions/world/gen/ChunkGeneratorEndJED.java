@@ -1,6 +1,7 @@
 package fi.dy.masa.justenoughdimensions.world.gen;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -13,14 +14,21 @@ public class ChunkGeneratorEndJED extends ChunkGeneratorEnd
     protected final World world;
     protected final int dimension;
     protected final Random rand;
+    protected final String generatorOptions;
 
     public ChunkGeneratorEndJED(World world, boolean mapFeaturesEnabled, long seed, BlockPos spawn)
+    {
+        this(world, mapFeaturesEnabled, seed, spawn, null);
+    }
+
+    public ChunkGeneratorEndJED(World world, boolean mapFeaturesEnabled, long seed, BlockPos spawn, @Nullable String generatorOptions)
     {
         super(world, mapFeaturesEnabled, seed, spawn);
 
         this.world = world;
         this.dimension = world.provider.getDimension();
         this.rand = new Random(seed);
+        this.generatorOptions = generatorOptions;
     }
 
     @Override
