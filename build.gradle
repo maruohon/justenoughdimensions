@@ -14,10 +14,9 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle.forge'
 
 repositories {
-    // ModMaven for Baubles
     maven {
-        name "ModMaven"
-        url "https://modmaven.k-4u.nl"
+        name = "CurseForge"
+        url = "https://minecraft.curseforge.com/api/maven/"
     }
 }
 
@@ -77,7 +76,9 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    deobfCompile "com.azanor.baubles:Baubles:${config.baubles_api_version}"
+    compile "baubles:Baubles:${config.baubles_api_version}"
+    compile files("libs/TrashSlot_1.12.2-8.4.10.jar")
+    compile files("libs/aether-1.12.2-v1.5.2.jar")
 }
 
 version = project.minecraft.mod_version
@@ -124,3 +125,9 @@ if (project.hasProperty("signJarKeyStore")) {
 
     build.dependsOn signJar
 }
+
+// Set uft-8 encoding (Should be in here by default...)
+compileJava.options.encoding = 'UTF-8'
+
+// Uncomment for Intellij Resource-Testing (Intellij only, else not recommend )
+// sourceSets {main { output.resourcesDir = output.classesDir }}

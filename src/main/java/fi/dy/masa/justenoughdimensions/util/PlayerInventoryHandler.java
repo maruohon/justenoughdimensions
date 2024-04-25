@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+
+import fi.dy.masa.justenoughdimensions.compat.trash_slot.TrashSlotCompat;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.common.Loader;
 
 public class PlayerInventoryHandler
 {
@@ -20,6 +23,9 @@ public class PlayerInventoryHandler
     {
         this.handlers.add(new InventoryHandler("player_inv", InventoryViewPlayerInventory::new));
         this.handlers.add(new InventoryHandler("ender_chest", InventoryViewEnderChest::new));
+
+        if(Loader.isModLoaded("trashslot"))
+            this.handlers.add(new InventoryHandler("trash", TrashSlotCompat.InventoryViewTrashSlot::new));
     }
 
     public PlayerInventoryHandler addHandler(InventoryHandler handler)
