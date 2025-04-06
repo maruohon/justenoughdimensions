@@ -61,7 +61,10 @@ public class WorldFileUtils
         File dimensionDir = mainWorldDir;
         String dimensionDirName = world.provider.getSaveFolder();
 
-        if (dimensionDirName != null)
+        // Don't append the dimension directory, if the directory from the SaveHandler already points there.
+        // This isn't the case in vanilla/Forge, but some other server mods (bukkit hybrid things?)
+        // seem to use separate instances for each dimension.
+        if (dimensionDirName != null && mainWorldDir.toString().contains(dimensionDirName) == false)
         {
             dimensionDir = new File(mainWorldDir, dimensionDirName);
 
