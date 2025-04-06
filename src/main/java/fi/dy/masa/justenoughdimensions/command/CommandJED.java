@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -21,9 +22,11 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+
 import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDefaultGameType;
 import fi.dy.masa.justenoughdimensions.command.utils.CommandJEDDifficulty;
@@ -423,12 +426,25 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("World class: {}", world.getClass().getName());
                 WorldType type = world.getWorldInfo().getTerrainType();
                 JustEnoughDimensions.logger.info("WorldType: '{}' (class: {})", type.getName(), type.getClass().getName());
-                JustEnoughDimensions.logger.info("WorldInfo class: '{}'", world.getWorldInfo().getClass().getName());
-                JustEnoughDimensions.logger.info("WorldProvider: {}", world.provider.getClass().getName());
-                JustEnoughDimensions.logger.info("ChunkProvider: {}", cp.getClass().getName());
-                JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator: {}",
-                        ((cp instanceof ChunkProviderServer) ? ((ChunkProviderServer) cp).chunkGenerator.getClass().getName() : "null"));
-                JustEnoughDimensions.logger.info("BiomeProvider: {}", world.getBiomeProvider().getClass().getName());
+                JustEnoughDimensions.logger.info("WorldInfo class: {}", world.getWorldInfo().getClass().getName());
+                JustEnoughDimensions.logger.info("WorldInfo.generatorOptions: '{}'", world.getWorldInfo().getGeneratorOptions());
+                JustEnoughDimensions.logger.info("WorldProvider class: {}", world.provider.getClass().getName());
+                JustEnoughDimensions.logger.info("WorldProvider#getSaveFolder(): {}", world.provider.getSaveFolder());
+                JustEnoughDimensions.logger.info("ChunkProvider class: {}", cp.getClass().getName());
+
+                if (cp instanceof ChunkProviderServer)
+                {
+                    ChunkProviderServer cps = (ChunkProviderServer) cp;
+                    JustEnoughDimensions.logger.info("ChunkProviderServer.chunkGenerator class: {}", cps.chunkGenerator.getClass().getName());
+                    JustEnoughDimensions.logger.info("ChunkProviderServer.chunkLoader class: {}", cps.chunkLoader.getClass().getName());
+
+                    if (cps.chunkLoader instanceof AnvilChunkLoader)
+                    {
+                        JustEnoughDimensions.logger.info("[instanceof AnvilChunkLoader] ChunkProviderServer.chunkLoader.chunkSaveLocation: {}", ((AnvilChunkLoader) cps.chunkLoader).chunkSaveLocation);
+                    }
+                }
+
+                JustEnoughDimensions.logger.info("BiomeProvider class: {}", world.getBiomeProvider().getClass().getName());
 
                 JEDWorldProperties props = JEDWorldProperties.getPropertiesIfExists(world);
                 if (props != null)
@@ -446,7 +462,7 @@ public class CommandJED extends CommandBase
                 JustEnoughDimensions.logger.info("Vanilla level NBT: {}", tag.toString());
                 JustEnoughDimensions.logger.info("============= JED DEBUG END ==========");
 
-                sender.sendMessage(new TextComponentTranslation("jed.commands.info.output.printed.to.console"));
+                sender.sendMessage(new TextComponentString("Command output printed to game console/log"));
             }
         }
         else
